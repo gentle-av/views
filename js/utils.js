@@ -1,4 +1,3 @@
-// Утилиты и общие функции
 const Utils = {
     isHiddenFile(filename) {
         return filename.startsWith('.');
