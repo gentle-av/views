@@ -7,10 +7,29 @@ const PlayerManager = {
     maxRetries: 30,
     retryDelay: 2000,
     playerActive: false,
+    isMobile: false,
+    serverHost: window.location.hostname, // Сохраняем хост сервера
 
     init() {
         this.setupEventListeners();
         this.setPlayerActive(false);
+        this.checkMobile();
+        console.log('Server host:', this.serverHost);
+        console.log('Server URL:', this.getServerUrl());
+        console.log('Player URL:', this.getPlayerUrl());
+    },
+
+    getServerUrl() {
+        return `http://${this.serverHost}:${CONFIG.SERVER_PORT}`;
+    },
+
+    getPlayerUrl() {
+        return `http://${this.serverHost}:${CONFIG.PLAYER_PORT}`;
+    },
+
+    checkMobile() {
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log('Mobile device:', this.isMobile);
     },
 
     setupEventListeners() {
@@ -81,7 +100,11 @@ const PlayerManager = {
         console.log('Launching player with file:', path);
 
         try {
-            const response = await fetch(`http://localhost:${CONFIG.SERVER_PORT}/api/open`, {
+            // Используем правильный URL для сервера
+            const url = `${this.getServerUrl()}/api/open`;
+            console.log('Launch URL:', url);
+
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ path: path })
@@ -101,89 +124,121 @@ const PlayerManager = {
         }
     },
 
-async checkApiAvailability() {
-    try {
-        const response = await fetch(`http://localhost:${CONFIG.PLAYER_PORT}/api/status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
-        });
-        if (response.ok) {
-            const data = await response.json();
-            console.log('API check result:', data);
-            // Проверяем что available это true и это булево значение
-            return data && data.available === true;
-        }
-    } catch (error) {
-        console.log('API not available yet (this is normal before player starts)');
-    }
-    return false;
-},
-async checkFullscreenStatus() {
-    if (!this.currentFile) return false;
-    try {
-        const response = await fetch(`http://localhost:${CONFIG.PLAYER_PORT}/api/status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
-        });
+    async checkApiAvailability() {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        if (!response.ok) return false;
+            const url = `${this.getPlayerUrl()}/api/status`;
+            console.log('Checking API at:', url);
 
-        const data = await response.json();
-        console.log('Fullscreen status check raw data:', data);
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+                signal: controller.signal
+            });
 
-        if (data && data.available) {
-            // Явное преобразование в булево значение
-            const isFullScreen = data.isFullScreen === true ||
-                                 data.isFullScreen === "true" ||
-                                 data.isFullScreen === 1;
+            clearTimeout(timeoutId);
 
-            console.log('Parsed fullscreen status:', isFullScreen, 'from value:', data.isFullScreen);
-
-            const wasFullscreen = this.isFullscreen;
-            this.isFullscreen = isFullScreen;
-
-            if (wasFullscreen !== this.isFullscreen) {
-                console.log('Fullscreen status changed to:', this.isFullscreen);
-                this.updateFullscreenButton();
-
-                if (this.isFullscreen) {
-                    document.querySelector('.status-indicator')?.style.setProperty('background', 'var(--green)');
-                } else {
-                    document.querySelector('.status-indicator')?.style.setProperty('background', 'var(--yellow)');
-                }
+            if (response.ok) {
+                const data = await response.json();
+                console.log('API check result:', data);
+                return data && data.available === true;
             }
-
-            return this.isFullscreen;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('API check timeout');
+            } else {
+                console.log('API not available yet:', error.message);
+            }
         }
-    } catch (error) {
-        console.log('Error checking fullscreen status:', error);
-    }
-    return false;
-},
-    async waitForApi(maxAttempts = this.maxRetries) {
+        return false;
+    },
+
+    async checkFullscreenStatus() {
+        if (!this.currentFile) return false;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+            const url = `${this.getPlayerUrl()}/api/status`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) return false;
+
+            const data = await response.json();
+            console.log('Fullscreen status check raw data:', data);
+
+            if (data && data.available) {
+                const isFullScreen = data.isFullScreen === true ||
+                                     data.isFullScreen === "true" ||
+                                     data.isFullScreen === 1;
+
+                console.log('Parsed fullscreen status:', isFullScreen, 'from value:', data.isFullScreen);
+
+                const wasFullscreen = this.isFullscreen;
+                this.isFullscreen = isFullScreen;
+
+                if (wasFullscreen !== this.isFullscreen) {
+                    console.log('Fullscreen status changed to:', this.isFullscreen);
+                    this.updateFullscreenButton();
+
+                    if (this.isFullscreen) {
+                        document.querySelector('.status-indicator')?.style.setProperty('background', 'var(--green)');
+                    } else {
+                        document.querySelector('.status-indicator')?.style.setProperty('background', 'var(--yellow)');
+                    }
+                }
+
+                return this.isFullscreen;
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Fullscreen status check timeout');
+            } else {
+                console.log('Error checking fullscreen status:', error.message);
+            }
+        }
+        return false;
+    },
+
+    async waitForApi(maxAttempts = 40) {
         console.log('Waiting for player API to become available...');
+        let lastError = null;
+
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             this.updateProgressBar(attempt, maxAttempts);
 
-            const isAvailable = await this.checkApiAvailability();
+            try {
+                const isAvailable = await this.checkApiAvailability();
 
-            if (isAvailable) {
-                this.hideProgressBar();
-                console.log('Player API is now available');
-
-                // Проверяем статус полноэкранного режима
-                await this.checkFullscreenStatus();
-
-                return true;
+                if (isAvailable) {
+                    this.hideProgressBar();
+                    console.log('Player API is now available');
+                    return true;
+                }
+            } catch (error) {
+                lastError = error;
             }
 
             console.log(`Attempt ${attempt}/${maxAttempts}: API not ready, waiting ${this.retryDelay}ms...`);
             await Utils.delay(this.retryDelay);
         }
+
         this.hideProgressBar();
         console.log('Player API did not become available after', maxAttempts, 'attempts');
+        if (lastError) {
+            console.log('Last error:', lastError);
+        }
         return false;
     },
 
@@ -200,7 +255,7 @@ async checkFullscreenStatus() {
 
             placeholder.innerHTML = `
                 <i class="fas fa-spinner fa-spin" style="font-size: 60px;"></i>
-                <div>Запуск Mediateka...</div>
+                <div>Запуск Mediateka на сервере ${this.serverHost}...</div>
                 <div style="font-size: 0.9rem; margin-top: 10px; color: var(--fg3);">
                     Попытка ${attempt} из ${maxAttempts}
                 </div>
@@ -208,7 +263,7 @@ async checkFullscreenStatus() {
                     Прошло: ${secondsPassed}с / ~${totalSeconds}с
                 </div>
                 <div style="font-size: 0.8rem; margin-top: 20px; color: var(--fg4);">
-                    Плеер запускается, пожалуйста подождите...
+                    Плеер запускается на сервере, пожалуйста подождите...
                 </div>
             `;
         }
@@ -220,7 +275,7 @@ async checkFullscreenStatus() {
         progressBar.querySelector('.loading-progress-bar').style.width = '0%';
     },
 
-async playVideo(path) {
+  async playVideo(path) {
     try {
         this.currentFile = path;
         const fileName = path.split('/').pop();
@@ -233,40 +288,48 @@ async playVideo(path) {
         document.getElementById('currentFilePath').textContent = path;
 
         console.log('Launching player for file:', path);
+        console.log('Server host:', this.serverHost);
 
-        // ШАГ 1: Проверяем, запущен ли плеер и доступно ли API
+        // ШАГ 1: Проверяем, запущен ли плеер
         let isPlayerRunning = false;
         try {
-            const statusCheck = await fetch(`http://localhost:${CONFIG.PLAYER_PORT}/api/status`, {
+            const url = `${this.getPlayerUrl()}/api/status`;
+            console.log('Checking player status at:', url);
+
+            const statusCheck = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
+                body: JSON.stringify({}),
+                signal: AbortSignal.timeout(2000)
             });
+
             if (statusCheck.ok) {
                 const statusData = await statusCheck.json();
                 isPlayerRunning = statusData.available === true;
                 console.log('Player already running:', isPlayerRunning);
             }
         } catch (e) {
-            console.log('Player not running or API not responding, will launch new instance');
+            console.log('Player not running or API not responding');
             isPlayerRunning = false;
         }
 
-        // ШАГ 2: Если плеер не запущен, запускаем его
+        // ШАГ 2: Открываем файл в плеере
         if (!isPlayerRunning) {
             console.log('Launching new player instance...');
             await this.launchPlayerWithFile(path);
-            console.log('Player launched, waiting for API to become available...');
-
-            // Даем больше времени на запуск плеера
-            await Utils.delay(3000);
+            console.log('Player launched, waiting for API...');
+            await Utils.delay(2000);
         } else {
             console.log('Player already running, sending open file command...');
             try {
-                const openResponse = await fetch(`http://localhost:${CONFIG.PLAYER_PORT}/api/openfile`, {
+                const url = `${this.getPlayerUrl()}/api/openfile`;
+                console.log('Open file URL:', url);
+
+                const openResponse = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path: path })
+                    body: JSON.stringify({ path: path }),
+                    signal: AbortSignal.timeout(5000)
                 });
 
                 if (!openResponse.ok) {
@@ -277,74 +340,115 @@ async playVideo(path) {
                 console.log('Open file response:', openData);
 
                 if (!openData.success) {
-                    throw new Error(openData.error || 'Failed to open file in running player');
+                    throw new Error(openData.error || 'Failed to open file');
                 }
-
-                // Даем время на загрузку файла
-                await Utils.delay(2000);
             } catch (err) {
-                console.error('Error opening file in running player:', err);
-                console.log('Falling back to launching new player instance...');
+                console.error('Error opening file:', err);
+                console.log('Falling back to launching new instance...');
                 await this.launchPlayerWithFile(path);
-                await Utils.delay(3000);
+                await Utils.delay(2000);
             }
         }
 
-        // ШАГ 3: Ждем API с увеличенным количеством попыток
-        console.log('Waiting for API to become available...');
-        const apiReady = await this.waitForApi(40); // Увеличиваем до 40 попыток
+        // ШАГ 3: Ждем API и сразу отправляем команду на fullscreen
+        console.log('Waiting for API and enabling fullscreen...');
 
-        if (!apiReady) {
-            throw new Error('API плеера не отвечает. Проверьте, запущена ли Mediateka');
+        let apiReady = false;
+        let fullscreenActivated = false;
+
+        // Делаем несколько попыток с увеличенным таймаутом
+        for (let attempt = 1; attempt <= 30; attempt++) {
+            this.updateProgressBar(attempt, 30);
+
+            try {
+                // Сначала проверяем доступность API
+                const statusUrl = `${this.getPlayerUrl()}/api/status`;
+                const statusResponse = await fetch(statusUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}),
+                    signal: AbortSignal.timeout(3000)
+                });
+
+                if (statusResponse.ok) {
+                    const statusData = await statusResponse.json();
+
+                    if (statusData && statusData.available === true) {
+                        console.log(`API available on attempt ${attempt}`);
+                        apiReady = true;
+
+                        // Как только API доступно, сразу отправляем fullscreen
+                        if (!fullscreenActivated) {
+                            console.log(`Sending fullscreen command on attempt ${attempt}`);
+                            try {
+                                const fsUrl = `${this.getPlayerUrl()}/api/fullscreen`;
+                                const fsResponse = await fetch(fsUrl, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ fullscreen: true }),
+                                    signal: AbortSignal.timeout(3000)
+                                });
+
+                                if (fsResponse.ok) {
+                                    const fsData = await fsResponse.json();
+                                    if (fsData.success) {
+                                        console.log('Fullscreen command accepted');
+                                        fullscreenActivated = true;
+
+                                        // Даем время на применение fullscreen
+                                        await Utils.delay(1000);
+
+                                        // Проверяем статус еще раз для подтверждения
+                                        try {
+                                            await this.checkFullscreenStatus();
+                                        } catch (e) {
+                                            // Игнорируем ошибки проверки
+                                        }
+                                    }
+                                }
+                            } catch (fsError) {
+                                console.log(`Fullscreen attempt ${attempt} failed:`, fsError.message);
+                                // Продолжаем попытки, даже если fullscreen не удался
+                            }
+                        }
+
+                        // Если мы уже отправили fullscreen и прошло достаточно времени, выходим
+                        if (fullscreenActivated && attempt >= 5) {
+                            break;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log(`Attempt ${attempt}: API not ready (${error.message})`);
+            }
+
+            // Ждем перед следующей попыткой
+            await Utils.delay(this.retryDelay);
         }
 
-        console.log('API is ready');
+        if (!apiReady) {
+            throw new Error('API плеера не отвечает после 30 попыток');
+        }
 
-        // ШАГ 4: Даем команду на полноэкранный режим
-        console.log('Enabling fullscreen mode...');
+        // ШАГ 4: Финальная проверка и активация UI
+        console.log('API ready, finalizing...');
 
-        // Несколько попыток включить полноэкранный режим
-        let fullscreenEnabled = false;
-        for (let attempt = 1; attempt <= 5; attempt++) {
+        // Последняя попытка включить fullscreen, если еще не получилось
+        if (!fullscreenActivated) {
+            console.log('Final fullscreen attempt...');
             try {
-                console.log(`Fullscreen enable attempt ${attempt}/5...`);
-
-                const fsResponse = await fetch(`http://localhost:${CONFIG.PLAYER_PORT}/api/fullscreen`, {
+                const fsUrl = `${this.getPlayerUrl()}/api/fullscreen`;
+                await fetch(fsUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fullscreen: true })
                 });
-
-                if (fsResponse.ok) {
-                    const fsData = await fsResponse.json();
-                    console.log('Fullscreen response:', fsData);
-
-                    if (fsData.success) {
-                        fullscreenEnabled = true;
-                        break;
-                    }
-                }
-            } catch (err) {
-                console.warn(`Fullscreen attempt ${attempt} failed:`, err);
+            } catch (e) {
+                console.log('Final fullscreen attempt failed:', e.message);
             }
-
-            await Utils.delay(1000);
         }
 
-        // ШАГ 5: Проверяем статус полноэкранного режима
-        if (fullscreenEnabled) {
-            console.log('Fullscreen command sent successfully');
-            await Utils.delay(1500);
-        }
-
-        // ШАГ 6: Проверяем финальный статус
-        try {
-            await this.checkFullscreenStatus();
-        } catch (err) {
-            console.warn('Could not verify fullscreen status:', err);
-        }
-
-        // ШАГ 7: Активируем UI
+        // Активируем UI
         this.setPlayerActive(true);
         this.showSuccessState();
         this.isPlaying = true;
@@ -352,8 +456,20 @@ async playVideo(path) {
         this.updateTopBar();
         this.startStatusCheck();
 
+        // Периодически проверяем fullscreen и пробуем включить если нужно
+        this.fullscreenRetryInterval = setInterval(() => {
+            if (this.currentFile && !this.isFullscreen) {
+                console.log('Periodic fullscreen check - attempting to enable');
+                fetch(`${this.getPlayerUrl()}/api/fullscreen`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fullscreen: true })
+                }).catch(e => {});
+            }
+        }, 5000);
+
         Utils.addToHistory(path, 'success');
-        console.log('Video playback started successfully, fullscreen status:', this.isFullscreen);
+        console.log('Video playback started successfully');
 
     } catch (error) {
         console.error('Error in playVideo:', error);
@@ -363,140 +479,26 @@ async playVideo(path) {
     }
 },
 
-async checkApiAvailability() {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 секунды таймаут
+// Добавляем метод cleanup при закрытии
+hideControl() {
+    document.getElementById('playerControlPage').style.display = 'none';
+    document.querySelector('.main-container').classList.remove('blurred');
+    this.currentFile = null;
+    this.stopStatusCheck();
+    this.setPlayerActive(false);
+    this.isFullscreen = false;
 
-        const response = await fetch(`http://localhost:${CONFIG.PLAYER_PORT}/api/status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-            const data = await response.json();
-            console.log('API check result:', data);
-            return data && data.available === true;
-        }
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            console.log('API check timeout');
-        } else {
-            console.log('API not available yet:', error.message);
-        }
+    // Очищаем интервал повторных попыток fullscreen
+    if (this.fullscreenRetryInterval) {
+        clearInterval(this.fullscreenRetryInterval);
+        this.fullscreenRetryInterval = null;
     }
-    return false;
+
+    document.querySelector('.player-control-header').style.borderColor = '';
+    document.getElementById('playerTrackName').textContent = 'Нет активного файла';
+    document.getElementById('playerTrackPath').textContent = '';
 },
 
-async waitForApi(maxAttempts = 40) {
-    console.log('Waiting for player API to become available...');
-    let lastError = null;
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        this.updateProgressBar(attempt, maxAttempts);
-
-        try {
-            const isAvailable = await this.checkApiAvailability();
-
-            if (isAvailable) {
-                this.hideProgressBar();
-                console.log('Player API is now available');
-                return true;
-            }
-        } catch (error) {
-            lastError = error;
-        }
-
-        console.log(`Attempt ${attempt}/${maxAttempts}: API not ready, waiting ${this.retryDelay}ms...`);
-        await Utils.delay(this.retryDelay);
-    }
-
-    this.hideProgressBar();
-    console.log('Player API did not become available after', maxAttempts, 'attempts');
-    if (lastError) {
-        console.log('Last error:', lastError);
-    }
-    return false;
-},
-
-async checkFullscreenStatus() {
-    if (!this.currentFile) return false;
-
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-        const response = await fetch(`http://localhost:${CONFIG.PLAYER_PORT}/api/status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) return false;
-
-        const data = await response.json();
-        console.log('Fullscreen status check raw data:', data);
-
-        if (data && data.available) {
-            const isFullScreen = data.isFullScreen === true ||
-                                 data.isFullScreen === "true" ||
-                                 data.isFullScreen === 1;
-
-            console.log('Parsed fullscreen status:', isFullScreen, 'from value:', data.isFullScreen);
-
-            const wasFullscreen = this.isFullscreen;
-            this.isFullscreen = isFullScreen;
-
-            if (wasFullscreen !== this.isFullscreen) {
-                console.log('Fullscreen status changed to:', this.isFullscreen);
-                this.updateFullscreenButton();
-
-                if (this.isFullscreen) {
-                    document.querySelector('.status-indicator')?.style.setProperty('background', 'var(--green)');
-                } else {
-                    document.querySelector('.status-indicator')?.style.setProperty('background', 'var(--yellow)');
-                }
-            }
-
-            return this.isFullscreen;
-        }
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            console.log('Fullscreen status check timeout');
-        } else {
-            console.log('Error checking fullscreen status:', error.message);
-        }
-    }
-    return false;
-},
-
-async waitForApi(maxAttempts = 20) { // Увеличим количество попыток
-    console.log('Waiting for player API to become available...');
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        this.updateProgressBar(attempt, maxAttempts);
-
-        const isAvailable = await this.checkApiAvailability();
-
-        if (isAvailable) {
-            this.hideProgressBar();
-            console.log('Player API is now available');
-            return true;
-        }
-
-        console.log(`Attempt ${attempt}/${maxAttempts}: API not ready, waiting ${this.retryDelay}ms...`);
-        await Utils.delay(this.retryDelay);
-    }
-    this.hideProgressBar();
-    console.log('Player API did not become available after', maxAttempts, 'attempts');
-    return false;
-},
     showControl(filePath) {
         document.getElementById('playerControlPage').style.display = 'flex';
         document.querySelector('.main-container').classList.add('blurred');
@@ -504,7 +506,8 @@ async waitForApi(maxAttempts = 20) { // Увеличим количество п
         const placeholder = document.querySelector('.player-placeholder');
         placeholder.innerHTML = `
             <i class="fas fa-spinner fa-spin" style="font-size: 60px;"></i>
-            <div>Открытие файла в Mediateka...</div>
+            <div>Открытие файла в Mediateka на сервере ${this.serverHost}...</div>
+            <div style="font-size: 0.9rem; margin-top: 10px; color: var(--fg3);">Плеер запустится на сервере, управление будет доступно с этого устройства</div>
         `;
     },
 
@@ -512,8 +515,8 @@ async waitForApi(maxAttempts = 20) { // Увеличим количество п
         const placeholder = document.querySelector('.player-placeholder');
         placeholder.innerHTML = `
             <i class="fas fa-check-circle" style="color: var(--green); font-size: 80px;"></i>
-            <div style="color: var(--green);">Файл успешно открыт</div>
-            <div style="font-size: 1rem; margin-top: 10px; color: var(--fg3);">Видео воспроизводится в Mediateka</div>
+            <div style="color: var(--green);">Файл успешно открыт на сервере</div>
+            <div style="font-size: 1rem; margin-top: 10px; color: var(--fg3);">Видео воспроизводится в Mediateka на сервере ${this.serverHost}</div>
         `;
         document.querySelector('.player-control-header').style.borderColor = 'var(--green)';
         this.hideProgressBar();
@@ -523,7 +526,7 @@ async waitForApi(maxAttempts = 20) { // Увеличим количество п
         const placeholder = document.querySelector('.player-placeholder');
         placeholder.innerHTML = `
             <i class="fas fa-exclamation-triangle" style="color: var(--red); font-size: 80px;"></i>
-            <div style="color: var(--red);">Ошибка</div>
+            <div style="color: var(--red);">Ошибка на сервере</div>
             <div style="font-size: 1rem; margin-top: 10px;">${message}</div>
             <button class="retry-btn" onclick="PlayerManager.retryOpen()">
                 <i class="fas fa-redo-alt"></i> Повторить
@@ -553,11 +556,10 @@ async waitForApi(maxAttempts = 20) { // Увеличим количество п
 
     async togglePlayPause() {
         try {
-            const endpoint = this.isPlaying ?
-                `http://localhost:${CONFIG.PLAYER_PORT}/api/pause` :
-                `http://localhost:${CONFIG.PLAYER_PORT}/api/play`;
+            const endpoint = this.isPlaying ? 'pause' : 'play';
+            const url = `${this.getPlayerUrl()}/api/${endpoint}`;
 
-            const response = await fetch(endpoint, {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({})
@@ -585,10 +587,20 @@ async waitForApi(maxAttempts = 20) { // Увеличим количество п
 
     async toggleFullscreen() {
         const newState = !this.isFullscreen;
-        console.log('Toggling fullscreen to:', newState);
+        console.log('Toggling UI fullscreen to:', newState);
 
+        // Для мобильных устройств просто меняем UI состояние
+        if (this.isMobile) {
+            this.isFullscreen = newState;
+            this.updateFullscreenButton();
+            Utils.showNotification(newState ? 'Полноэкранный режим интерфейса' : 'Оконный режим интерфейса', 'info');
+            return;
+        }
+
+        // Для десктопа пытаемся управлять плеером
         try {
-            const response = await fetch(`http://localhost:${CONFIG.PLAYER_PORT}/api/fullscreen`, {
+            const url = `${this.getPlayerUrl()}/api/fullscreen`;
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ fullscreen: newState })
@@ -598,7 +610,7 @@ async waitForApi(maxAttempts = 20) { // Увеличим количество п
             if (data.success) {
                 this.isFullscreen = newState;
                 this.updateFullscreenButton();
-                Utils.showNotification(newState ? 'Полноэкранный режим' : 'Оконный режим', 'info');
+                Utils.showNotification(newState ? 'Полноэкранный режим плеера' : 'Оконный режим плеера', 'info');
             } else {
                 Utils.showNotification('Не удалось изменить режим', 'error');
             }
@@ -608,48 +620,22 @@ async waitForApi(maxAttempts = 20) { // Увеличим количество п
         }
     },
 
-exitFullscreen() {
-    console.log('Exit fullscreen called');
-    this.setFullscreen(false);
-},
+    exitFullscreen() {
+        console.log('Exit fullscreen called');
+        this.toggleFullscreen();
+    },
 
-async setFullscreen(enable) {
-    console.log('Setting fullscreen to:', enable);
-    try {
-        const response = await fetch(`http://localhost:${CONFIG.PLAYER_PORT}/api/fullscreen`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fullscreen: enable })
-        });
-        const data = await response.json();
-        console.log('Fullscreen response:', data);
-        if (data.success) {
-            this.isFullscreen = enable;
-            this.updateFullscreenButton();
-            Utils.showNotification(
-                enable ? 'Полноэкранный режим включен' : 'Полноэкранный режим выключен',
-                'info'
-            );
-        } else {
-            Utils.showNotification('Не удалось изменить режим: ' + (data.error || 'unknown error'), 'error');
-        }
-        return data.success;
-    } catch (error) {
-        console.error('Fullscreen error:', error);
-        Utils.showNotification('Ошибка при переключении режима: ' + error.message, 'error');
-        return false;
-    }
-},
     async closeFile() {
         try {
-            const response = await fetch(`http://localhost:${CONFIG.PLAYER_PORT}/api/close`, {
+            const url = `${this.getPlayerUrl()}/api/close`;
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({})
             });
             const data = await response.json();
             if (data.success) {
-                Utils.showNotification('Файл закрыт', 'success');
+                Utils.showNotification('Файл закрыт на сервере', 'success');
                 this.hideControl();
             } else {
                 Utils.showNotification('Ошибка: ' + data.error, 'error');
@@ -659,37 +645,30 @@ async setFullscreen(enable) {
         }
     },
 
-async checkStatus() {
-    if (!this.currentFile) return;
-    try {
-        const response = await fetch(`http://localhost:${CONFIG.PLAYER_PORT}/api/status`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
-        });
-        const data = await response.json();
-        // Исправление: проверяем, что данные получены
-        if (data && data.available) {
-            const wasFullscreen = this.isFullscreen;
-            this.isFullscreen = data.isFullScreen === true || data.isFullScreen === "true";
-
-            if (wasFullscreen !== this.isFullscreen) {
-                this.updateFullscreenButton();
+    async checkStatus() {
+        if (!this.currentFile) return;
+        try {
+            const url = `${this.getPlayerUrl()}/api/status`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            const data = await response.json();
+            if (data && data.available) {
+                // Обновляем статус только для отображения, не меняем UI fullscreen
+                console.log('Server status:', data);
             }
-
-            if (this.isFullscreen) {
-                document.querySelector('.status-indicator')?.style.setProperty('background', 'var(--green)');
-            } else {
-                document.querySelector('.status-indicator')?.style.setProperty('background', 'var(--yellow)');
-            }
+        } catch (error) {
+            // Тихо игнорируем ошибки статуса для мобильных
         }
-    } catch (error) {
-        // Тихо игнорируем ошибки статуса
-    }
-},
+    },
+
     startStatusCheck() {
         this.stopStatusCheck();
-        this.statusCheckInterval = setInterval(() => this.checkStatus(), 2000);
+        if (!this.isMobile) {
+            this.statusCheckInterval = setInterval(() => this.checkStatus(), 5000);
+        }
         this.createStatusIndicator();
     },
 
@@ -713,9 +692,10 @@ async checkStatus() {
                 width: 12px;
                 height: 12px;
                 border-radius: 50%;
-                background: var(--yellow);
+                background: var(--green);
                 box-shadow: 0 0 10px currentColor;
             `;
+            indicator.title = `Подключение к серверу ${this.serverHost}`;
             document.querySelector('.player-control-header').appendChild(indicator);
         }
     },
@@ -729,7 +709,7 @@ async checkStatus() {
                 break;
             case 'Escape':
                 if (this.isFullscreen) {
-                    this.setFullscreen(false);
+                    this.toggleFullscreen();
                 }
                 break;
         }

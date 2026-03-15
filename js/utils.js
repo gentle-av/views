@@ -52,13 +52,23 @@ const Utils = {
         if (this.history.length > 10) {
             this.history.pop();
         }
+    },
+    getBaseUrl() {
+        const host = window.location.hostname;
+        return `http://${host}`;
+    },
+    getServerUrl() {
+        return `${this.getBaseUrl()}:${CONFIG.SERVER_PORT}`;
+    },
+    getPlayerUrl() {
+        return `${this.getBaseUrl()}:${CONFIG.PLAYER_PORT}`;
     }
 };
 
 const CONFIG = {
     ROOT_PATH: '/mnt/video',
-    SERVER_PORT: 8083,
-    PLAYER_PORT: 8082,
+    SERVER_PORT: 8083,  // Порт веб-интерфейса
+    PLAYER_PORT: 8082,  // Порт плеера
     API_ENDPOINTS: {
         LIST: '/api/list',
         OPEN_FILE: '/api/openfile',
