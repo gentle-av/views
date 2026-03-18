@@ -739,3 +739,31 @@ body {
     top: 8px;
     z-index: 31;
 }
+
+.control-btn.delete-file {
+    background: var(--bg2);
+    color: var(--orange);
+}
+
+.control-btn.delete-file:hover {
+    background: var(--bg3);
+    border-color: var(--orange);
+    color: var(--orange);
+}
+
+.top-control-btn.delete-file {
+    background: var(--bg2);
+    color: var(--orange);
+}
+
+.top-control-btn.delete-file.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.top-control-btn.delete-file.active:hover {
+    background: var(--bg3);
+    border-color: var(--orange);
+    color: var(--orange);
+    transform: scale(1.1);
+}

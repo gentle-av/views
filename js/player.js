@@ -36,18 +36,18 @@ const PlayerManager = {
         document.getElementById('playPauseBtn').addEventListener('click', () => this.togglePlayPause());
         document.getElementById('closeFileBtn').addEventListener('click', () => this.closeFile());
         document.querySelector('.close-control-page').addEventListener('click', () => this.hideControl());
-
         document.getElementById('topPlayPauseBtn').addEventListener('click', () => this.togglePlayPause());
         document.getElementById('topCloseFileBtn').addEventListener('click', () => this.closeFile());
-
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
+        document.getElementById('deleteFileBtn').addEventListener('click', () => this.deleteFile());
+        document.getElementById('topDeleteFileBtn').addEventListener('click', () => this.deleteFile());
     },
 
     setPlayerActive(active) {
         this.playerActive = active;
         const topPlayBtn = document.getElementById('topPlayPauseBtn');
         const topCloseBtn = document.getElementById('topCloseFileBtn');
-
+        const topDeleteBtn = document.getElementById('topDeleteFileBtn');
         if (active) {
             topPlayBtn.classList.add('active');
             topCloseBtn.classList.add('active');
@@ -63,10 +63,8 @@ const PlayerManager = {
 
     updateTopBar() {
         if (!this.playerActive || !this.currentFile) return;
-
         const topPlayBtn = document.getElementById('topPlayPauseBtn');
         topPlayBtn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
-
         if (this.isPlaying) {
             topPlayBtn.classList.add('playing');
         } else {
@@ -76,20 +74,16 @@ const PlayerManager = {
 
     async launchPlayerWithFile(path) {
         console.log('Launching player with file:', path);
-
         try {
             const url = `${this.getServerUrl()}/api/open`;
             console.log('Launch URL:', url);
-
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ path: path })
             });
-
             const data = await response.json();
             console.log('Launch response:', data);
-
             if (data.success) {
                 return true;
             } else {
@@ -105,19 +99,15 @@ const PlayerManager = {
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3000);
-
             const url = `${this.getPlayerUrl()}/api/status`;
             console.log('Checking API at:', url);
-
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({}),
                 signal: controller.signal
             });
-
             clearTimeout(timeoutId);
-
             if (response.ok) {
                 const data = await response.json();
                 console.log('API check result:', data);
@@ -135,11 +125,9 @@ const PlayerManager = {
 
     async checkFullscreenStatus() {
         if (!this.currentFile) return false;
-
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 2000);
-
             const url = `${this.getPlayerUrl()}/api/status`;
             const response = await fetch(url, {
                 method: 'POST',
@@ -147,13 +135,9 @@ const PlayerManager = {
                 body: JSON.stringify({}),
                 signal: controller.signal
             });
-
             clearTimeout(timeoutId);
-
             if (!response.ok) return false;
-
             const data = await response.json();
-
             if (data && data.available) {
                 const isFullScreen = data.isFullScreen === true ||
                                      data.isFullScreen === "true" ||
@@ -161,11 +145,9 @@ const PlayerManager = {
 
                 const wasFullscreen = this.isFullscreen;
                 this.isFullscreen = isFullScreen;
-
                 return this.isFullscreen;
             }
         } catch (error) {
-            // Игнорируем ошибки
         }
         return false;
     },
@@ -175,15 +157,15 @@ const PlayerManager = {
         const progressFill = progressBar.querySelector('.loading-progress-bar');
         progressBar.classList.add('active');
         progressFill.style.width = (attempt / maxAttempts * 100) + '%';
-
         const placeholder = document.querySelector('.player-placeholder');
         if (placeholder && this.currentFile) {
+            const mediaType = Utils.getMediaTypeFromPath(this.currentFile);
+            const mediaName = mediaType === 'audio' ? 'аудиоплеера' : 'Mediateka';
             const secondsPassed = (attempt * this.retryDelay / 1000);
             const totalSeconds = (maxAttempts * this.retryDelay / 1000);
-
             placeholder.innerHTML = `
                 <i class="fas fa-spinner fa-spin" style="font-size: 60px;"></i>
-                <div>Запуск Mediateka на сервере ${this.serverHost}...</div>
+                <div>Запуск ${mediaName} на сервере ${this.serverHost}...</div>
                 <div style="font-size: 0.9rem; margin-top: 10px; color: var(--fg3);">
                     Попытка ${attempt} из ${maxAttempts}
                 </div>
@@ -203,34 +185,29 @@ const PlayerManager = {
         progressBar.querySelector('.loading-progress-bar').style.width = '0%';
     },
 
-    async playVideo(path) {
+    async playMedia(path) {
         try {
             this.currentFile = path;
             const fileName = path.split('/').pop();
-
+            const mediaType = Utils.getMediaTypeFromPath(path);
             document.getElementById('playerTrackName').textContent = fileName;
             document.getElementById('playerTrackPath').textContent = path;
-
-            this.showControl(path);
+            this.showControl(path, mediaType);
             document.getElementById('currentFileName').textContent = fileName;
             document.getElementById('currentFilePath').textContent = path;
-
             console.log('Launching player for file:', path);
+            console.log('Media type:', mediaType);
             console.log('Server host:', this.serverHost);
-
-            // ШАГ 1: Проверяем, запущен ли плеер
             let isPlayerRunning = false;
             try {
                 const url = `${this.getPlayerUrl()}/api/status`;
                 console.log('Checking player status at:', url);
-
                 const statusCheck = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({}),
                     signal: AbortSignal.timeout(2000)
                 });
-
                 if (statusCheck.ok) {
                     const statusData = await statusCheck.json();
                     isPlayerRunning = statusData.available === true;
@@ -240,8 +217,6 @@ const PlayerManager = {
                 console.log('Player not running or API not responding');
                 isPlayerRunning = false;
             }
-
-            // ШАГ 2: Открываем файл в плеере
             if (!isPlayerRunning) {
                 console.log('Launching new player instance...');
                 await this.launchPlayerWithFile(path);
@@ -252,21 +227,17 @@ const PlayerManager = {
                 try {
                     const url = `${this.getPlayerUrl()}/api/openfile`;
                     console.log('Open file URL:', url);
-
                     const openResponse = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ path: path }),
                         signal: AbortSignal.timeout(5000)
                     });
-
                     if (!openResponse.ok) {
                         throw new Error(`HTTP error: ${openResponse.status}`);
                     }
-
                     const openData = await openResponse.json();
                     console.log('Open file response:', openData);
-
                     if (!openData.success) {
                         throw new Error(openData.error || 'Failed to open file');
                     }
@@ -277,16 +248,11 @@ const PlayerManager = {
                     await Utils.delay(2000);
                 }
             }
-
-            // ШАГ 3: Ждем API и включаем полноэкранный режим
-            console.log('Waiting for API and enabling fullscreen...');
-
+            console.log('Waiting for API...');
             let apiReady = false;
             let fullscreenActivated = false;
-
             for (let attempt = 1; attempt <= 30; attempt++) {
                 this.updateProgressBar(attempt, 30);
-
                 try {
                     const statusUrl = `${this.getPlayerUrl()}/api/status`;
                     const statusResponse = await fetch(statusUrl, {
@@ -295,16 +261,12 @@ const PlayerManager = {
                         body: JSON.stringify({}),
                         signal: AbortSignal.timeout(3000)
                     });
-
                     if (statusResponse.ok) {
                         const statusData = await statusResponse.json();
-
                         if (statusData && statusData.available === true) {
                             console.log(`API available on attempt ${attempt}`);
                             apiReady = true;
-
-                            // Включаем полноэкранный режим
-                            if (!fullscreenActivated) {
+                            if (mediaType === 'video' && !fullscreenActivated) {
                                 console.log(`Sending fullscreen command on attempt ${attempt}`);
                                 try {
                                     const fsUrl = `${this.getPlayerUrl()}/api/fullscreen`;
@@ -314,7 +276,6 @@ const PlayerManager = {
                                         body: JSON.stringify({ fullscreen: true }),
                                         signal: AbortSignal.timeout(3000)
                                     });
-
                                     if (fsResponse.ok) {
                                         const fsData = await fsResponse.json();
                                         if (fsData.success) {
@@ -335,15 +296,11 @@ const PlayerManager = {
 
                 await Utils.delay(this.retryDelay);
             }
-
             if (!apiReady) {
                 throw new Error('API плеера не отвечает после 30 попыток');
             }
-
-            // ШАГ 4: Финальная активация UI и повторная попытка fullscreen если нужно
             console.log('API ready, finalizing...');
-
-            if (!fullscreenActivated) {
+            if (mediaType === 'video' && !fullscreenActivated) {
                 console.log('Final fullscreen attempt...');
                 try {
                     const fsUrl = `${this.getPlayerUrl()}/api/fullscreen`;
@@ -357,31 +314,28 @@ const PlayerManager = {
                     console.log('Final fullscreen attempt failed:', e.message);
                 }
             }
-
-            // Периодически проверяем fullscreen и пробуем включить если нужно
-            this.fullscreenRetryInterval = setInterval(() => {
-                if (this.currentFile && !this.isFullscreen) {
-                    console.log('Periodic fullscreen check - attempting to enable');
-                    fetch(`${this.getPlayerUrl()}/api/fullscreen`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ fullscreen: true })
-                    }).catch(e => {});
-                }
-            }, 5000);
-
+            if (mediaType === 'video') {
+                this.fullscreenRetryInterval = setInterval(() => {
+                    if (this.currentFile && !this.isFullscreen) {
+                        console.log('Periodic fullscreen check - attempting to enable');
+                        fetch(`${this.getPlayerUrl()}/api/fullscreen`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ fullscreen: true })
+                        }).catch(e => {});
+                    }
+                }, 5000);
+            }
             this.setPlayerActive(true);
-            this.showSuccessState();
+            this.showSuccessState(mediaType);
             this.isPlaying = true;
             this.updatePlayPauseButton();
             this.updateTopBar();
             this.startStatusCheck();
-
             Utils.addToHistory(path, 'success');
-            console.log('Video playback started successfully');
-
+            console.log('Media playback started successfully');
         } catch (error) {
-            console.error('Error in playVideo:', error);
+            console.error('Error in playMedia:', error);
             this.setPlayerActive(false);
             this.showErrorState(error.message);
             Utils.addToHistory(this.currentFile || path, 'error');
@@ -389,42 +343,46 @@ const PlayerManager = {
     },
 
     hideControl() {
-        document.getElementById('playerControlPage').style.display = 'none';
-        document.querySelector('.main-container').classList.remove('blurred');
-        this.currentFile = null;
-        this.stopStatusCheck();
-        this.setPlayerActive(false);
-        this.isFullscreen = false;
+      document.getElementById('playerControlPage').style.display = 'none';
+      document.querySelector('.main-container').classList.remove('blurred');
+      this.currentFile = null;
+      this.stopStatusCheck();
+      this.setPlayerActive(false);
+      this.isFullscreen = false;
+      const topDeleteBtn = document.getElementById('topDeleteFileBtn');
+      if (topDeleteBtn) {
+          topDeleteBtn.classList.remove('active');
+      }
+      if (this.fullscreenRetryInterval) {
+          clearInterval(this.fullscreenRetryInterval);
+          this.fullscreenRetryInterval = null;
+      }
+      document.querySelector('.player-control-header').style.borderColor = '';
+      document.getElementById('playerTrackName').textContent = 'Нет активного файла';
+      document.getElementById('playerTrackPath').textContent = '';
+  },
 
-        // Очищаем интервал повторных попыток fullscreen
-        if (this.fullscreenRetryInterval) {
-            clearInterval(this.fullscreenRetryInterval);
-            this.fullscreenRetryInterval = null;
-        }
-
-        document.querySelector('.player-control-header').style.borderColor = '';
-        document.getElementById('playerTrackName').textContent = 'Нет активного файла';
-        document.getElementById('playerTrackPath').textContent = '';
-    },
-
-    showControl(filePath) {
+    showControl(filePath, mediaType = 'video') {
         document.getElementById('playerControlPage').style.display = 'flex';
         document.querySelector('.main-container').classList.add('blurred');
-
+        const mediaName = mediaType === 'audio' ? 'аудиоплеера' : 'Mediateka';
+        const icon = mediaType === 'audio' ? 'fa-music' : 'fa-film';
         const placeholder = document.querySelector('.player-placeholder');
         placeholder.innerHTML = `
-            <i class="fas fa-spinner fa-spin" style="font-size: 60px;"></i>
-            <div>Открытие файла в Mediateka на сервере ${this.serverHost}...</div>
+            <i class="fas ${icon} fa-spin" style="font-size: 60px;"></i>
+            <div>Открытие файла в ${mediaName} на сервере ${this.serverHost}...</div>
             <div style="font-size: 0.9rem; margin-top: 10px; color: var(--fg3);">Плеер запустится на сервере, управление будет доступно с этого устройства</div>
         `;
     },
 
-    showSuccessState() {
+    showSuccessState(mediaType = 'video') {
         const placeholder = document.querySelector('.player-placeholder');
+        const icon = mediaType === 'audio' ? 'fa-music' : 'fa-film';
+        const mediaName = mediaType === 'audio' ? 'аудиоплеере' : 'Mediateka';
         placeholder.innerHTML = `
             <i class="fas fa-check-circle" style="color: var(--green); font-size: 80px;"></i>
             <div style="color: var(--green);">Файл успешно открыт на сервере</div>
-            <div style="font-size: 1rem; margin-top: 10px; color: var(--fg3);">Видео воспроизводится в Mediateka на сервере ${this.serverHost}</div>
+            <div style="font-size: 1rem; margin-top: 10px; color: var(--fg3);">Воспроизводится в ${mediaName} на сервере ${this.serverHost}</div>
         `;
         document.querySelector('.player-control-header').style.borderColor = 'var(--green)';
         this.hideProgressBar();
@@ -446,7 +404,7 @@ const PlayerManager = {
 
     retryOpen() {
         if (this.currentFile) {
-            this.playVideo(this.currentFile);
+            this.playMedia(this.currentFile);
         }
     },
 
@@ -454,7 +412,6 @@ const PlayerManager = {
         try {
             const endpoint = this.isPlaying ? 'pause' : 'play';
             const url = `${this.getPlayerUrl()}/api/${endpoint}`;
-
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -513,15 +470,12 @@ const PlayerManager = {
             const data = await response.json();
             if (data && data.available) {
                 console.log('Server status:', data);
-
-                // Обновляем статус fullscreen
                 const isFullScreen = data.isFullScreen === true ||
                                      data.isFullScreen === "true" ||
                                      data.isFullScreen === 1;
                 this.isFullscreen = isFullScreen;
             }
         } catch (error) {
-            // Тихо игнорируем ошибки статуса
         }
     },
 
@@ -568,6 +522,44 @@ const PlayerManager = {
                 e.preventDefault();
                 this.togglePlayPause();
                 break;
+            case 'Delete':
+            case 'Del':
+                e.preventDefault();
+                this.deleteFile();
+                break;
         }
-    }
+    },
+
+    async deleteFile() {
+      if (!this.currentFile) {
+          Utils.showNotification('Нет активного файла', 'error');
+          return;
+      }
+      if (!confirm('Вы уверены, что хотите переместить файл в корзину?')) {
+          return;
+      }
+      try {
+          const url = `${this.getPlayerUrl()}/api/closefile`;
+          console.log('Deleting file via:', url);
+          const response = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({})
+          });
+          const data = await response.json();
+          console.log('Delete response:', data);
+          if (data.success) {
+              Utils.showNotification('Файл перемещён в корзину', 'success');
+              this.hideControl();
+              if (App && App.currentPath) {
+                  App.loadDirectory(App.currentPath, this.currentMediaType);
+              }
+          } else {
+              Utils.showNotification('Ошибка: ' + (data.error || 'Не удалось удалить файл'), 'error');
+          }
+      } catch (error) {
+          console.error('Error deleting file:', error);
+          Utils.showNotification('Ошибка при удалении файла: ' + error.message, 'error');
+      }
+  },
 };

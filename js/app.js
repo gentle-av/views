@@ -1,5 +1,6 @@
 const App = {
     currentPath: CONFIG.ROOT_PATH,
+    currentMediaType: 'video',
     sliderWrapper: null,
     isDragging: false,
     startY: 0,
@@ -10,25 +11,27 @@ const App = {
         TreeManager.init();
         PlayerManager.init();
         this.setupEventListeners();
-        this.loadDirectory(CONFIG.ROOT_PATH);
+        this.loadDirectory(CONFIG.ROOT_PATH, 'video');
     },
+
     setupEventListeners() {
         document.getElementById('menuBtn').addEventListener('click', () => this.toggleLeftPanel());
         document.addEventListener('click', (e) => this.handleOutsideClick(e));
         this.setupDragScroll();
         this.sliderWrapper.addEventListener('scroll', () => this.updateScrollIndicator());
     },
+
     toggleLeftPanel() {
         const leftPanel = document.getElementById('leftPanel');
         leftPanel.classList.toggle('visible');
         if (leftPanel.classList.contains('visible')) {
-            TreeManager.loadTreeData();
+            TreeManager.loadTreeData(this.currentMediaType);
         }
     },
+
     handleOutsideClick(e) {
         const leftPanel = document.getElementById('leftPanel');
         const menuBtn = document.getElementById('menuBtn');
-
         if (leftPanel.classList.contains('visible') &&
             !leftPanel.contains(e.target) &&
             e.target !== menuBtn &&
@@ -36,6 +39,7 @@ const App = {
             this.toggleLeftPanel();
         }
     },
+
     setupDragScroll() {
         this.sliderWrapper.addEventListener('mousedown', (e) => {
             this.isDragging = true;
@@ -57,7 +61,10 @@ const App = {
             this.updateScrollIndicator();
         });
     },
-    async loadDirectory(path) {
+
+    async loadDirectory(path, mediaType = 'video') {
+        this.currentPath = path;
+        this.currentMediaType = mediaType;
         const sliderContent = document.getElementById('sliderContent');
         sliderContent.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i>Загрузка...</div>';
         try {
@@ -70,8 +77,7 @@ const App = {
             if (data.success) {
                 const visibleItems = data.items.filter(item => !Utils.isHiddenFile(item.name));
                 const totalHidden = data.items.length - visibleItems.length;
-                this.displayItems(visibleItems, totalHidden);
-                this.currentPath = path;
+                this.displayItems(visibleItems, totalHidden, mediaType);
                 TreeManager.updateActiveItem(path);
             } else {
                 sliderContent.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle" style="margin-right: 10px;"></i>Ошибка: ${data.error}</div>`;
@@ -80,7 +86,8 @@ const App = {
             sliderContent.innerHTML = `<div class="error"><i class="fas fa-exclamation-circle" style="margin-right: 10px;"></i>Ошибка загрузки: ${error.message}</div>`;
         }
     },
-    displayItems(items, hiddenCount = 0) {
+
+    displayItems(items, hiddenCount = 0, mediaType = 'video') {
         const sliderContent = document.getElementById('sliderContent');
         sliderContent.innerHTML = '';
         this.updateHiddenCount(hiddenCount);
@@ -88,14 +95,25 @@ const App = {
             sliderContent.innerHTML = '<div class="empty-message"><i class="fas fa-folder-open" style="margin-right: 10px;"></i>📁 Папка пуста</div>';
             return;
         }
-        items.forEach(item => {
-            const card = this.createItemCard(item);
+        let displayItems = items;
+        if (mediaType === 'audio') {
+            displayItems = items.filter(item =>
+                item.isDirectory || Utils.isAudioFile(item.name)
+            );
+        } else {
+            displayItems = items.filter(item =>
+                item.isDirectory || Utils.isVideoFile(item.name)
+            );
+        }
+        displayItems.forEach(item => {
+            const card = this.createItemCard(item, mediaType);
             sliderContent.appendChild(card);
         });
         this.sliderWrapper.scrollTop = 0;
         this.updateScrollIndicator();
     },
-    createItemCard(item) {
+
+    createItemCard(item, mediaType) {
         const card = document.createElement('div');
         card.className = 'item-card';
         let icon = 'fa-file';
@@ -103,9 +121,17 @@ const App = {
         if (item.isDirectory) {
             icon = 'fa-folder';
             iconClass = 'folder-icon';
-        } else if (item.isVideo) {
-            icon = 'fa-file-video';
-            iconClass = 'video-icon';
+        } else {
+            if (Utils.isVideoFile(item.name)) {
+                icon = 'fa-file-video';
+                iconClass = 'video-icon';
+            } else if (Utils.isAudioFile(item.name)) {
+                icon = 'fa-file-audio';
+                iconClass = 'audio-icon';
+            } else {
+                icon = 'fa-file';
+                iconClass = 'file-icon';
+            }
         }
         card.innerHTML = `
             <i class="fas ${icon} ${iconClass}"></i>
@@ -116,12 +142,13 @@ const App = {
             </div>
         `;
         if (item.isDirectory) {
-            card.onclick = () => this.loadDirectory(item.path);
+            card.onclick = () => this.loadDirectory(item.path, mediaType);
         } else {
-            card.onclick = () => PlayerManager.playVideo(item.path);
+            card.onclick = () => PlayerManager.playMedia(item.path);
         }
         return card;
     },
+
     updateHiddenCount(count) {
         const hiddenCountElement = document.getElementById('hiddenCount');
         if (count > 0) {
@@ -132,6 +159,7 @@ const App = {
             hiddenCountElement.style.display = 'none';
         }
     },
+
     updateScrollIndicator() {
         const scrollPercent = (this.sliderWrapper.scrollTop /
             (this.sliderWrapper.scrollHeight - this.sliderWrapper.clientHeight)) * 100;
@@ -141,4 +169,5 @@ const App = {
         }
     }
 };
+
 document.addEventListener('DOMContentLoaded', () => App.init());
