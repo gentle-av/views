@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Медиа проводник /mnt/video</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#fabd2f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Media Explorer">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="mask-icon" href="icons/icon-192x192.png" color="#fabd2f">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="shortcut icon" href="media.ico" type="image/x-icon">
@@ -50,7 +57,6 @@
             </div>
         </div>
     </div>
-
     <div id="playerControlPage" class="player-control-page">
         <div class="player-control-header">
             <div class="player-controls-center">
@@ -83,17 +89,58 @@
             <i class="fas fa-arrow-left"></i>
         </button>
     </div>
-
     <div class="scroll-indicator" id="scrollIndicator">
         <div class="scroll-indicator-bar" id="scrollIndicatorBar"></div>
     </div>
-
     <div class="loading-progress" id="loadingProgress">
         <div class="loading-progress-bar"></div>
     </div>
-
     <script src="js/utils.js"></script>
     <script src="js/player.js"></script>
     <script src="js/app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registered: ', registration);
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('ServiceWorker update found!');
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    if (confirm('Доступна новая версия приложения. Обновить?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+                window.addEventListener('online', () => {
+                    console.log('Internet connection restored');
+                    if (typeof Utils !== 'undefined' && Utils.showNotification) {
+                        Utils.showNotification('Подключение к интернету восстановлено', 'success');
+                    }
+                });
+                window.addEventListener('offline', () => {
+                    console.log('Internet connection lost');
+                    if (typeof Utils !== 'undefined' && Utils.showNotification) {
+                        Utils.showNotification('Нет подключения к интернету. Доступен просмотр кэшированных данных.', 'info');
+                    }
+                });
+            });
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            const isRunningAsPwa = window.matchMedia('(display-mode: standalone)').matches ||
+                                   window.navigator.standalone === true;
+            if (isRunningAsPwa) {
+                console.log('App is running as PWA');
+                document.body.classList.add('pwa-mode');
+            }
+        });
+    </script>
 </body>
 </html>

@@ -1,12 +1,10 @@
 const TreeManager = {
     treeContainer: null,
     currentPath: CONFIG.ROOT_PATH,
-    currentMediaType: 'video', // 'video' или 'audio'
-
+    currentMediaType: 'video',
     init() {
         this.treeContainer = document.getElementById('treeContainer');
     },
-
     async loadTreeData(mediaType = null) {
         if (!this.treeContainer) return;
         if (mediaType) {
@@ -36,7 +34,6 @@ const TreeManager = {
             this.showError(`Ошибка: ${error.message}`);
         }
     },
-
     buildTree(videoItems, musicItems) {
         if (!this.treeContainer) return;
         const videoFolders = videoItems.filter(item => item.isDirectory && !Utils.isHiddenFile(item.name));
@@ -72,7 +69,7 @@ const TreeManager = {
                 </div>
             `;
         });
-        html += '</div></div>'; // Закрываем группу видео
+        html += '</div></div>';
         html += `
             <div class="tree-group">
                 <div class="tree-group-header ${this.currentMediaType === 'audio' ? 'active' : ''}"
@@ -103,17 +100,15 @@ const TreeManager = {
                 </div>
             `;
         });
-        html += '</div></div></div>'; // Закрываем все
+        html += '</div></div></div>';
         this.treeContainer.innerHTML = html;
     },
-
     switchMediaType(type) {
         this.currentMediaType = type;
         this.currentPath = type === 'video' ? CONFIG.ROOT_PATH : CONFIG.MUSIC_PATH;
         App.loadDirectory(this.currentPath, type);
         this.updateActiveItem(this.currentPath);
     },
-
     navigateFromTree(path, type) {
         this.currentPath = path;
         this.currentMediaType = type;
@@ -123,7 +118,6 @@ const TreeManager = {
             document.getElementById('leftPanel').classList.remove('visible');
         }
     },
-
     updateActiveItem(path) {
         this.currentPath = path;
         if (document.getElementById('leftPanel').classList.contains('visible')) {
@@ -143,7 +137,6 @@ const TreeManager = {
             }
         }
     },
-
     showError(message) {
         if (this.treeContainer) {
             this.treeContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--red);">${message}</div>`;

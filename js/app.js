@@ -6,7 +6,6 @@ const App = {
     startY: 0,
     scrollTop: 0,
     pathHistory: [],
-
     init() {
         this.sliderWrapper = document.getElementById('sliderWrapper');
         PlayerManager.init();
@@ -15,13 +14,11 @@ const App = {
         this.updateBackButton();
         this.updateBreadcrumbs();
     },
-
     setupEventListeners() {
         this.setupDragScroll();
         this.sliderWrapper.addEventListener('scroll', () => this.updateScrollIndicator());
         document.getElementById('backBtn').addEventListener('click', () => this.goBack());
     },
-
     goBack() {
         if (this.pathHistory.length > 0) {
             const previousPath = this.pathHistory.pop();
@@ -29,49 +26,37 @@ const App = {
         }
         this.updateBackButton();
     },
-
     updateBackButton() {
         const backBtn = document.getElementById('backBtn');
         if (backBtn) {
             backBtn.disabled = this.pathHistory.length === 0;
         }
     },
-
     updateBreadcrumbs() {
         const breadcrumbsContainer = document.getElementById('breadcrumbs');
         if (!breadcrumbsContainer) return;
         breadcrumbsContainer.innerHTML = '';
         const rootPath = this.currentMediaType === 'audio' ? CONFIG.MUSIC_PATH : CONFIG.ROOT_PATH;
         const rootIcon = this.currentMediaType === 'audio' ? 'fa-music' : 'fa-video';
-        const rootName = this.currentMediaType === 'audio' ? 'music' : 'video';
+        const rootTitle = this.currentMediaType === 'audio' ? 'Музыка' : 'Видео';
         const rootCrumbs = document.createElement('div');
         rootCrumbs.className = 'breadcrumb-item root-breadcrumb';
-        rootCrumbs.innerHTML = `
-            <i class="fas ${rootIcon}"></i>
-            <span class="breadcrumb-text" title="${rootName}">${rootName}</span>
-        `;
+        rootCrumbs.innerHTML = `<i class="fas ${rootIcon}" title="${rootTitle}"></i>`;
         rootCrumbs.addEventListener('click', (e) => {
             e.stopPropagation();
             this.loadDirectory(rootPath, this.currentMediaType);
         });
         breadcrumbsContainer.appendChild(rootCrumbs);
-        if (this.currentPath === rootPath) {
-            return;
-        }
+        if (this.currentPath === rootPath) return;
         let relativePath = this.currentPath.substring(rootPath.length);
-        if (relativePath.startsWith('/')) {
-            relativePath = relativePath.substring(1);
-        }
+        if (relativePath.startsWith('/')) relativePath = relativePath.substring(1);
         const pathParts = relativePath.split('/').filter(part => part.length > 0);
         let currentFullPath = rootPath;
         pathParts.forEach((part, index) => {
             currentFullPath += '/' + part;
             const crumb = document.createElement('div');
             crumb.className = 'breadcrumb-item';
-            const displayText = part.length > 2 ? part.substring(0, 2) + '…' : part;
-            crumb.innerHTML = `
-                <span class="breadcrumb-text" title="${part}">${displayText}</span>
-            `;
+            crumb.innerHTML = `<i class="fas fa-folder" title="${part}"></i>`;
             if (index === pathParts.length - 1) {
                 crumb.classList.add('active');
             } else {
@@ -83,7 +68,6 @@ const App = {
             breadcrumbsContainer.appendChild(crumb);
         });
     },
-
      setupDragScroll() {
           this.sliderWrapper.addEventListener('mousedown', (e) => {
               this.isDragging = true;
@@ -111,7 +95,6 @@ const App = {
               e.preventDefault();
           });
     },
-
     async loadDirectory(path, mediaType = 'video') {
         if (this.currentPath !== path) {
             this.pathHistory.push(this.currentPath);
@@ -121,31 +104,61 @@ const App = {
         this.updateBreadcrumbs();
         const sliderContent = document.getElementById('sliderContent');
         sliderContent.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin" style="margin-right: 10px;"></i>Загрузка...</div>';
+        if (!Utils.isOnline()) {
+            console.log('Offline mode: loading cached data');
+            const cached = Utils.getCachedState(path);
+            if (cached && cached.items) {
+                this.displayItems(cached.items, mediaType);
+                Utils.showNotification('Работа в офлайн-режиме (загружено из кэша)', 'info');
+            } else {
+                sliderContent.innerHTML = '<div class="error"><i class="fas fa-wifi-slash"></i> Нет подключения к интернету и нет кэшированных данных</div>';
+            }
+            this.updateBackButton();
+            return;
+        }
         try {
-            console.log('Loading path:', path); // Отладка
+            console.log('Loading path:', path);
             const response = await fetch(CONFIG.API_ENDPOINTS.LIST, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ path: path })
             });
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
             const data = await response.json();
-            console.log('Received data:', data); // Отладка
-
+            console.log('Received data:', data);
             if (data.success) {
-                // Фильтруем скрытые файлы
                 const visibleItems = data.items.filter(item => !Utils.isHiddenFile(item.name));
-                console.log('Visible items:', visibleItems); // Отладка
+                console.log('Visible items:', visibleItems);
+                Utils.cacheCurrentState(path, visibleItems);
                 this.displayItems(visibleItems, mediaType);
             } else {
-                sliderContent.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle" style="margin-right: 10px;"></i>Ошибка: ${data.error}</div>`;
+                const cached = Utils.getCachedState(path);
+                if (cached && cached.items) {
+                    this.displayItems(cached.items, mediaType);
+                    Utils.showNotification('Загружено из кэша (сервер недоступен)', 'info');
+                } else {
+                    sliderContent.innerHTML = `<div class="error"><i class="fas fa-exclamation-triangle" style="margin-right: 10px;"></i>Ошибка: ${data.error}</div>`;
+                }
             }
         } catch (error) {
-            console.error('Load error:', error); // Отладка
-            sliderContent.innerHTML = `<div class="error"><i class="fas fa-exclamation-circle" style="margin-right: 10px;"></i>Ошибка загрузки: ${error.message}</div>`;
+            console.error('Load error:', error);
+            const cached = Utils.getCachedState(path);
+            if (cached && cached.items) {
+                this.displayItems(cached.items, mediaType);
+                Utils.showNotification('Загружено из кэша (ошибка сети)', 'info');
+            } else {
+                sliderContent.innerHTML = `<div class="error"><i class="fas fa-exclamation-circle" style="margin-right: 10px;"></i>Ошибка загрузки: ${error.message}</div>`;
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'retry-btn';
+                retryBtn.innerHTML = '<i class="fas fa-redo-alt"></i> Повторить';
+                retryBtn.onclick = () => this.loadDirectory(path, mediaType);
+                sliderContent.querySelector('.error')?.appendChild(retryBtn);
+            }
         }
         this.updateBackButton();
     },
-
     displayItems(items, mediaType = 'video') {
         const sliderContent = document.getElementById('sliderContent');
         sliderContent.innerHTML = '';
@@ -170,7 +183,6 @@ const App = {
         this.sliderWrapper.scrollTop = 0;
         this.updateScrollIndicator();
     },
-
     createItemCard(item, mediaType) {
         const card = document.createElement('div');
         card.className = 'item-card';
@@ -195,7 +207,6 @@ const App = {
             <i class="fas ${icon} ${iconClass}"></i>
             <div class="item-info">
                 <div class="item-name" title="${item.name}">${item.name}</div>
-                ${item.size ? `<div class="item-size">${Utils.formatFileSize(item.size)}</div>` : ''}
                 <div class="item-path" title="${item.path}">${item.path}</div>
             </div>
         `;
@@ -206,7 +217,6 @@ const App = {
         }
         return card;
     },
-
     updateScrollIndicator() {
         const scrollPercent = (this.sliderWrapper.scrollTop /
             (this.sliderWrapper.scrollHeight - this.sliderWrapper.clientHeight)) * 100;
@@ -216,5 +226,4 @@ const App = {
         }
     }
 };
-
 document.addEventListener('DOMContentLoaded', () => App.init());

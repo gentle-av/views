@@ -164,12 +164,6 @@ body {
     font-weight: 500;
 }
 
-.item-size {
-    font-size: 0.9rem;
-    color: var(--fg3);
-    font-family: monospace;
-}
-
 .item-path {
     font-size: 0.85rem;
     color: var(--fg4);
@@ -722,7 +716,6 @@ body {
     }
 }
 
-/* Адаптация для очень маленьких экранов */
 @media (max-width: 480px) {
     .breadcrumb-item {
         min-width: 30px;
@@ -741,5 +734,23 @@ body {
 
     .root-breadcrumb .breadcrumb-text {
         max-width: 30px;
+    }
+}
+
+.top-player-bar:not(.active) ~ .main-container .slider-wrapper {
+    padding-top: 70px;
+}
+
+.top-player-bar.active ~ .main-container .slider-wrapper {
+    padding-top: 130px;
+}
+
+@media (max-width: 768px) {
+    .top-player-bar:not(.active) ~ .main-container .slider-wrapper {
+        padding-top: 60px;
+    }
+
+    .top-player-bar.active ~ .main-container .slider-wrapper {
+        padding-top: 110px;
     }
 }
