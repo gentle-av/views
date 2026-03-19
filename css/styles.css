@@ -61,7 +61,6 @@ body {
     height: 100vh;
 }
 
-
 .slider-wrapper {
     padding: 110px 20px 20px 20px;
     overflow-y: auto;
@@ -143,6 +142,10 @@ body {
 
 .video-icon {
     color: var(--aqua);
+}
+
+.audio-icon {
+    color: var(--purple);
 }
 
 .item-info {
@@ -414,6 +417,7 @@ body {
 }
 
 .top-player-bar {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
@@ -421,12 +425,15 @@ body {
     height: 60px;
     background: var(--bg1);
     border-bottom: 2px solid var(--bg3);
-    display: flex;
     align-items: center;
     justify-content: center;
     padding: 0 20px;
     z-index: 20;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.top-player-bar.active {
+    display: flex;
 }
 
 .player-top-controls {
@@ -522,22 +529,22 @@ body {
     top: 60px;
     left: 0;
     right: 0;
-    height: 40px;
+    height: 50px;
     background: var(--bg2);
     border-bottom: 1px solid var(--bg3);
     display: flex;
     align-items: center;
     padding: 0 15px;
     z-index: 19;
-    gap: 10px;
+    gap: 12px;
 }
 
 .nav-btn {
     background: var(--bg1);
     border: 1px solid var(--bg3);
     color: var(--fg1);
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     cursor: pointer;
     font-size: 1rem;
@@ -548,7 +555,7 @@ body {
     flex-shrink: 0;
 }
 
-.nav-btn:hover {
+.nav-btn:hover:not(:disabled) {
     background: var(--bg3);
     border-color: var(--yellow);
     color: var(--yellow);
@@ -557,16 +564,169 @@ body {
 
 .nav-btn:disabled {
     opacity: 0.3;
+    cursor: not-allowed;
     pointer-events: none;
 }
 
-.current-path {
-    color: var(--fg3);
-    font-size: 0.9rem;
-    font-family: monospace;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* Стили для хлебных крошек */
+.breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     flex: 1;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: thin;
+    padding: 4px 0;
+    min-height: 40px;
 }
 
+.breadcrumbs::-webkit-scrollbar {
+    height: 3px;
+}
+
+.breadcrumbs::-webkit-scrollbar-track {
+    background: var(--bg3);
+}
+
+.breadcrumbs::-webkit-scrollbar-thumb {
+    background: var(--yellow);
+    border-radius: 3px;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg1);
+    border: 1px solid var(--bg3);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 0.9rem;
+    color: var(--fg2);
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    min-width: 40px;
+    height: 34px;
+}
+
+.breadcrumb-item.root-breadcrumb {
+    background: var(--bg0);
+    border-color: var(--yellow);
+    color: var(--yellow);
+    min-width: 70px;
+    padding: 4px 14px;
+    gap: 6px;
+}
+
+.breadcrumb-item.root-breadcrumb i {
+    font-size: 1rem;
+}
+
+.breadcrumb-item.root-breadcrumb .breadcrumb-text {
+    text-transform: uppercase;
+    font-weight: 500;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.breadcrumb-item:hover:not(.active) {
+    background: var(--bg3);
+    border-color: var(--yellow);
+    color: var(--yellow);
+    transform: translateY(-1px);
+}
+
+.breadcrumb-item.active {
+    background: var(--yellow);
+    border-color: var(--orange);
+    color: var(--bg0);
+    cursor: default;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(250, 189, 47, 0.3);
+}
+
+.breadcrumb-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    max-width: 45px;
+    font-weight: 500;
+}
+
+.root-breadcrumb .breadcrumb-text {
+    max-width: 55px;
+}
+
+/* Адаптация для мобильных устройств */
+@media (max-width: 768px) {
+    .slider-wrapper {
+        padding: 100px 10px 10px 10px;
+    }
+
+    .navigation-bar {
+        height: 45px;
+        padding: 0 10px;
+        gap: 8px;
+    }
+
+    .nav-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    .breadcrumb-item {
+        min-width: 35px;
+        height: 30px;
+        padding: 4px 6px;
+    }
+
+    .breadcrumb-item.root-breadcrumb {
+        min-width: 60px;
+        padding: 4px 10px;
+        gap: 4px;
+    }
+
+    .breadcrumb-text {
+        max-width: 30px;
+        font-size: 0.8rem;
+    }
+
+    .root-breadcrumb .breadcrumb-text {
+        max-width: 40px;
+    }
+
+    .item-card {
+        padding: 12px 16px;
+        min-height: 70px;
+    }
+
+    .item-card i {
+        font-size: 32px;
+        width: 40px;
+    }
+}
+
+/* Адаптация для очень маленьких экранов */
+@media (max-width: 480px) {
+    .breadcrumb-item {
+        min-width: 30px;
+        height: 28px;
+        padding: 4px 5px;
+    }
+
+    .breadcrumb-item.root-breadcrumb {
+        min-width: 50px;
+        padding: 4px 8px;
+    }
+
+    .breadcrumb-text {
+        max-width: 25px;
+    }
+
+    .root-breadcrumb .breadcrumb-text {
+        max-width: 30px;
+    }
+}
