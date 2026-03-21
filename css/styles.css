@@ -62,7 +62,7 @@ body {
 }
 
 .slider-wrapper {
-    padding: 110px 20px 20px 20px;
+    padding: 110px 20px 80px 20px;
     overflow-y: auto;
     overflow-x: hidden;
     scroll-behavior: smooth;
@@ -667,10 +667,9 @@ body {
     max-width: 55px;
 }
 
-/* Адаптация для мобильных устройств */
 @media (max-width: 768px) {
     .slider-wrapper {
-        padding: 100px 10px 10px 10px;
+        padding: 100px 10px 80px 10px;
     }
 
     .navigation-bar {
@@ -739,10 +738,12 @@ body {
 
 .top-player-bar:not(.active) ~ .main-container .slider-wrapper {
     padding-top: 70px;
+    padding-bottom: 80px;
 }
 
 .top-player-bar.active ~ .main-container .slider-wrapper {
     padding-top: 130px;
+    padding-bottom: 80px;
 }
 
 @media (max-width: 768px) {
