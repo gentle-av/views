@@ -1,22 +1,25 @@
 const VideoExplorer = {
     currentPath: '/mnt/video',
     history: [],
-
     async init() {
-        await this.loadDirectory(this.currentPath);
+        const videoContent = document.getElementById('videoContent');
+        if (videoContent) {
+            await this.loadDirectory(this.currentPath);
+        }
     },
-
     async loadDirectory(path, addToHistory = true) {
+        const videoContent = document.getElementById('videoContent');
+        if (!videoContent) {
+            console.error('videoContent element not found');
+            return;
+        }
         console.log('loadDirectory called with path:', path);
         if (addToHistory && this.currentPath && this.currentPath !== path) {
             this.history.push(this.currentPath);
         }
         this.currentPath = path;
         this.updateBreadcrumbs();
-
-        const content = document.getElementById('videoContent');
-        content.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
-
+        videoContent.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
         const url = `${Utils.getServerUrl()}/api/list`;
         try {
             const response = await fetch(url, {
@@ -25,27 +28,24 @@ const VideoExplorer = {
                 body: JSON.stringify({ path: path })
             });
             const data = await response.json();
-
             if (data.success) {
                 this.renderContent(data.items);
             } else {
-                content.innerHTML = `<div class="empty"><i class="fas fa-exclamation-triangle"></i> ${data.error || 'Ошибка загрузки'}</div>`;
+                videoContent.innerHTML = `<div class="empty"><i class="fas fa-exclamation-triangle"></i> ${data.error || 'Ошибка загрузки'}</div>`;
             }
         } catch (error) {
             console.error('Error loading directory:', error);
-            content.innerHTML = '<div class="empty"><i class="fas fa-wifi"></i> Ошибка подключения к серверу: ' + error.message + '</div>';
+            videoContent.innerHTML = '<div class="empty"><i class="fas fa-wifi"></i> Ошибка подключения к серверу: ' + error.message + '</div>';
         }
     },
-
     renderContent(items) {
         const content = document.getElementById('videoContent');
+        if (!content) return;
         const visibleItems = items.filter(item => !Utils.isHiddenFile(item.name));
-
         if (visibleItems.length === 0) {
             content.innerHTML = '<div class="empty"><i class="fas fa-folder-open"></i> Папка пуста</div>';
             return;
         }
-
         content.innerHTML = visibleItems.map(item => `
             <div class="item-card" data-path="${item.path}" data-is-dir="${item.isDirectory}">
                 <i class="fas ${item.isDirectory ? 'fa-folder folder-icon' : 'fa-file-video video-icon'}"></i>
@@ -53,7 +53,6 @@ const VideoExplorer = {
                 ${!item.isDirectory ? `<div class="item-size">${item.size || ''}</div>` : ''}
             </div>
         `).join('');
-
         document.querySelectorAll('.item-card').forEach(card => {
             card.addEventListener('click', () => {
                 const path = card.dataset.path;
@@ -66,7 +65,6 @@ const VideoExplorer = {
             });
         });
     },
-
     async playVideo(path) {
         try {
             if (typeof PlayerManager !== 'undefined') {
@@ -89,12 +87,10 @@ const VideoExplorer = {
             Utils.showNotification('Ошибка подключения к серверу', 'error');
         }
     },
-
     updateBreadcrumbs() {
         const breadcrumbs = document.getElementById('videoBreadcrumbs');
         if (!breadcrumbs) return;
         breadcrumbs.innerHTML = '';
-
         const rootPath = '/mnt/video';
         const rootBreadcrumb = document.createElement('div');
         rootBreadcrumb.className = 'breadcrumb-root';
@@ -103,13 +99,10 @@ const VideoExplorer = {
             this.loadDirectory(rootPath, true);
         });
         breadcrumbs.appendChild(rootBreadcrumb);
-
         if (this.currentPath === rootPath) return;
-
         let relativePath = this.currentPath.substring(rootPath.length);
         if (relativePath.startsWith('/')) relativePath = relativePath.substring(1);
         const pathParts = relativePath.split('/').filter(part => part.length > 0);
-
         let currentPath = rootPath;
         for (let i = 0; i < pathParts.length; i++) {
             const part = pathParts[i];

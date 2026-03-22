@@ -1,71 +1,70 @@
 const App = {
     currentPage: 'video',
+    loadedScripts: {
+        video: false,
+        audio: false
+    },
     async init() {
         this.setupNavigation();
-
-        // Сначала показываем страницу видео, чтобы интерфейс был активным
-        this.showPage('video');
-
-        // Затем инициализируем все модули параллельно
-        try {
-            // Запускаем инициализацию всех модулей без ожидания друг друга
-            VideoExplorer.init();
-            AlbumLibrary.init(); // не ждем завершения
-            AudioPlayer.init();
-            PlayerManager.init();
-        } catch (error) {
-            console.error('Error initializing modules:', error);
-        }
-
         this.setupMobileMenu();
+        const pageContainer = document.getElementById('pageContainer');
+        if (pageContainer) {
+            pageContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
+        }
+        await this.loadPage('video');
     },
     setupNavigation() {
         const navVideo = document.getElementById('navVideo');
         const navAudio = document.getElementById('navAudio');
-        if (navVideo) navVideo.addEventListener('click', () => this.showPage('video'));
-        if (navAudio) navAudio.addEventListener('click', () => this.showPage('audio'));
+        if (navVideo) navVideo.addEventListener('click', () => this.loadPage('video'));
+        if (navAudio) navAudio.addEventListener('click', () => this.loadPage('audio'));
     },
-    showPage(page) {
-        this.currentPage = page;
-        const pageVideo = document.getElementById('pageVideo');
-        const pageAudio = document.getElementById('pageAudio');
+    async loadPage(page) {
+        const pageContainer = document.getElementById('pageContainer');
+        if (!pageContainer) return;
         const navVideo = document.getElementById('navVideo');
         const navAudio = document.getElementById('navAudio');
-
-        if (pageVideo) pageVideo.classList.toggle('hidden', page !== 'video');
-        if (pageAudio) pageAudio.classList.toggle('hidden', page !== 'audio');
         if (navVideo) navVideo.classList.toggle('active', page === 'video');
         if (navAudio) navAudio.classList.toggle('active', page === 'audio');
-
-        // При переходе на аудио, если альбомы уже загружены, показываем их
-        if (page === 'audio') {
-            // Скрываем плеер если он был показан
-            const audioPlayerBar = document.getElementById('audioPlayerBar');
-            if (audioPlayerBar && !AudioPlayer.currentAlbum) {
-                audioPlayerBar.style.display = 'none';
-            }
-
-            // Рендерим альбомы если они есть
-            if (AlbumLibrary.filteredAlbums && AlbumLibrary.filteredAlbums.length > 0) {
-                AlbumLibrary.renderAlbums();
-            } else if (AlbumLibrary.albums && AlbumLibrary.albums.length > 0) {
-                AlbumLibrary.filteredAlbums = [...AlbumLibrary.albums];
-                AlbumLibrary.renderAlbums();
-            } else if (AlbumLibrary.artists.length === 0) {
-                // Если данные еще не загружены, загружаем
-                AlbumLibrary.loadArtists();
-            }
+        const audioPlayerBar = document.getElementById('audioPlayerBar');
+        if (audioPlayerBar && page === 'video') {
+            audioPlayerBar.style.display = 'none';
         }
-
-        // При переходе на видео, обновляем содержимое если оно пустое
-        if (page === 'video') {
-            const videoContent = document.getElementById('videoContent');
-            // Проверяем, что контент еще не загружен или показывает ошибку/пустоту
-            if (videoContent && (videoContent.innerHTML.includes('Загрузка') ||
-                videoContent.innerHTML.includes('Ошибка') ||
-                videoContent.children.length === 0)) {
-                VideoExplorer.loadDirectory(VideoExplorer.currentPath);
+        try {
+            const response = await fetch(`pages/${page}.html`);
+            if (!response.ok) throw new Error('Page not found');
+            const html = await response.text();
+            pageContainer.innerHTML = html;
+            if (page === 'video') {
+                const script = document.createElement('script');
+                script.src = 'js/modules/video-explorer.js';
+                script.onload = () => {
+                    if (typeof VideoExplorer !== 'undefined') {
+                        setTimeout(() => VideoExplorer.init(), 100);
+                    }
+                };
+                document.body.appendChild(script);
+            } else if (page === 'audio') {
+                const script1 = document.createElement('script');
+                script1.src = 'js/modules/album-library.js';
+                const script2 = document.createElement('script');
+                script2.src = 'js/modules/audio-player.js';
+                script1.onload = () => {
+                    script2.onload = () => {
+                        if (typeof AlbumLibrary !== 'undefined') {
+                            setTimeout(() => AlbumLibrary.init(), 100);
+                        }
+                        if (typeof AudioPlayer !== 'undefined') {
+                            setTimeout(() => AudioPlayer.init(), 150);
+                        }
+                    };
+                    document.body.appendChild(script2);
+                };
+                document.body.appendChild(script1);
             }
+        } catch (error) {
+            console.error('Error loading page:', error);
+            pageContainer.innerHTML = '<div class="error">Ошибка загрузки страницы</div>';
         }
     },
     setupMobileMenu() {
@@ -92,7 +91,6 @@ const App = {
         }
     }
 };
-
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
 });

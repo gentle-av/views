@@ -4,6 +4,8 @@ const AlbumLibrary = {
     artists: [],
     currentArtist: null,
     async init() {
+        const grid = document.getElementById('albumsGrid');
+        if (!grid) return;
         await this.loadArtists();
         this.setupEventListeners();
     },
@@ -42,7 +44,7 @@ const AlbumLibrary = {
         if (!grid) return;
         grid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка альбомов...</div>';
         this.albums = [];
-
+        const uniqueAlbums = new Map();
         for (const artist of this.artists) {
             try {
                 const response = await fetch(`${Utils.getServerUrl()}/api/music/albums`, {
@@ -53,36 +55,41 @@ const AlbumLibrary = {
                 const data = await response.json();
                 if (data.success && data.albums) {
                     for (const album of data.albums) {
-                        const tracks = await this.getTracksFromAlbum(album.path);
-                        // Проверяем, что tracks - это массив
-                        const tracksArray = Array.isArray(tracks) ? tracks : [];
-                        const coverUrl = tracksArray.length > 0
-                            ? await this.getAlbumCover(album.path, tracksArray[0]?.path)
-                            : '';
-
-                        this.albums.push({
-                            path: album.path,
-                            name: album.name,
-                            artist: artist,
-                            title: album.name,
-                            year: album.year || '',
-                            tracks: tracksArray,
-                            coverUrl: coverUrl,
-                            trackCount: tracksArray.length
-                        });
+                        const year = this.extractYearFromPath(album.path);
+                        const albumKey = `${album.album}|${year}|${artist}`;
+                        if (!uniqueAlbums.has(albumKey)) {
+                            const tracks = await this.getTracksFromAlbum(album.path);
+                            const tracksArray = Array.isArray(tracks) ? tracks : [];
+                            const coverUrl = await this.getAlbumCover(album.path, tracksArray[0]?.path);
+                            uniqueAlbums.set(albumKey, {
+                                path: album.path,
+                                name: album.album,
+                                artist: artist,
+                                title: album.album,
+                                year: year,
+                                tracks: tracksArray,
+                                coverUrl: coverUrl,
+                                trackCount: tracksArray.length
+                            });
+                        }
                     }
                 }
             } catch (error) {
                 console.error(`Error loading albums for artist ${artist}:`, error);
             }
         }
-
+        this.albums = Array.from(uniqueAlbums.values());
         this.albums.sort((a, b) => {
             if (a.artist !== b.artist) return a.artist.localeCompare(b.artist);
-            return a.year.localeCompare(b.year);
+            if (a.year !== b.year) return a.year.localeCompare(b.year);
+            return a.title.localeCompare(b.title);
         });
         this.filteredAlbums = [...this.albums];
         this.renderAlbums();
+    },
+    extractYearFromPath(path) {
+        const match = path.match(/(\d{4})/);
+        return match ? match[1] : '';
     },
     async getTracksFromAlbum(albumPath) {
         try {
@@ -94,7 +101,7 @@ const AlbumLibrary = {
             const data = await response.json();
             if (data.success && data.items) {
                 return data.items
-                    .filter(item => !item.isDirectory && (item.name.endsWith('.flac') || item.name.endsWith('.mp3')))
+                    .filter(item => item.name.endsWith('.flac') || item.name.endsWith('.mp3'))
                     .sort((a, b) => a.name.localeCompare(b.name))
                     .map(item => ({
                         name: item.name.replace(/^\d+\.\s*/, '').replace(/\.(flac|mp3)$/i, ''),
@@ -111,32 +118,35 @@ const AlbumLibrary = {
     async getAlbumCover(albumPath, trackPath) {
         if (!trackPath) return '';
         try {
-            const url = `${Utils.getServerUrl()}/api/music/albumart?path=${encodeURIComponent(trackPath)}`;
+            const encodedPath = encodeURIComponent(trackPath);
+            const url = `${Utils.getServerUrl()}/api/music/albumart?path=${encodedPath}`;
             const response = await fetch(url);
             if (response.ok) {
-                return url;
+                const blob = await response.blob();
+                if (blob.size > 0 && blob.type.startsWith('image/')) {
+                    return url;
+                }
             }
         } catch (error) {
-            console.error('Error loading cover:', error);
+            console.debug('No album art found for:', trackPath);
         }
         return '';
     },
     renderAlbums() {
         const grid = document.getElementById('albumsGrid');
         if (!grid) return;
-
         if (this.filteredAlbums.length === 0) {
             grid.innerHTML = '<div class="empty"><i class="fas fa-music"></i> Альбомы не найдены</div>';
             return;
         }
-
         grid.innerHTML = this.filteredAlbums.map(album => `
             <div class="album-card" data-path="${album.path}">
                 <div class="album-cover">
                     ${album.coverUrl ?
-                        `<img src="${album.coverUrl}" alt="${Utils.escapeHtml(album.title)}">` :
+                        `<img src="${album.coverUrl}" alt="${Utils.escapeHtml(album.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` :
                         `<i class="fas fa-album fallback-icon"></i>`
                     }
+                    ${album.coverUrl ? `<i class="fas fa-album fallback-icon" style="display: none;"></i>` : ''}
                 </div>
                 <div class="album-info">
                     <div class="album-title" title="${Utils.escapeHtml(album.title)}">${Utils.escapeHtml(album.title)}</div>
@@ -146,7 +156,6 @@ const AlbumLibrary = {
                 </div>
             </div>
         `).join('');
-
         document.querySelectorAll('.album-card').forEach(card => {
             card.addEventListener('click', () => {
                 const path = card.dataset.path;
@@ -177,10 +186,14 @@ const AlbumLibrary = {
         const modalTitle = document.getElementById('modalAlbumTitle');
         const modalArt = document.getElementById('modalAlbumArt');
         const tracksList = document.getElementById('modalTracksList');
-
         if (modalTitle) modalTitle.textContent = `${album.artist} — ${album.title} (${album.year})`;
-        if (modalArt) modalArt.src = album.coverUrl || '';
-
+        if (modalArt) {
+            modalArt.src = album.coverUrl || '';
+            modalArt.onerror = () => {
+                modalArt.style.display = 'none';
+            };
+            modalArt.style.display = album.coverUrl ? 'block' : 'none';
+        }
         if (tracksList) {
             tracksList.innerHTML = album.tracks.map((track, idx) => `
                 <div class="track-item" data-track-index="${idx}">
@@ -191,7 +204,6 @@ const AlbumLibrary = {
                     </button>
                 </div>
             `).join('');
-
             tracksList.querySelectorAll('.track-item').forEach(item => {
                 item.addEventListener('click', (e) => {
                     if (!e.target.closest('.track-play-btn')) {
@@ -203,7 +215,6 @@ const AlbumLibrary = {
                         modal.classList.remove('active');
                     }
                 });
-
                 const playBtn = item.querySelector('.track-play-btn');
                 if (playBtn) {
                     playBtn.addEventListener('click', (e) => {
@@ -218,7 +229,6 @@ const AlbumLibrary = {
                 }
             });
         }
-
         modal.classList.add('active');
         const closeBtn = document.querySelector('.modal-close');
         if (closeBtn) {
