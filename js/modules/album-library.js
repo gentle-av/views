@@ -181,63 +181,76 @@ const AlbumLibrary = {
         this.renderAlbums();
     },
     showAlbumModal(album) {
-        const modal = document.getElementById('albumModal');
-        if (!modal) return;
-        const modalTitle = document.getElementById('modalAlbumTitle');
-        const modalArt = document.getElementById('modalAlbumArt');
-        const tracksList = document.getElementById('modalTracksList');
-        if (modalTitle) modalTitle.textContent = `${album.artist} — ${album.title} (${album.year})`;
-        if (modalArt) {
-            modalArt.src = album.coverUrl || '';
-            modalArt.onerror = () => {
-                modalArt.style.display = 'none';
-            };
-            modalArt.style.display = album.coverUrl ? 'block' : 'none';
-        }
-        if (tracksList) {
-            tracksList.innerHTML = album.tracks.map((track, idx) => `
-                <div class="track-item" data-track-index="${idx}">
-                    <div class="track-number">${String(idx + 1).padStart(2, '0')}</div>
-                    <div class="track-name">${Utils.escapeHtml(track.name)}</div>
-                    <button class="track-play-btn">
-                        <i class="fas fa-play"></i>
-                    </button>
-                </div>
-            `).join('');
-            tracksList.querySelectorAll('.track-item').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    if (!e.target.closest('.track-play-btn')) {
-                        const idx = parseInt(item.dataset.trackIndex);
-                        if (typeof AudioPlayer !== 'undefined') {
-                            AudioPlayer.playAlbum(album);
-                            setTimeout(() => AudioPlayer.playTrack(idx), 500);
-                        }
-                        modal.classList.remove('active');
-                    }
-                });
-                const playBtn = item.querySelector('.track-play-btn');
-                if (playBtn) {
-                    playBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const idx = parseInt(item.dataset.trackIndex);
-                        if (typeof AudioPlayer !== 'undefined') {
-                            AudioPlayer.playAlbum(album);
-                            setTimeout(() => AudioPlayer.playTrack(idx), 500);
-                        }
-                        modal.classList.remove('active');
-                    });
-                }
-            });
-        }
-        modal.classList.add('active');
-        const closeBtn = document.querySelector('.modal-close');
-        if (closeBtn) {
-            closeBtn.onclick = () => {
-                modal.classList.remove('active');
-            };
-        }
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.remove('active');
-        });
-    }
+      const modal = document.getElementById('albumModal');
+      if (!modal) return;
+      const modalTitle = document.getElementById('modalAlbumTitle');
+      const modalArt = document.getElementById('modalAlbumArt');
+      const tracksList = document.getElementById('modalTracksList');
+      if (modalTitle) modalTitle.textContent = `${album.artist} — ${album.title} (${album.year})`;
+      if (modalArt) {
+          modalArt.src = album.coverUrl || '';
+          modalArt.onerror = () => {
+              modalArt.style.display = 'none';
+          };
+          modalArt.style.display = album.coverUrl ? 'block' : 'none';
+      }
+      if (tracksList) {
+          tracksList.innerHTML = album.tracks.map((track, idx) => `
+              <div class="track-item" data-track-index="${idx}">
+                  <div class="track-number">${String(idx + 1).padStart(2, '0')}</div>
+                  <div class="track-name">${Utils.escapeHtml(track.name)}</div>
+                  <button class="track-play-btn play-album-btn">
+                      <i class="fas fa-list"></i>
+                  </button>
+                  <button class="track-play-btn play-now-btn" style="margin-left: 5px;">
+                      <i class="fas fa-play"></i>
+                  </button>
+              </div>
+          `).join('');
+          tracksList.querySelectorAll('.track-item').forEach(item => {
+              const idx = parseInt(item.dataset.trackIndex);
+              const playAlbumBtn = item.querySelector('.play-album-btn');
+              const playNowBtn = item.querySelector('.play-now-btn');
+              if (playAlbumBtn) {
+                  playAlbumBtn.addEventListener('click', (e) => {
+                      e.stopPropagation();
+                      if (typeof AudioPlayer !== 'undefined') {
+                          AudioPlayer.loadAlbum(album);
+                          modal.classList.remove('active');
+                          Utils.showNotification(`Альбом "${album.title}" добавлен в плейлист`, 'success');
+                      }
+                  });
+              }
+              if (playNowBtn) {
+                  playNowBtn.addEventListener('click', (e) => {
+                      e.stopPropagation();
+                      if (typeof AudioPlayer !== 'undefined') {
+                          AudioPlayer.loadAlbum(album);
+                          setTimeout(() => AudioPlayer.playTrack(idx), 500);
+                          modal.classList.remove('active');
+                      }
+                  });
+              }
+              item.addEventListener('click', (e) => {
+                  if (!e.target.closest('.track-play-btn')) {
+                      if (typeof AudioPlayer !== 'undefined') {
+                          AudioPlayer.loadAlbum(album);
+                          setTimeout(() => AudioPlayer.playTrack(idx), 500);
+                          modal.classList.remove('active');
+                      }
+                  }
+              });
+          });
+      }
+      modal.classList.add('active');
+      const closeBtn = document.querySelector('.modal-close');
+      if (closeBtn) {
+          closeBtn.onclick = () => {
+              modal.classList.remove('active');
+          };
+      }
+      modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.classList.remove('active');
+      });
+  }
 };
