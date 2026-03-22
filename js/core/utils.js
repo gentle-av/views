@@ -13,6 +13,7 @@ const Utils = {
 
     showNotification(message, type = 'info') {
         const notification = document.getElementById('notification');
+        if (!notification) return;
         notification.className = `notification ${type}`;
         notification.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> ${message}`;
         notification.style.display = 'flex';
@@ -34,6 +35,7 @@ const Utils = {
     },
 
     escapeHtml(str) {
+        if (!str) return '';
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
@@ -56,5 +58,12 @@ const Utils = {
             title: albumFolder,
             artist: artist
         };
+    },
+
+    shortenName(name, maxLength = 35) {
+        if (name.length > maxLength) {
+            return name.substring(0, maxLength - 3) + '...';
+        }
+        return name;
     }
 };

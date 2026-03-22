@@ -4,34 +4,28 @@ const VideoExplorer = {
 
     async init() {
         await this.loadDirectory(this.currentPath);
-        this.setupEventListeners();
-    },
-
-    setupEventListeners() {
     },
 
     async loadDirectory(path, addToHistory = true) {
-        console.log('loadDirectory called with path:', path, 'addToHistory:', addToHistory);
-        console.log('Current path:', this.currentPath);
+        console.log('loadDirectory called with path:', path);
         if (addToHistory && this.currentPath && this.currentPath !== path) {
             this.history.push(this.currentPath);
         }
         this.currentPath = path;
         this.updateBreadcrumbs();
+
         const content = document.getElementById('videoContent');
         content.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
-        const url = `http://${window.location.hostname}:8083/api/list`;
-        console.log('Fetching URL:', url);
-        console.log('Request body:', { path: path });
+
+        const url = `${Utils.getServerUrl()}/api/list`;
         try {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ path: path })
             });
-            console.log('Response status:', response.status);
             const data = await response.json();
-            console.log('loadDirectory response:', data);
+
             if (data.success) {
                 this.renderContent(data.items);
             } else {
@@ -44,27 +38,26 @@ const VideoExplorer = {
     },
 
     renderContent(items) {
-        console.log('renderContent called with items:', items);
         const content = document.getElementById('videoContent');
         const visibleItems = items.filter(item => !Utils.isHiddenFile(item.name));
-        console.log('visibleItems after filter:', visibleItems);
+
         if (visibleItems.length === 0) {
             content.innerHTML = '<div class="empty"><i class="fas fa-folder-open"></i> Папка пуста</div>';
             return;
         }
+
         content.innerHTML = visibleItems.map(item => `
             <div class="item-card" data-path="${item.path}" data-is-dir="${item.isDirectory}">
                 <i class="fas ${item.isDirectory ? 'fa-folder folder-icon' : 'fa-file-video video-icon'}"></i>
-                <div class="item-name" title="${Utils.escapeHtml(this.shortenName(item.name))}">${Utils.escapeHtml(this.shortenName(item.name))}</div>
+                <div class="item-name" title="${Utils.escapeHtml(item.name)}">${Utils.escapeHtml(Utils.shortenName(item.name))}</div>
                 ${!item.isDirectory ? `<div class="item-size">${item.size || ''}</div>` : ''}
             </div>
         `).join('');
-        console.log('Rendered HTML length:', content.innerHTML.length);
+
         document.querySelectorAll('.item-card').forEach(card => {
             card.addEventListener('click', () => {
                 const path = card.dataset.path;
                 const isDir = card.dataset.isDir === 'true';
-                console.log('Card clicked:', { path, isDir });
                 if (isDir) {
                     this.loadDirectory(path, true);
                 } else {
@@ -74,19 +67,12 @@ const VideoExplorer = {
         });
     },
 
-    shortenName(name) {
-        if (name.length > 35) {
-            return name.substring(0, 32) + '...';
-        }
-        return name;
-    },
-
     async playVideo(path) {
         try {
             if (typeof PlayerManager !== 'undefined') {
                 await PlayerManager.playMedia(path);
             } else {
-                const response = await fetch(`http://${window.location.hostname}:8083/api/open`, {
+                const response = await fetch(`${Utils.getServerUrl()}/api/open`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path: path })
@@ -106,7 +92,9 @@ const VideoExplorer = {
 
     updateBreadcrumbs() {
         const breadcrumbs = document.getElementById('videoBreadcrumbs');
+        if (!breadcrumbs) return;
         breadcrumbs.innerHTML = '';
+
         const rootPath = '/mnt/video';
         const rootBreadcrumb = document.createElement('div');
         rootBreadcrumb.className = 'breadcrumb-root';
@@ -115,10 +103,13 @@ const VideoExplorer = {
             this.loadDirectory(rootPath, true);
         });
         breadcrumbs.appendChild(rootBreadcrumb);
+
         if (this.currentPath === rootPath) return;
+
         let relativePath = this.currentPath.substring(rootPath.length);
         if (relativePath.startsWith('/')) relativePath = relativePath.substring(1);
         const pathParts = relativePath.split('/').filter(part => part.length > 0);
+
         let currentPath = rootPath;
         for (let i = 0; i < pathParts.length; i++) {
             const part = pathParts[i];
@@ -126,7 +117,7 @@ const VideoExplorer = {
             const crumb = document.createElement('div');
             crumb.className = 'breadcrumb';
             if (i === pathParts.length - 1) {
-                crumb.innerHTML = `<i class="fas fa-folder"></i><span class="breadcrumb-text" title="${Utils.escapeHtml(part)}">${Utils.escapeHtml(this.shortenName(part))}</span>`;
+                crumb.innerHTML = `<i class="fas fa-folder"></i><span class="breadcrumb-text" title="${Utils.escapeHtml(part)}">${Utils.escapeHtml(Utils.shortenName(part))}</span>`;
                 crumb.classList.add('active');
             } else {
                 crumb.innerHTML = `<i class="fas fa-folder"></i>`;

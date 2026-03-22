@@ -2,9 +2,11 @@ const TreeManager = {
     treeContainer: null,
     currentPath: CONFIG.ROOT_PATH,
     currentMediaType: 'video',
+
     init() {
         this.treeContainer = document.getElementById('treeContainer');
     },
+
     async loadTreeData(mediaType = null) {
         if (!this.treeContainer) return;
         if (mediaType) {
@@ -34,11 +36,14 @@ const TreeManager = {
             this.showError(`Ошибка: ${error.message}`);
         }
     },
+
     buildTree(videoItems, musicItems) {
         if (!this.treeContainer) return;
         const videoFolders = videoItems.filter(item => item.isDirectory && !Utils.isHiddenFile(item.name));
         const musicFolders = musicItems.filter(item => item.isDirectory && !Utils.isHiddenFile(item.name));
         let html = '<div class="tree-root">';
+
+        // Video section
         html += `
             <div class="tree-group">
                 <div class="tree-group-header ${this.currentMediaType === 'video' ? 'active' : ''}"
@@ -70,6 +75,8 @@ const TreeManager = {
             `;
         });
         html += '</div></div>';
+
+        // Music section
         html += `
             <div class="tree-group">
                 <div class="tree-group-header ${this.currentMediaType === 'audio' ? 'active' : ''}"
@@ -103,24 +110,33 @@ const TreeManager = {
         html += '</div></div></div>';
         this.treeContainer.innerHTML = html;
     },
+
     switchMediaType(type) {
         this.currentMediaType = type;
         this.currentPath = type === 'video' ? CONFIG.ROOT_PATH : CONFIG.MUSIC_PATH;
-        App.loadDirectory(this.currentPath, type);
+        if (typeof App !== 'undefined') {
+            App.loadDirectory(this.currentPath, type);
+        }
         this.updateActiveItem(this.currentPath);
     },
+
     navigateFromTree(path, type) {
         this.currentPath = path;
         this.currentMediaType = type;
-        App.loadDirectory(path, type);
+        if (typeof App !== 'undefined') {
+            App.loadDirectory(path, type);
+        }
         this.updateActiveItem(path);
         if (window.innerWidth <= 768) {
-            document.getElementById('leftPanel').classList.remove('visible');
+            const leftPanel = document.getElementById('leftPanel');
+            if (leftPanel) leftPanel.classList.remove('visible');
         }
     },
+
     updateActiveItem(path) {
         this.currentPath = path;
-        if (document.getElementById('leftPanel').classList.contains('visible')) {
+        const leftPanel = document.getElementById('leftPanel');
+        if (leftPanel && leftPanel.classList.contains('visible')) {
             document.querySelectorAll('.tree-item-content').forEach(el => {
                 el.classList.remove('active');
             });
@@ -137,6 +153,7 @@ const TreeManager = {
             }
         }
     },
+
     showError(message) {
         if (this.treeContainer) {
             this.treeContainer.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--red);">${message}</div>`;

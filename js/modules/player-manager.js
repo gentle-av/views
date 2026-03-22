@@ -28,20 +28,30 @@ const PlayerManager = {
     },
 
     setupEventListeners() {
-        const playPauseBtn = document.getElementById('playPauseBtn');
-        if (playPauseBtn) playPauseBtn.addEventListener('click', () => this.togglePlayPause());
-        const seekForwardBtn = document.getElementById('seekForwardBtn');
-        if (seekForwardBtn) seekForwardBtn.addEventListener('click', () => this.seekForward());
-        const seekBackwardBtn = document.getElementById('seekBackwardBtn');
-        if (seekBackwardBtn) seekBackwardBtn.addEventListener('click', () => this.seekBackward());
-        const closeFileBtn = document.getElementById('closeFileBtn');
-        if (closeFileBtn) closeFileBtn.addEventListener('click', () => this.closeFile());
-        const closeControlPage = document.querySelector('.close-control-page');
-        if (closeControlPage) closeControlPage.addEventListener('click', () => this.closeFile());
-        const deleteFileBtn = document.getElementById('deleteFileBtn');
-        if (deleteFileBtn) deleteFileBtn.addEventListener('click', () => this.deleteFile());
-        const fullscreenBtn = document.getElementById('fullscreenBtn');
-        if (fullscreenBtn) fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+        const elements = {
+            playPauseBtn: 'playPauseBtn',
+            seekForwardBtn: 'seekForwardBtn',
+            seekBackwardBtn: 'seekBackwardBtn',
+            closeFileBtn: 'closeFileBtn',
+            closeControlPage: 'close-control-page',
+            deleteFileBtn: 'deleteFileBtn',
+            fullscreenBtn: 'fullscreenBtn'
+        };
+
+        for (const [key, id] of Object.entries(elements)) {
+            const element = document.getElementById(id);
+            if (element) {
+                const handler = this[key === 'closeControlPage' ? 'closeFile' :
+                                   key === 'playPauseBtn' ? 'togglePlayPause' :
+                                   key === 'seekForwardBtn' ? 'seekForward' :
+                                   key === 'seekBackwardBtn' ? 'seekBackward' :
+                                   key === 'closeFileBtn' ? 'closeFile' :
+                                   key === 'deleteFileBtn' ? 'deleteFile' :
+                                   key === 'fullscreenBtn' ? 'toggleFullscreen' : null];
+                if (handler) element.addEventListener('click', () => handler.call(this));
+            }
+        }
+
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
     },
 
@@ -117,18 +127,18 @@ const PlayerManager = {
         this.playerActive = false;
         this.hideControl();
         this.showLibrary();
-        this.showNotification('Плеер закрыт, возврат в библиотеку', 'info');
+        Utils.showNotification('Плеер закрыт, возврат в библиотеку', 'info');
     },
 
     async seekForward() {
         if (!this.playerActive) return;
         const result = await this.callPlayerApi('/api/seekforward', { seconds: 10 });
         if (result && result.success) {
-            this.showNotification('Вперед 10 секунд', 'success');
+            Utils.showNotification('Вперед 10 секунд', 'success');
         } else if (result === null) {
             this.handlePlayerDisconnected();
         } else {
-            this.showNotification('Ошибка перемотки', 'error');
+            Utils.showNotification('Ошибка перемотки', 'error');
         }
     },
 
@@ -136,11 +146,11 @@ const PlayerManager = {
         if (!this.playerActive) return;
         const result = await this.callPlayerApi('/api/seekbackward', { seconds: 10 });
         if (result && result.success) {
-            this.showNotification('Назад 10 секунд', 'success');
+            Utils.showNotification('Назад 10 секунд', 'success');
         } else if (result === null) {
             this.handlePlayerDisconnected();
         } else {
-            this.showNotification('Ошибка перемотки', 'error');
+            Utils.showNotification('Ошибка перемотки', 'error');
         }
     },
 
@@ -151,7 +161,7 @@ const PlayerManager = {
         if (result && result.success) {
             this.isFullscreen = newState;
             this.updateFullscreenButton();
-            this.showNotification(newState ? 'Полноэкранный режим включен' : 'Полноэкранный режим выключен', 'success');
+            Utils.showNotification(newState ? 'Полноэкранный режим включен' : 'Полноэкранный режим выключен', 'success');
         } else if (result === null) {
             this.handlePlayerDisconnected();
         }
@@ -199,7 +209,7 @@ const PlayerManager = {
         }
         const result = await this.callPlayerApi('/api/close');
         if (result && result.success) {
-            this.showNotification('Файл закрыт', 'success');
+            Utils.showNotification('Файл закрыт', 'success');
         }
         this.hideControl();
         this.showLibrary();
@@ -214,14 +224,14 @@ const PlayerManager = {
         if (!confirm('Вы уверены, что хотите переместить файл в корзину?')) return;
         const result = await this.callPlayerApi('/api/closefile');
         if (result && result.success) {
-            this.showNotification(result.message || 'Файл перемещён в корзину', 'success');
+            Utils.showNotification(result.message || 'Файл перемещён в корзину', 'success');
             if (typeof VideoExplorer !== 'undefined' && VideoExplorer.currentPath) {
                 VideoExplorer.loadDirectory(VideoExplorer.currentPath);
             }
         } else if (result === null) {
-            this.showNotification('Плеер закрыт, файл не удалён', 'info');
+            Utils.showNotification('Плеер закрыт, файл не удалён', 'info');
         } else {
-            this.showNotification(result?.error || 'Ошибка при удалении', 'error');
+            Utils.showNotification(result?.error || 'Ошибка при удалении', 'error');
         }
         this.hideControl();
         this.showLibrary();
@@ -353,13 +363,13 @@ const PlayerManager = {
                 this.updateFullscreenButton();
                 this.startStatusPolling();
                 if (!this.isFullscreen) setTimeout(() => this.toggleFullscreen(), 1500);
-                this.showNotification(`Воспроизведение: ${path.split('/').pop()}`, 'success');
+                Utils.showNotification(`Воспроизведение: ${path.split('/').pop()}`, 'success');
             } else {
                 throw new Error('Player did not load the file');
             }
         } catch (error) {
             console.error('Error playing media:', error);
-            this.showNotification(error.message || 'Ошибка воспроизведения', 'error');
+            Utils.showNotification(error.message || 'Ошибка воспроизведения', 'error');
             this.hideControl();
             this.showLibrary();
         }
@@ -504,24 +514,14 @@ const PlayerManager = {
         `;
     },
 
-    showNotification(message, type) {
-        const notification = document.getElementById('notification');
-        if (notification) {
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> ${message}`;
-            notification.style.display = 'flex';
-            setTimeout(() => { notification.style.display = 'none'; }, 3000);
-        }
-    },
-
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    },
-
     escapeHtml(str) {
         if (!str) return '';
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
+    },
+
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 };

@@ -13,12 +13,3 @@ const CONFIG = {
         STATUS: 'http://' + window.location.hostname + ':8082/api/status'
     }
 };
-
-document.addEventListener('DOMContentLoaded', () => {
-    if (typeof PlayerManager !== 'undefined') {
-        PlayerManager.init();
-    }
-    if (typeof App !== 'undefined') {
-        App.init();
-    }
-});

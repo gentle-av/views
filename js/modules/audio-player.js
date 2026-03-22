@@ -11,13 +11,17 @@ const AudioPlayer = {
     },
 
     setupEventListeners() {
-        document.getElementById('playerPlayBtn').addEventListener('click', () => this.togglePlayPause());
-        document.getElementById('playerPrevBtn').addEventListener('click', () => this.previousTrack());
-        document.getElementById('playerNextBtn').addEventListener('click', () => this.nextTrack());
-        document.getElementById('playerStopBtn').addEventListener('click', () => this.stop());
-
+        const playBtn = document.getElementById('playerPlayBtn');
+        const prevBtn = document.getElementById('playerPrevBtn');
+        const nextBtn = document.getElementById('playerNextBtn');
+        const stopBtn = document.getElementById('playerStopBtn');
         const volumeSlider = document.getElementById('volumeSlider');
-        volumeSlider.addEventListener('click', (e) => this.setVolume(e));
+
+        if (playBtn) playBtn.addEventListener('click', () => this.togglePlayPause());
+        if (prevBtn) prevBtn.addEventListener('click', () => this.previousTrack());
+        if (nextBtn) nextBtn.addEventListener('click', () => this.nextTrack());
+        if (stopBtn) stopBtn.addEventListener('click', () => this.stop());
+        if (volumeSlider) volumeSlider.addEventListener('click', (e) => this.setVolume(e));
     },
 
     async callApi(action, data = null) {
@@ -48,10 +52,15 @@ const AudioPlayer = {
 
         await this.playTrack(0);
 
-        document.getElementById('playerAlbumArt').src = album.coverUrl || '';
-        document.getElementById('playerAlbum').textContent = album.title;
-        document.getElementById('playerArtist').textContent = album.artist;
-        document.getElementById('audioPlayerBar').style.display = 'flex';
+        const albumArt = document.getElementById('playerAlbumArt');
+        const albumTitle = document.getElementById('playerAlbum');
+        const artistName = document.getElementById('playerArtist');
+        const playerBar = document.getElementById('audioPlayerBar');
+
+        if (albumArt) albumArt.src = album.coverUrl || '';
+        if (albumTitle) albumTitle.textContent = album.title;
+        if (artistName) artistName.textContent = album.artist;
+        if (playerBar) playerBar.style.display = 'flex';
     },
 
     async playTrack(index) {
@@ -99,37 +108,43 @@ const AudioPlayer = {
         this.isPlaying = false;
         this.currentTrackIndex = -1;
         this.updatePlayerUI();
-        document.getElementById('audioPlayerBar').style.display = 'none';
+        const playerBar = document.getElementById('audioPlayerBar');
+        if (playerBar) playerBar.style.display = 'none';
     },
 
     async setVolume(event) {
         const slider = event.currentTarget;
         const rect = slider.getBoundingClientRect();
         const percent = Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100));
-        document.getElementById('volumeProgress').style.width = percent + '%';
+        const volumeProgress = document.getElementById('volumeProgress');
+        if (volumeProgress) volumeProgress.style.width = percent + '%';
 
         await this.callApi('volume', { volume: percent });
     },
 
     updatePlayerUI() {
         const playBtn = document.getElementById('playerPlayBtn');
-        playBtn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+        const trackName = document.getElementById('playerTrack');
 
-        if (this.currentTrackIndex >= 0 && this.tracks[this.currentTrackIndex]) {
-            document.getElementById('playerTrack').textContent = this.tracks[this.currentTrackIndex].name;
-        } else {
-            document.getElementById('playerTrack').textContent = '—';
+        if (playBtn) {
+            playBtn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+        }
+
+        if (trackName) {
+            if (this.currentTrackIndex >= 0 && this.tracks[this.currentTrackIndex]) {
+                trackName.textContent = this.tracks[this.currentTrackIndex].name;
+            } else {
+                trackName.textContent = '—';
+            }
         }
     },
 
     async startStatusPolling() {
         this.statusInterval = setInterval(async () => {
             const status = await this.callApi('status');
-            if (status) {
-                if (status.isPlaying !== this.isPlaying) {
-                    this.isPlaying = status.isPlaying;
-                    this.updatePlayerUI();
-                }
+            if (status && status.isPlaying !== this.isPlaying) {
+                this.isPlaying = status.isPlaying;
+                this.updatePlayerUI();
             }
         }, 2000);
     }

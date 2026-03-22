@@ -8,13 +8,17 @@ const AlbumLibrary = {
     },
 
     setupEventListeners() {
-        document.getElementById('albumSearch').addEventListener('input', (e) => {
-            this.filterAlbums(e.target.value);
-        });
+        const searchInput = document.getElementById('albumSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.filterAlbums(e.target.value);
+            });
+        }
     },
 
     async loadAlbums() {
         const grid = document.getElementById('albumsGrid');
+        if (!grid) return;
         grid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Сканирование альбомов...</div>';
 
         try {
@@ -111,6 +115,7 @@ const AlbumLibrary = {
 
     renderAlbums() {
         const grid = document.getElementById('albumsGrid');
+        if (!grid) return;
 
         if (this.filteredAlbums.length === 0) {
             grid.innerHTML = '<div class="empty"><i class="fas fa-music"></i> Альбомы не найдены</div>';
@@ -154,45 +159,60 @@ const AlbumLibrary = {
 
     showAlbumModal(album) {
         const modal = document.getElementById('albumModal');
-        document.getElementById('modalAlbumTitle').textContent = `${album.artist} — ${album.title} (${album.year})`;
-        document.getElementById('modalAlbumArt').src = album.coverUrl || '';
+        if (!modal) return;
 
+        const modalTitle = document.getElementById('modalAlbumTitle');
+        const modalArt = document.getElementById('modalAlbumArt');
         const tracksList = document.getElementById('modalTracksList');
-        tracksList.innerHTML = album.tracks.map((track, idx) => `
-            <div class="track-item" data-track-index="${idx}">
-                <div class="track-number">${String(idx + 1).padStart(2, '0')}</div>
-                <div class="track-name">${Utils.escapeHtml(track.name)}</div>
-                <button class="track-play-btn">
-                    <i class="fas fa-play"></i>
-                </button>
-            </div>
-        `).join('');
 
-        tracksList.querySelectorAll('.track-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (!e.target.closest('.track-play-btn')) {
-                    const idx = parseInt(item.dataset.trackIndex);
-                    AudioPlayer.playAlbum(album);
-                    setTimeout(() => AudioPlayer.playTrack(idx), 500);
-                    modal.classList.remove('active');
+        if (modalTitle) modalTitle.textContent = `${album.artist} — ${album.title} (${album.year})`;
+        if (modalArt) modalArt.src = album.coverUrl || '';
+        if (tracksList) {
+            tracksList.innerHTML = album.tracks.map((track, idx) => `
+                <div class="track-item" data-track-index="${idx}">
+                    <div class="track-number">${String(idx + 1).padStart(2, '0')}</div>
+                    <div class="track-name">${Utils.escapeHtml(track.name)}</div>
+                    <button class="track-play-btn">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            tracksList.querySelectorAll('.track-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (!e.target.closest('.track-play-btn')) {
+                        const idx = parseInt(item.dataset.trackIndex);
+                        if (typeof AudioPlayer !== 'undefined') {
+                            AudioPlayer.playAlbum(album);
+                            setTimeout(() => AudioPlayer.playTrack(idx), 500);
+                        }
+                        modal.classList.remove('active');
+                    }
+                });
+
+                const playBtn = item.querySelector('.track-play-btn');
+                if (playBtn) {
+                    playBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const idx = parseInt(item.dataset.trackIndex);
+                        if (typeof AudioPlayer !== 'undefined') {
+                            AudioPlayer.playAlbum(album);
+                            setTimeout(() => AudioPlayer.playTrack(idx), 500);
+                        }
+                        modal.classList.remove('active');
+                    });
                 }
             });
-
-            const playBtn = item.querySelector('.track-play-btn');
-            playBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const idx = parseInt(item.dataset.trackIndex);
-                AudioPlayer.playAlbum(album);
-                setTimeout(() => AudioPlayer.playTrack(idx), 500);
-                modal.classList.remove('active');
-            });
-        });
+        }
 
         modal.classList.add('active');
 
-        document.querySelector('.modal-close').onclick = () => {
-            modal.classList.remove('active');
-        };
+        const closeBtn = document.querySelector('.modal-close');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.classList.remove('active');
+            };
+        }
 
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.classList.remove('active');

@@ -101,6 +101,24 @@
             </div>
         </div>
 
+        <!-- Модальное окно альбома -->
+        <div id="albumModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalAlbumTitle"></h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="album-detail-art">
+                        <img id="modalAlbumArt" src="" alt="Album art">
+                    </div>
+                    <div class="album-tracks">
+                        <div id="modalTracksList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Панель управления плеером -->
         <div id="playerControlPage" class="player-control-page" style="display: none;">
             <div class="player-control-header">
@@ -130,7 +148,7 @@
                 <div>Видео воспроизводится в Mediateka</div>
                 <div style="font-size: 1rem; margin-top: 20px; color: var(--fg3);">Используйте кнопки управления выше</div>
             </div>
-            <button class="close-control-page" title="Закрыть панель управления">
+            <button class="close-control-page" id="closeControlPage" title="Закрыть панель управления">
                 <i class="fas fa-arrow-left"></i>
             </button>
         </div>
@@ -141,39 +159,18 @@
         <div id="notification" class="notification" style="display: none;"></div>
     </div>
 
-    <script src="js/config.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/player.js"></script>
-    <script src="js/audio-player.js"></script>
-    <script src="js/video-explorer.js"></script>
-    <script src="js/album-library.js"></script>
+    <!-- Core -->
+    <script src="js/core/config.js"></script>
+    <script src="js/core/utils.js"></script>
+
+    <!-- Modules -->
+    <script src="js/modules/player-manager.js"></script>
+    <script src="js/modules/audio-player.js"></script>
+    <script src="js/modules/video-explorer.js"></script>
+    <script src="js/modules/album-library.js"></script>
+    <script src="js/modules/tree-manager.js"></script>
+
+    <!-- App -->
     <script src="js/app.js"></script>
-    <script>
-        // Мобильное меню
-        const menuToggle = document.getElementById('menuToggle');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-
-        function toggleMenu() {
-            sidebar.classList.toggle('open');
-            sidebarOverlay.classList.toggle('open');
-        }
-
-        if (menuToggle) {
-            menuToggle.addEventListener('click', toggleMenu);
-        }
-        if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', toggleMenu);
-        }
-
-        // Закрываем меню при выборе пункта
-        document.querySelectorAll('.sidebar-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (window.innerWidth <= 768) {
-                    toggleMenu();
-                }
-            });
-        });
-    </script>
 </body>
 </html>
