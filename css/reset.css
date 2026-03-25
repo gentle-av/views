@@ -19,3 +19,7 @@ body {
     height: 100vh;
     overflow: hidden;
 }
+
+.menu-toggle {
+    display: none;
+}
