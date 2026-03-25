@@ -1,3 +1,4 @@
+// js/app.js
 const App = {
     currentPage: 'video',
     loadedScripts: {
@@ -5,8 +6,22 @@ const App = {
         audio: false
     },
     async init() {
+        const serverAvailable = await this.checkServerAvailability();
+        if (!serverAvailable) {
+            const pageContainer = document.getElementById('pageContainer');
+            if (pageContainer) {
+                pageContainer.innerHTML = `
+                    <div class="error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Сервер недоступен. Убедитесь, что бэкенд запущен.
+                    </div>
+                `;
+            }
+            return;
+        }
         this.setupNavigation();
         this.setupMobileMenu();
+        this.showProfileIndicator();
         if (typeof PlayerManager !== 'undefined') {
             PlayerManager.init();
         }
@@ -15,6 +30,32 @@ const App = {
             pageContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
         }
         await this.loadPage('video');
+    },
+    async checkServerAvailability() {
+        try {
+            const response = await fetch(`${Utils.getServerUrl()}/api/list`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: '/mnt/video' })
+            });
+            return response.ok;
+        } catch (error) {
+            console.warn('Server not available:', error);
+            return false;
+        }
+    },
+    showProfileIndicator() {
+        const indicator = document.getElementById('profileIndicator');
+        if (!indicator) return;
+        const port = window.location.port;
+        const profile = port === '9093' ? 'тестовая' : 'продуктовая';
+        const color = port === '9093' ? 'var(--orange)' : 'var(--green)';
+        indicator.innerHTML = `
+            <div style="font-size: 0.7rem; margin-top: 5px; padding: 2px 8px; background: ${color}20; border-radius: 12px; color: ${color};">
+                <i class="fas ${port === '9093' ? 'fa-flask' : 'fa-check-circle'}"></i>
+                ${profile} (порт ${port})
+            </div>
+        `;
     },
     setupNavigation() {
         const navVideo = document.getElementById('navVideo');

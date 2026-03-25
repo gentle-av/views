@@ -3,6 +3,9 @@ const AlbumLibrary = {
     filteredAlbums: [],
     artists: [],
     currentArtist: null,
+    getServerUrl() {
+        return `http://${window.location.hostname}:${window.location.port}`;
+    },
     async init() {
         const grid = document.getElementById('albumsGrid');
         if (!grid) return;
@@ -22,13 +25,12 @@ const AlbumLibrary = {
         if (!grid) return;
         grid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка артистов...</div>';
         try {
-            const response = await fetch(`${Utils.getServerUrl()}/api/music/artists`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path: '/mnt/media/music' })
+            const response = await fetch(`${this.getServerUrl()}/api/music/artists`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
             });
             const data = await response.json();
-            if (data.success && data.artists) {
+            if (data.status === 'success' && data.artists) {
                 this.artists = data.artists;
                 await this.loadAlbumsForAllArtists();
             } else {
@@ -36,7 +38,7 @@ const AlbumLibrary = {
             }
         } catch (error) {
             console.error('Error loading artists:', error);
-            grid.innerHTML = '<div class="empty"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки</div>';
+            grid.innerHTML = '<div class="empty"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки артистов</div>';
         }
     },
     async loadAlbumsForAllArtists() {
@@ -47,29 +49,26 @@ const AlbumLibrary = {
         const uniqueAlbums = new Map();
         for (const artist of this.artists) {
             try {
-                const response = await fetch(`${Utils.getServerUrl()}/api/music/albums`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ artist: artist, path: '/mnt/media/music' })
+                const url = `${this.getServerUrl()}/api/music/albums${artist ? `?artist=${encodeURIComponent(artist)}` : ''}`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
                 });
                 const data = await response.json();
-                if (data.success && data.albums) {
+                if (data.status === 'success' && data.albums) {
                     for (const album of data.albums) {
-                        const year = this.extractYearFromPath(album.path);
-                        const albumKey = `${album.album}|${year}|${artist}`;
+                        const albumKey = `${album.album}|${album.year}|${artist}`;
                         if (!uniqueAlbums.has(albumKey)) {
-                            const tracks = await this.getTracksFromAlbum(album.path);
-                            const tracksArray = Array.isArray(tracks) ? tracks : [];
-                            const coverUrl = await this.getAlbumCover(album.path, tracksArray[0]?.path);
+                            const tracks = await this.getTracksFromAlbum(album.album, artist);
+                            const coverUrl = await this.getAlbumCover(album.album, artist);
                             uniqueAlbums.set(albumKey, {
-                                path: album.path,
                                 name: album.album,
                                 artist: artist,
                                 title: album.album,
-                                year: year,
-                                tracks: tracksArray,
+                                year: album.year || '',
+                                tracks: tracks,
                                 coverUrl: coverUrl,
-                                trackCount: tracksArray.length
+                                trackCount: tracks.length
                             });
                         }
                     }
@@ -87,27 +86,20 @@ const AlbumLibrary = {
         this.filteredAlbums = [...this.albums];
         this.renderAlbums();
     },
-    extractYearFromPath(path) {
-        const match = path.match(/(\d{4})/);
-        return match ? match[1] : '';
-    },
-    async getTracksFromAlbum(albumPath) {
+    async getTracksFromAlbum(albumName, artist) {
         try {
-            const response = await fetch(`${Utils.getServerUrl()}/api/music/list`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path: albumPath })
+            const url = `${this.getServerUrl()}/api/music/tracks/album/${encodeURIComponent(albumName)}${artist ? `?artist=${encodeURIComponent(artist)}` : ''}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
             });
             const data = await response.json();
-            if (data.success && data.items) {
-                return data.items
-                    .filter(item => item.name.endsWith('.flac') || item.name.endsWith('.mp3'))
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map(item => ({
-                        name: item.name.replace(/^\d+\.\s*/, '').replace(/\.(flac|mp3)$/i, ''),
-                        path: item.path,
-                        number: parseInt(item.name.match(/^(\d+)/)?.[1] || '0')
-                    }));
+            if (data.status === 'success' && data.tracks) {
+                return data.tracks.map((track, idx) => ({
+                    name: track.title || track.filename || `Track ${idx + 1}`,
+                    path: track.path,
+                    number: track.track || idx + 1
+                }));
             }
             return [];
         } catch (error) {
@@ -115,11 +107,9 @@ const AlbumLibrary = {
             return [];
         }
     },
-    async getAlbumCover(albumPath, trackPath) {
-        if (!trackPath) return '';
+    async getAlbumCover(albumName, artist) {
         try {
-            const encodedPath = encodeURIComponent(trackPath);
-            const url = `${Utils.getServerUrl()}/api/music/albumart?path=${encodedPath}`;
+            const url = `${this.getServerUrl()}/api/music/albumart/album/${encodeURIComponent(albumName)}${artist ? `?artist=${encodeURIComponent(artist)}` : ''}`;
             const response = await fetch(url);
             if (response.ok) {
                 const blob = await response.blob();
@@ -128,7 +118,7 @@ const AlbumLibrary = {
                 }
             }
         } catch (error) {
-            console.debug('No album art found for:', trackPath);
+            console.debug('No album art found');
         }
         return '';
     },
@@ -140,7 +130,7 @@ const AlbumLibrary = {
             return;
         }
         grid.innerHTML = this.filteredAlbums.map(album => `
-            <div class="album-card" data-path="${album.path}">
+            <div class="album-card" data-artist="${Utils.escapeHtml(album.artist)}" data-album="${Utils.escapeHtml(album.title)}">
                 <div class="album-cover">
                     ${album.coverUrl ?
                         `<img src="${album.coverUrl}" alt="${Utils.escapeHtml(album.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` :
@@ -158,8 +148,9 @@ const AlbumLibrary = {
         `).join('');
         document.querySelectorAll('.album-card').forEach(card => {
             card.addEventListener('click', () => {
-                const path = card.dataset.path;
-                const album = this.albums.find(a => a.path === path);
+                const artist = card.dataset.artist;
+                const albumTitle = card.dataset.album;
+                const album = this.albums.find(a => a.artist === artist && a.title === albumTitle);
                 if (album) this.showAlbumModal(album);
             });
         });
@@ -172,85 +163,63 @@ const AlbumLibrary = {
         );
         this.renderAlbums();
     },
-    filterByArtist(artist) {
-        if (!artist || artist === 'all') {
-            this.filteredAlbums = [...this.albums];
-        } else {
-            this.filteredAlbums = this.albums.filter(album => album.artist === artist);
-        }
-        this.renderAlbums();
-    },
     showAlbumModal(album) {
-      const modal = document.getElementById('albumModal');
-      if (!modal) return;
-      const modalTitle = document.getElementById('modalAlbumTitle');
-      const modalArt = document.getElementById('modalAlbumArt');
-      const tracksList = document.getElementById('modalTracksList');
-      if (modalTitle) modalTitle.textContent = `${album.artist} — ${album.title} (${album.year})`;
-      if (modalArt) {
-          modalArt.src = album.coverUrl || '';
-          modalArt.onerror = () => {
-              modalArt.style.display = 'none';
-          };
-          modalArt.style.display = album.coverUrl ? 'block' : 'none';
-      }
-      if (tracksList) {
-          tracksList.innerHTML = album.tracks.map((track, idx) => `
-              <div class="track-item" data-track-index="${idx}">
-                  <div class="track-number">${String(idx + 1).padStart(2, '0')}</div>
-                  <div class="track-name">${Utils.escapeHtml(track.name)}</div>
-                  <button class="track-play-btn play-album-btn">
-                      <i class="fas fa-list"></i>
-                  </button>
-                  <button class="track-play-btn play-now-btn" style="margin-left: 5px;">
-                      <i class="fas fa-play"></i>
-                  </button>
-              </div>
-          `).join('');
-          tracksList.querySelectorAll('.track-item').forEach(item => {
-              const idx = parseInt(item.dataset.trackIndex);
-              const playAlbumBtn = item.querySelector('.play-album-btn');
-              const playNowBtn = item.querySelector('.play-now-btn');
-              if (playAlbumBtn) {
-                  playAlbumBtn.addEventListener('click', (e) => {
-                      e.stopPropagation();
-                      if (typeof AudioPlayer !== 'undefined') {
-                          AudioPlayer.loadAlbum(album);
-                          modal.classList.remove('active');
-                          Utils.showNotification(`Альбом "${album.title}" добавлен в плейлист`, 'success');
-                      }
-                  });
-              }
-              if (playNowBtn) {
-                  playNowBtn.addEventListener('click', (e) => {
-                      e.stopPropagation();
-                      if (typeof AudioPlayer !== 'undefined') {
-                          AudioPlayer.loadAlbum(album);
-                          setTimeout(() => AudioPlayer.playTrack(idx), 500);
-                          modal.classList.remove('active');
-                      }
-                  });
-              }
-              item.addEventListener('click', (e) => {
-                  if (!e.target.closest('.track-play-btn')) {
-                      if (typeof AudioPlayer !== 'undefined') {
-                          AudioPlayer.loadAlbum(album);
-                          setTimeout(() => AudioPlayer.playTrack(idx), 500);
-                          modal.classList.remove('active');
-                      }
-                  }
-              });
-          });
-      }
-      modal.classList.add('active');
-      const closeBtn = document.querySelector('.modal-close');
-      if (closeBtn) {
-          closeBtn.onclick = () => {
-              modal.classList.remove('active');
-          };
-      }
-      modal.addEventListener('click', (e) => {
-          if (e.target === modal) modal.classList.remove('active');
-      });
-  }
+        const modal = document.getElementById('albumModal');
+        if (!modal) return;
+        const modalTitle = document.getElementById('modalAlbumTitle');
+        const modalArt = document.getElementById('modalAlbumArt');
+        const tracksList = document.getElementById('modalTracksList');
+        if (modalTitle) modalTitle.textContent = `${album.artist} — ${album.title} (${album.year})`;
+        if (modalArt) {
+            modalArt.src = album.coverUrl || '';
+            modalArt.onerror = () => {
+                modalArt.style.display = 'none';
+            };
+            modalArt.style.display = album.coverUrl ? 'block' : 'none';
+        }
+        if (tracksList) {
+            tracksList.innerHTML = album.tracks.map((track, idx) => `
+                <div class="track-item" data-track-index="${idx}">
+                    <div class="track-number">${String(idx + 1).padStart(2, '0')}</div>
+                    <div class="track-name">${Utils.escapeHtml(track.name)}</div>
+                    <button class="track-play-btn play-now-btn">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+            `).join('');
+            tracksList.querySelectorAll('.track-item').forEach(item => {
+                const idx = parseInt(item.dataset.trackIndex);
+                const playNowBtn = item.querySelector('.play-now-btn');
+                if (playNowBtn) {
+                    playNowBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (typeof AudioPlayer !== 'undefined') {
+                            AudioPlayer.loadAlbum(album);
+                            setTimeout(() => AudioPlayer.playTrack(idx), 500);
+                            modal.classList.remove('active');
+                        }
+                    });
+                }
+                item.addEventListener('click', (e) => {
+                    if (!e.target.closest('.track-play-btn')) {
+                        if (typeof AudioPlayer !== 'undefined') {
+                            AudioPlayer.loadAlbum(album);
+                            setTimeout(() => AudioPlayer.playTrack(idx), 500);
+                            modal.classList.remove('active');
+                        }
+                    }
+                });
+            });
+        }
+        modal.classList.add('active');
+        const closeBtn = document.querySelector('.modal-close');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.classList.remove('active');
+            };
+        }
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.classList.remove('active');
+        });
+    }
 };

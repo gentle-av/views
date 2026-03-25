@@ -1,6 +1,9 @@
 const VideoExplorer = {
     currentPath: '/mnt/video',
     history: [],
+    getServerUrl() {
+        return `http://${window.location.hostname}:${window.location.port}`;
+    },
     async init() {
         const videoContent = document.getElementById('videoContent');
         if (videoContent) {
@@ -20,7 +23,7 @@ const VideoExplorer = {
         this.currentPath = path;
         this.updateBreadcrumbs();
         videoContent.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
-        const url = `${Utils.getServerUrl()}/api/list`;
+        const url = `${this.getServerUrl()}/api/list`;
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -70,7 +73,7 @@ const VideoExplorer = {
             if (typeof PlayerManager !== 'undefined') {
                 await PlayerManager.playMedia(path);
             } else {
-                const response = await fetch(`${Utils.getServerUrl()}/api/open`, {
+                const response = await fetch(`${this.getServerUrl()}/api/open`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path: path })

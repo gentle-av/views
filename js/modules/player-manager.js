@@ -8,25 +8,25 @@ const PlayerManager = {
     playerActive: false,
     isMobile: false,
     serverHost: window.location.hostname,
+    serverPort: window.location.port,
     fullscreenRetryInterval: null,
     currentMediaType: 'video',
     updatingStatus: false,
-
     init() {
         this.setupEventListeners();
         this.checkMobile();
-        console.log('PlayerManager initialized');
+        console.log('PlayerManager initialized, server port:', this.serverPort);
         this.checkPlayerAvailability();
     },
-
     getPlayerUrl() {
         return `http://${this.serverHost}:8082`;
     },
-
+    getServerUrl() {
+        return `http://${this.serverHost}:${this.serverPort}`;
+    },
     checkMobile() {
         this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     },
-
     setupEventListeners() {
         const elements = {
             playPauseBtn: 'playPauseBtn',
@@ -37,7 +37,6 @@ const PlayerManager = {
             deleteFileBtn: 'deleteFileBtn',
             fullscreenBtn: 'fullscreenBtn'
         };
-
         for (const [key, id] of Object.entries(elements)) {
             const element = document.getElementById(id);
             if (element) {
@@ -51,10 +50,8 @@ const PlayerManager = {
                 if (handler) element.addEventListener('click', () => handler.call(this));
             }
         }
-
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
     },
-
     async checkPlayerAvailability() {
         try {
             const controller = new AbortController();
@@ -84,7 +81,6 @@ const PlayerManager = {
             this.showLibrary();
         }
     },
-
     showLibrary() {
         const pageContainer = document.querySelector('.page-container');
         const audioPlayerBar = document.getElementById('audioPlayerBar');
@@ -93,14 +89,12 @@ const PlayerManager = {
         this.playerActive = false;
         this.currentFile = null;
     },
-
     hideLibrary() {
         const pageContainer = document.querySelector('.page-container');
         const audioPlayerBar = document.getElementById('audioPlayerBar');
         if (pageContainer) pageContainer.style.display = 'none';
         if (audioPlayerBar) audioPlayerBar.style.display = 'none';
     },
-
     async callPlayerApi(endpoint, data = {}) {
         if (!this.playerActive) return null;
         try {
@@ -121,7 +115,6 @@ const PlayerManager = {
             return null;
         }
     },
-
     handlePlayerDisconnected() {
         console.log('Player disconnected, returning to library');
         this.playerActive = false;
@@ -129,7 +122,6 @@ const PlayerManager = {
         this.showLibrary();
         Utils.showNotification('Плеер закрыт, возврат в библиотеку', 'info');
     },
-
     async seekForward() {
         if (!this.playerActive) return;
         const result = await this.callPlayerApi('/api/seekforward', { seconds: 10 });
@@ -141,7 +133,6 @@ const PlayerManager = {
             Utils.showNotification('Ошибка перемотки', 'error');
         }
     },
-
     async seekBackward() {
         if (!this.playerActive) return;
         const result = await this.callPlayerApi('/api/seekbackward', { seconds: 10 });
@@ -153,7 +144,6 @@ const PlayerManager = {
             Utils.showNotification('Ошибка перемотки', 'error');
         }
     },
-
     async toggleFullscreen() {
         if (!this.playerActive) return;
         const newState = !this.isFullscreen;
@@ -166,21 +156,18 @@ const PlayerManager = {
             this.handlePlayerDisconnected();
         }
     },
-
     updateFullscreenButton() {
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         if (fullscreenBtn) {
             fullscreenBtn.innerHTML = this.isFullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
         }
     },
-
     updatePlayPauseButton() {
         const btn = document.getElementById('playPauseBtn');
         if (btn) {
             btn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
         }
     },
-
     async togglePlayPause() {
         if (!this.playerActive) return;
         if (this.updatingStatus) return;
@@ -200,7 +187,6 @@ const PlayerManager = {
             setTimeout(() => { this.updatingStatus = false; }, 500);
         }
     },
-
     async closeFile() {
         if (!this.playerActive) {
             this.hideControl();
@@ -214,7 +200,6 @@ const PlayerManager = {
         this.hideControl();
         this.showLibrary();
     },
-
     async deleteFile() {
         if (!this.playerActive) {
             this.hideControl();
@@ -236,7 +221,6 @@ const PlayerManager = {
         this.hideControl();
         this.showLibrary();
     },
-
     async getStatus() {
         if (!this.playerActive) return false;
         try {
@@ -279,7 +263,6 @@ const PlayerManager = {
         }
         return false;
     },
-
     async checkCurrentPlayback() {
         try {
             const controller = new AbortController();
@@ -330,7 +313,6 @@ const PlayerManager = {
             return false;
         }
     },
-
     async playMedia(path) {
         console.log('PlayerManager.playMedia called with path:', path);
         try {
@@ -374,7 +356,6 @@ const PlayerManager = {
             this.showLibrary();
         }
     },
-
     async checkPlayerRunning() {
         try {
             const controller = new AbortController();
@@ -393,7 +374,6 @@ const PlayerManager = {
         } catch (error) {}
         return false;
     },
-
     async checkPlayerRunningWithStatus() {
         try {
             const controller = new AbortController();
@@ -411,7 +391,6 @@ const PlayerManager = {
         } catch (error) {}
         return null;
     },
-
     async waitForPlayer(timeoutMs) {
         const startTime = Date.now();
         while (Date.now() - startTime < timeoutMs) {
@@ -425,10 +404,9 @@ const PlayerManager = {
         }
         throw new Error('Player did not start within timeout');
     },
-
     async launchPlayerWithFile(path) {
         try {
-            const response = await fetch(`http://${this.serverHost}:8083/api/open`, {
+            const response = await fetch(`${this.getServerUrl()}/api/open`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ path: path })
@@ -440,12 +418,10 @@ const PlayerManager = {
             return false;
         }
     },
-
     showControl() {
         const playerControlPage = document.getElementById('playerControlPage');
         if (playerControlPage) playerControlPage.style.display = 'flex';
     },
-
     hideControl() {
         const playerControlPage = document.getElementById('playerControlPage');
         if (playerControlPage) playerControlPage.style.display = 'none';
@@ -459,19 +435,16 @@ const PlayerManager = {
             this.fullscreenRetryInterval = null;
         }
     },
-
     startStatusPolling() {
         this.stopStatusPolling();
         this.statusCheckInterval = setInterval(() => this.getStatus(), 3000);
     },
-
     stopStatusPolling() {
         if (this.statusCheckInterval) {
             clearInterval(this.statusCheckInterval);
             this.statusCheckInterval = null;
         }
     },
-
     handleKeyPress(e) {
         if (!this.playerActive) return;
         switch(e.code) {
@@ -496,7 +469,6 @@ const PlayerManager = {
                 break;
         }
     },
-
     updatePlaybackStatus(isPlaying) {
         this.isPlaying = isPlaying;
         const placeholder = document.querySelector('.player-placeholder');
@@ -513,14 +485,12 @@ const PlayerManager = {
             </div>
         `;
     },
-
     escapeHtml(str) {
         if (!str) return '';
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
     },
-
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
