@@ -120,13 +120,13 @@ const PlayerManager = {
         this.playerActive = false;
         this.hideControl();
         this.showLibrary();
-        Utils.showNotification('Плеер закрыт, возврат в библиотеку', 'info');
+        // Utils.showNotification('Плеер закрыт, возврат в библиотеку', 'info');
     },
     async seekForward() {
         if (!this.playerActive) return;
         const result = await this.callPlayerApi('/api/seekforward', { seconds: 10 });
         if (result && result.success) {
-            Utils.showNotification('Вперед 10 секунд', 'success');
+            // Utils.showNotification('Вперед 10 секунд', 'success');
         } else if (result === null) {
             this.handlePlayerDisconnected();
         } else {
@@ -137,7 +137,7 @@ const PlayerManager = {
         if (!this.playerActive) return;
         const result = await this.callPlayerApi('/api/seekbackward', { seconds: 10 });
         if (result && result.success) {
-            Utils.showNotification('Назад 10 секунд', 'success');
+            // Utils.showNotification('Назад 10 секунд', 'success');
         } else if (result === null) {
             this.handlePlayerDisconnected();
         } else {
@@ -151,7 +151,7 @@ const PlayerManager = {
         if (result && result.success) {
             this.isFullscreen = newState;
             this.updateFullscreenButton();
-            Utils.showNotification(newState ? 'Полноэкранный режим включен' : 'Полноэкранный режим выключен', 'success');
+            // Utils.showNotification(newState ? 'Полноэкранный режим включен' : 'Полноэкранный режим выключен', 'success');
         } else if (result === null) {
             this.handlePlayerDisconnected();
         }
@@ -195,7 +195,7 @@ const PlayerManager = {
         }
         const result = await this.callPlayerApi('/api/close');
         if (result && result.success) {
-            Utils.showNotification('Файл закрыт', 'success');
+            // Utils.showNotification('Файл закрыт', 'success');
         }
         this.hideControl();
         this.showLibrary();
@@ -209,7 +209,7 @@ const PlayerManager = {
         if (!confirm('Вы уверены, что хотите переместить файл в корзину?')) return;
         const result = await this.callPlayerApi('/api/closefile');
         if (result && result.success) {
-            Utils.showNotification(result.message || 'Файл перемещён в корзину', 'success');
+            // Utils.showNotification(result.message || 'Файл перемещён в корзину', 'success');
             if (typeof VideoExplorer !== 'undefined' && VideoExplorer.currentPath) {
                 VideoExplorer.loadDirectory(VideoExplorer.currentPath);
             }
@@ -345,7 +345,7 @@ const PlayerManager = {
                 this.updateFullscreenButton();
                 this.startStatusPolling();
                 if (!this.isFullscreen) setTimeout(() => this.toggleFullscreen(), 1500);
-                Utils.showNotification(`Воспроизведение: ${path.split('/').pop()}`, 'success');
+                // Utils.showNotification(`Воспроизведение: ${path.split('/').pop()}`, 'success');
             } else {
                 throw new Error('Player did not load the file');
             }
