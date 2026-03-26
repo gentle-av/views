@@ -2,6 +2,7 @@ const AudioPlayer = {
     currentAlbum: null,
     currentTrackIndex: -1,
     tracks: [],
+    currentPlaylist: [],
     isPlaying: false,
     audioElement: null,
     getServerUrl() {
@@ -10,6 +11,7 @@ const AudioPlayer = {
     init() {
         this.setupEventListeners();
         this.createAudioElement();
+        this.currentPlaylist = [];
     },
     createAudioElement() {
         this.audioElement = new Audio();
@@ -51,9 +53,20 @@ const AudioPlayer = {
         Utils.showNotification(`🎵 Альбом: ${album.title}`, 'success');
     },
     async playTrack(index) {
-        if (index < 0 || index >= this.tracks.length) return;
+        if (index < 0 || index >= this.currentPlaylist.length) return;
         this.currentTrackIndex = index;
-        const track = this.tracks[index];
+        const track = this.currentPlaylist[index];
+        const trackUrl = `${this.getServerUrl()}${track.path}`;
+        this.audioElement.src = trackUrl;
+        this.audioElement.play().catch(e => console.error('Play error:', e));
+        this.isPlaying = true;
+        this.updatePlayerUI();
+        this.updateTrackInfo();
+    },
+    loadTrack(index) {
+        if (index < 0 || index >= this.currentPlaylist.length) return;
+        this.currentTrackIndex = index;
+        const track = this.currentPlaylist[index];
         const trackUrl = `${this.getServerUrl()}${track.path}`;
         this.audioElement.src = trackUrl;
         this.audioElement.play().catch(e => console.error('Play error:', e));
@@ -73,15 +86,15 @@ const AudioPlayer = {
         this.updatePlayerUI();
     },
     async nextTrack() {
-        if (this.currentTrackIndex + 1 < this.tracks.length) {
-            await this.playTrack(this.currentTrackIndex + 1);
+        if (this.currentTrackIndex + 1 < this.currentPlaylist.length) {
+            await this.loadTrack(this.currentTrackIndex + 1);
         } else {
             this.stop();
         }
     },
     async previousTrack() {
         if (this.currentTrackIndex - 1 >= 0) {
-            await this.playTrack(this.currentTrackIndex - 1);
+            await this.loadTrack(this.currentTrackIndex - 1);
         } else {
             this.audioElement.currentTime = 0;
         }
@@ -91,6 +104,7 @@ const AudioPlayer = {
         this.audioElement.src = '';
         this.isPlaying = false;
         this.currentTrackIndex = -1;
+        this.currentPlaylist = [];
         this.updatePlayerUI();
         const playerBar = document.getElementById('audioPlayerBar');
         if (playerBar) playerBar.style.display = 'none';
@@ -105,8 +119,8 @@ const AudioPlayer = {
     },
     updateTrackInfo() {
         const trackName = document.getElementById('playerTrack');
-        if (trackName && this.currentTrackIndex >= 0 && this.tracks[this.currentTrackIndex]) {
-            trackName.textContent = this.tracks[this.currentTrackIndex].name;
+        if (trackName && this.currentTrackIndex >= 0 && this.currentPlaylist[this.currentTrackIndex]) {
+            trackName.textContent = this.currentPlaylist[this.currentTrackIndex].name;
         } else if (trackName) {
             trackName.textContent = '—';
         }
@@ -122,5 +136,91 @@ const AudioPlayer = {
             playBtn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
         }
         this.updateTrackInfo();
+    },
+    addAlbumToQueue(album) {
+        const startIndex = this.currentPlaylist.length;
+        this.currentPlaylist.push(...album.tracks);
+        Utils.showNotification(`Добавлено ${album.tracks.length} треков в плейлист`, 'success');
+        if (!this.audioElement.src && this.currentPlaylist.length > 0) {
+            this.loadTrack(startIndex);
+        }
+    },
+    replacePlaylistWithAlbum(album) {
+        this.currentPlaylist = [...album.tracks];
+        this.currentTrackIndex = 0;
+        if (this.currentPlaylist.length > 0) {
+            this.loadTrack(0);
+        }
+        Utils.showNotification(`Плейлист заменен альбомом: ${album.title}`, 'success');
+    },
+    replacePlaylistWithTrack(album, trackIndex) {
+        const track = album.tracks[trackIndex];
+        this.currentPlaylist = [track];
+        this.currentTrackIndex = 0;
+        this.loadTrack(0);
+        Utils.showNotification(`Воспроизведение: ${track.name}`, 'success');
+    },
+    addTrackToQueueAfterCurrent(album, trackIndex) {
+        const track = album.tracks[trackIndex];
+        if (this.currentTrackIndex >= 0 && this.currentTrackIndex < this.currentPlaylist.length) {
+            this.currentPlaylist.splice(this.currentTrackIndex + 1, 0, track);
+            Utils.showNotification(`Трек "${track.name}" добавлен в очередь после текущего`, 'success');
+        } else {
+            this.currentPlaylist.push(track);
+            Utils.showNotification(`Трек "${track.name}" добавлен в конец плейлиста`, 'success');
+        }
+    },
+    showCurrentPlaylist() {
+        if (!this.currentPlaylist || this.currentPlaylist.length === 0) {
+            Utils.showNotification('Плейлист пуст', 'info');
+            return;
+        }
+        let playlistHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+        this.currentPlaylist.forEach((track, idx) => {
+            const playing = idx === this.currentTrackIndex ? '▶ ' : '  ';
+            playlistHtml += `<div style="padding: 8px 12px; border-bottom: 1px solid var(--bg3); display: flex; align-items: center; gap: 10px;">
+                <span style="color: var(--yellow); width: 30px;">${playing}${idx + 1}</span>
+                <span style="flex: 1; ${idx === this.currentTrackIndex ? 'color: var(--yellow); font-weight: 600;' : ''}">${Utils.escapeHtml(track.name)}</span>
+            </div>`;
+        });
+        playlistHtml += '</div>';
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h3><i class="fas fa-list"></i> Текущий плейлист (${this.currentPlaylist.length} треков)</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body" style="flex-direction: column; padding: 0;">
+                    ${playlistHtml}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.classList.add('active');
+        const closeBtn = modal.querySelector('.modal-close');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                modal.classList.remove('active');
+                setTimeout(() => modal.remove(), 300);
+            };
+        }
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+                setTimeout(() => modal.remove(), 300);
+            }
+        });
+    },
+    clearPlaylist() {
+        this.currentPlaylist = [];
+        this.currentTrackIndex = -1;
+        this.audioElement.pause();
+        this.audioElement.src = '';
+        this.isPlaying = false;
+        this.updatePlayerUI();
+        const playerBar = document.getElementById('audioPlayerBar');
+        if (playerBar) playerBar.style.display = 'none';
     }
 };

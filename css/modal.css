@@ -23,6 +23,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    width: 800px;
 }
 
 .modal-header {
@@ -31,10 +32,13 @@
     align-items: center;
     padding: 20px;
     border-bottom: 1px solid var(--bg3);
+    flex-shrink: 0;
 }
 
 .modal-header h3 {
     color: var(--yellow);
+    font-size: 1.1rem;
+    margin: 0;
 }
 
 .modal-close {
@@ -45,6 +49,12 @@
     height: 32px;
     border-radius: var(--radius-round);
     cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.modal-close:hover {
+    background: var(--bg3);
+    color: var(--red);
 }
 
 .modal-body {
@@ -52,33 +62,89 @@
     gap: 24px;
     padding: 20px;
     overflow-y: auto;
-    flex-wrap: wrap;
+    flex: 1;
+    min-height: 0;
+}
+
+.modal-left {
+    flex-shrink: 0;
+    width: 200px;
 }
 
 .album-detail-art {
-    width: 200px;
-    flex-shrink: 0;
+    width: 100%;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg2);
 }
 
 .album-detail-art img {
     width: 100%;
-    border-radius: var(--radius-md);
+    display: block;
+}
+
+.modal-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.playlist-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--bg3);
+}
+
+.playlist-control-btn {
+    background: var(--bg2);
+    border: 1px solid var(--bg3);
+    color: var(--fg1);
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+}
+
+.playlist-control-btn i {
+    font-size: 0.9rem;
+}
+
+.playlist-control-btn:hover {
+    background: var(--bg3);
+    border-color: var(--yellow);
+    color: var(--yellow);
+}
+
+.playlist-control-btn.danger:hover {
+    border-color: var(--red);
+    color: var(--red);
 }
 
 .album-tracks {
     flex: 1;
-    min-width: 280px;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 .track-item {
     display: flex;
     align-items: center;
-    padding: 12px;
+    padding: 10px 12px;
     background: var(--bg2);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all var(--transition-fast);
+    gap: 12px;
 }
 
 .track-item:hover {
@@ -87,21 +153,95 @@
 }
 
 .track-number {
-    width: 40px;
+    width: 45px;
     color: var(--yellow);
     font-weight: 600;
+    font-size: 0.9rem;
+    flex-shrink: 0;
 }
 
 .track-name {
     flex: 1;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.track-play-btn {
+.track-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.track-action-btn {
     width: 32px;
     height: 32px;
     border-radius: var(--radius-round);
     background: var(--bg1);
-    border: none;
+    border: 1px solid var(--bg3);
     color: var(--fg1);
     cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.track-action-btn:hover {
+    background: var(--bg3);
+    border-color: var(--yellow);
+    color: var(--yellow);
+    transform: scale(1.05);
+}
+
+.track-action-btn.play-now:hover {
+    border-color: var(--green);
+    color: var(--green);
+}
+
+.track-action-btn.add-to-queue:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+@media (max-width: 768px) {
+    .modal-body {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .modal-left {
+        width: 120px;
+        align-self: center;
+    }
+
+    .playlist-controls {
+        justify-content: center;
+    }
+
+    .playlist-control-btn {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+    }
+
+    .track-item {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .track-number {
+        width: 35px;
+        font-size: 0.8rem;
+    }
+
+    .track-name {
+        font-size: 0.85rem;
+    }
+
+    .track-action-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+    }
 }
