@@ -1,4 +1,16 @@
 @media (max-width: 768px) {
+    .library-header {
+        margin-left: 48px;
+        margin-bottom: 16px;
+        padding-top: 8px;
+    }
+    .library-header h2 {
+        font-size: 1.1rem;
+    }
+    .search-box {
+        margin-left: 48px;
+        width: calc(100% - 48px);
+    }
     body {
         overflow-x: hidden;
         position: relative;
@@ -97,6 +109,7 @@
         gap: 14px;
         padding: 12px;
         padding-bottom: 100px;
+        margin-top: 8px;
     }
     .album-card {
         flex-direction: row;
@@ -338,15 +351,27 @@
     .menu-toggle:hover {
         background: var(--bg3);
     }
-
     player-controls-center {
         gap: 12px;
         padding: 10px 20px;
     }
-
     .control-btn {
         width: 44px;
         height: 44px;
         font-size: 1.1rem;
+    }
+    .library-header {
+        margin-left: 56px;
+        margin-bottom: 12px;
+    }
+    .library-header h2 {
+        font-size: 1rem;
+    }
+    .search-box {
+        margin-left: 56px;
+        width: calc(100% - 56px);
+    }
+    .explorer-header {
+        margin-left: 56px;
     }
 }
