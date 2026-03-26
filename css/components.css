@@ -30,29 +30,47 @@
 
 .search-box {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     background: var(--bg2);
     border-radius: var(--radius-xl);
     padding: 8px 16px;
     gap: 8px;
     border: 1px solid var(--bg3);
+    flex: 1;
+    min-width: 0;
 }
 
 .search-box i {
     color: var(--fg3);
+    flex-shrink: 0;
+    margin-top: 4px;
 }
 
-.search-box input {
+.search-box textarea {
     background: transparent;
     border: none;
     color: var(--fg1);
     font-size: 1rem;
     outline: none;
-    min-width: 200px;
+    min-width: 0;
+    width: 100%;
+    flex: 1;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-word;
+    line-height: 1.4;
+    padding: 0;
+    resize: none;
+    overflow: hidden;
+    font-family: inherit;
+    height: auto;
 }
 
-.search-box input::placeholder {
+.search-box textarea::placeholder {
     color: var(--fg4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .notification {

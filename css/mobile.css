@@ -1,16 +1,4 @@
 @media (max-width: 768px) {
-    .library-header {
-        margin-left: 48px;
-        margin-bottom: 16px;
-        padding-top: 8px;
-    }
-    .library-header h2 {
-        font-size: 1.1rem;
-    }
-    .search-box {
-        margin-left: 48px;
-        width: calc(100% - 48px);
-    }
     body {
         overflow-x: hidden;
         position: relative;
@@ -43,7 +31,7 @@
         background: var(--yellow);
         border-radius: 4px;
     }
-     .sidebar {
+    .sidebar {
         position: fixed;
         top: 0;
         bottom: 0;
@@ -75,6 +63,24 @@
     }
     .menu-toggle {
         display: flex;
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 1001;
+        background: var(--bg2);
+        border: none;
+        color: var(--fg1);
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-round);
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    .menu-toggle i {
+        color: var(--yellow);
     }
     .content-grid {
         grid-template-columns: 1fr;
@@ -159,6 +165,26 @@
     .explorer-header {
         margin-left: 48px;
     }
+    .library-header {
+        margin-left: 48px;
+        margin-bottom: 16px;
+        padding-top: 8px;
+    }
+    .library-header h2 {
+        font-size: 1.1rem;
+    }
+    .search-box {
+        width: calc(100% - 48px);
+        margin-left: 48px;
+        align-items: flex-start;
+    }
+    .search-box textarea {
+        font-size: 0.95rem;
+        min-height: 24px;
+    }
+    .search-box i {
+        margin-top: 3px;
+    }
     .breadcrumb .breadcrumb-text {
         max-width: 180px;
     }
@@ -211,12 +237,10 @@
         background: var(--yellow);
         color: var(--bg0);
     }
-
     .player-control-page {
         justify-content: flex-end;
         padding-bottom: 30px;
     }
-
     .player-control-header {
         position: relative;
         top: auto;
@@ -224,42 +248,35 @@
         right: auto;
         margin-bottom: 20px;
     }
-
     .player-controls-center {
         position: relative;
         gap: 20px;
         padding: 15px 25px;
         margin-bottom: 30px;
     }
-
     .control-btn {
         width: 56px;
         height: 56px;
         font-size: 1.4rem;
     }
-
     .close-control-page {
         display: none;
     }
-
     .control-btn.close-file-mobile {
         background: var(--red);
         border-color: var(--red);
         color: var(--bg0);
         order: -1;
     }
-
     .control-btn.close-file-mobile:hover {
         background: var(--red);
         transform: scale(1.05);
     }
-
     .control-btn.delete-file-mobile {
         background: var(--orange);
         border-color: var(--orange);
         color: var(--bg0);
     }
-
     .player-placeholder {
         position: fixed;
         top: 50%;
@@ -279,18 +296,15 @@
         padding: 12px 20px;
         margin-bottom: 20px;
     }
-
     .control-btn {
         width: 48px;
         height: 48px;
         font-size: 1.2rem;
     }
-
     .player-placeholder {
         width: 90%;
         padding: 30px;
     }
-
     .player-placeholder i {
         font-size: 60px;
     }
@@ -328,37 +342,11 @@
         font-size: 1rem;
     }
     .menu-toggle {
-        display: flex;
-        position: fixed;
-        top: 12px;
-        left: 12px;
-        z-index: 1001;
-        background: var(--bg2);
-        border: none;
-        color: var(--fg1);
-        width: 48px;
-        height: 48px;
-        border-radius: var(--radius-round);
-        cursor: pointer;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-    .menu-toggle i {
-        color: var(--yellow);
-    }
-    .menu-toggle:hover {
-        background: var(--bg3);
-    }
-    player-controls-center {
-        gap: 12px;
-        padding: 10px 20px;
-    }
-    .control-btn {
         width: 44px;
         height: 44px;
-        font-size: 1.1rem;
+        font-size: 1.3rem;
+        top: 10px;
+        left: 10px;
     }
     .library-header {
         margin-left: 56px;
@@ -367,11 +355,28 @@
     .library-header h2 {
         font-size: 1rem;
     }
-    .search-box {
-        margin-left: 56px;
-        width: calc(100% - 56px);
-    }
     .explorer-header {
         margin-left: 56px;
+    }
+    .search-box {
+        width: calc(100% - 56px);
+        margin-left: 56px;
+        padding: 6px 12px;
+    }
+    .search-box textarea {
+        font-size: 0.9rem;
+    }
+    .search-box i {
+        font-size: 0.9rem;
+        margin-top: 2px;
+    }
+    .player-controls-center {
+        gap: 12px;
+        padding: 10px 20px;
+    }
+    .control-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
     }
 }

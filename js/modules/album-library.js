@@ -17,7 +17,19 @@ const AlbumLibrary = {
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 this.filterAlbums(e.target.value);
+                this.autoResizeSearchInput(searchInput);
             });
+            this.autoResizeSearchInput(searchInput);
+        }
+    },
+    autoResizeSearchInput(textarea) {
+        textarea.style.height = 'auto';
+        const newHeight = Math.min(textarea.scrollHeight, 120);
+        textarea.style.height = newHeight + 'px';
+        const searchBox = textarea.closest('.search-box');
+        if (searchBox) {
+            const textareaHeight = textarea.offsetHeight;
+            searchBox.style.alignItems = textareaHeight > 32 ? 'flex-start' : 'center';
         }
     },
     async loadArtists() {
