@@ -209,7 +209,6 @@ const PlayerManager = {
         if (!confirm('Вы уверены, что хотите переместить файл в корзину?')) return;
         const result = await this.callPlayerApi('/api/closefile');
         if (result && result.success) {
-            // Utils.showNotification(result.message || 'Файл перемещён в корзину', 'success');
             if (typeof VideoExplorer !== 'undefined' && VideoExplorer.currentPath) {
                 VideoExplorer.loadDirectory(VideoExplorer.currentPath);
             }
@@ -222,12 +221,73 @@ const PlayerManager = {
         this.showLibrary();
     },
     async getStatus() {
-        if (!this.playerActive) return false;
+      if (!this.playerActive) return false;
+      try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          const url = `${this.getPlayerUrl()}/api/status`;
+          const response = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({}),
+              signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (!response.ok) {
+              console.log('Status response not ok:', response.status);
+              return true;
+          }
+          const status = await response.json();
+          if (status && status.available === true) {
+              this.isPlaying = status.isPlaying === true;
+              this.isFullscreen = status.isFullScreen === "true" || status.isFullScreen === true;
+              if (status.currentFile && status.currentFile.available) {
+                  const newFile = status.currentFile.path;
+                  if (this.currentFile !== newFile) {
+                      this.currentFile = newFile;
+                      this.currentMediaType = 'video';
+                      this.updatePlaybackStatus(this.isPlaying);
+                  }
+              }
+              this.updatePlayPauseButton();
+              this.updateFullscreenButton();
+              return true;
+          } else if (status && status.available === false) {
+              console.log('Player reported unavailable');
+              return this.checkPlayerRunning();
+          }
+      } catch (error) {
+          console.log('Status check failed, keeping player active if we have a file');
+          return true;
+      }
+      return true;
+    },
+    handlePlayerDisconnected() {
+        console.log('Player possibly disconnected, checking...');
+        setTimeout(async () => {
+            const isRunning = await this.checkPlayerRunning();
+            if (!isRunning && this.playerActive) {
+                console.log('Player confirmed disconnected, returning to library');
+                this.playerActive = false;
+                this.hideControl();
+                this.showLibrary();
+                Utils.showNotification('Плеер закрыт', 'info');
+            } else if (isRunning) {
+                console.log('Player is still running, keeping active');
+            }
+        }, 1000);
+    },
+
+    startStatusPolling() {
+        this.stopStatusPolling();
+        this.statusCheckInterval = setInterval(() => this.getStatus(), 5000);
+    },
+
+    async checkCurrentPlayback() {
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
-            const url = `${this.getPlayerUrl()}/api/status`;
-            const response = await fetch(url, {
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const response = await fetch(`${this.getPlayerUrl()}/api/status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({}),
@@ -235,33 +295,34 @@ const PlayerManager = {
             });
             clearTimeout(timeoutId);
             if (!response.ok) {
-                this.handlePlayerDisconnected();
+                console.log('Status check failed, but player might still be running');
                 return false;
             }
             const status = await response.json();
             if (status && status.available === true) {
+                console.log('Player is running, current status:', status);
+                this.playerActive = true;
                 this.isPlaying = status.isPlaying === true;
                 this.isFullscreen = status.isFullScreen === "true" || status.isFullScreen === true;
                 if (status.currentFile && status.currentFile.available) {
-                    const newFile = status.currentFile.path;
-                    if (this.currentFile !== newFile) {
-                        this.currentFile = newFile;
-                        this.currentMediaType = 'video';
-                        this.updatePlaybackStatus(this.isPlaying);
-                    }
+                    this.currentFile = status.currentFile.path;
+                    this.currentMediaType = 'video';
                 }
+                this.hideLibrary();
+                this.showControl();
+                this.updatePlaybackStatus(this.isPlaying);
                 this.updatePlayPauseButton();
                 this.updateFullscreenButton();
+                this.startStatusPolling();
                 return true;
-            } else if (status && status.available === false) {
-                this.handlePlayerDisconnected();
+            } else {
+                console.log('Player not running or no file playing');
                 return false;
             }
         } catch (error) {
-            console.log('Status check failed, player may be closed');
-            this.handlePlayerDisconnected();
+            console.log('Player not running');
+            return false;
         }
-        return false;
     },
     async checkCurrentPlayback() {
         try {
