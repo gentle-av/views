@@ -2,9 +2,15 @@
     <div class="audio-library">
         <div class="library-header">
             <h2><i class="fas fa-album"></i> Альбомы</h2>
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="albumSearch" placeholder="Поиск альбомов...">
+            <div class="header-controls">
+                <button class="refresh-btn" title="Обновить базу данных">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Обновить</span>
+                </button>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="albumSearch" placeholder="Поиск альбомов...">
+                </div>
             </div>
         </div>
         <div class="albums-grid" id="albumsGrid">

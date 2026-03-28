@@ -25,6 +25,11 @@ const AlbumLibrary = {
                 this.filterAlbums(e.target.value);
             });
         }
+
+        const refreshBtn = document.querySelector('.refresh-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.refreshDatabase());
+        }
     },
 
     async loadArtists() {
@@ -365,5 +370,58 @@ const AlbumLibrary = {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.classList.remove('active');
         });
+    },
+
+    async refreshDatabase() {
+        const refreshBtn = document.querySelector('.refresh-btn');
+        if (!refreshBtn) return;
+
+        refreshBtn.classList.add('refreshing');
+        refreshBtn.disabled = true;
+
+        try {
+            const scanResponse = await fetch('/api/music/scan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!scanResponse.ok) {
+                throw new Error('Ошибка при сканировании');
+            }
+
+            const scanResult = await scanResponse.json();
+
+            if (scanResult.status === 'success') {
+                const removeResponse = await fetch('/api/music/remove-missing', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!removeResponse.ok) {
+                    throw new Error('Ошибка при удалении отсутствующих файлов');
+                }
+
+                const removeResult = await removeResponse.json();
+
+                if (removeResult.status === 'success') {
+                    Utils.showNotification('База данных обновлена успешно', 'success');
+                    await this.loadArtists();
+                } else {
+                    throw new Error(removeResult.message || 'Ошибка при удалении файлов');
+                }
+            } else {
+                throw new Error(scanResult.message || 'Ошибка при сканировании');
+            }
+        } catch (error) {
+            console.error('Error refreshing database:', error);
+            Utils.showNotification('Ошибка при обновлении базы данных: ' + error.message, 'error');
+        } finally {
+            refreshBtn.classList.remove('refreshing');
+            refreshBtn.disabled = false;
+        }
     }
 };

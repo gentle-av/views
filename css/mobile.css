@@ -259,15 +259,21 @@
         z-index: 10;
     }
 
-    /* Стили для заголовка и поиска в мобильной версии */
     .library-header {
         flex-direction: column;
         align-items: center;
         gap: 12px;
+        position: relative;
     }
 
     .library-header h2 {
         margin-bottom: 0;
+    }
+
+    .header-controls {
+        width: 100%;
+        justify-content: center;
+        margin-top: 15px;
     }
 
     .search-box {
@@ -375,5 +381,17 @@
 
     .search-box input {
         font-size: 0.9rem;
+    }
+
+    .refresh-btn span {
+        display: none;
+    }
+
+    .refresh-btn {
+        padding: 8px 12px;
+    }
+
+    .header-controls {
+        margin-top: 15px;
     }
 }
