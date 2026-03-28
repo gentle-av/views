@@ -3,6 +3,9 @@ const AlbumLibrary = {
     filteredAlbums: [],
     artists: [],
     currentArtist: null,
+    loading: false,
+    loadedArtists: 0,
+    totalArtists: 0,
 
     getServerUrl() {
         return `http://${window.location.hostname}:${window.location.port}`;
@@ -27,7 +30,7 @@ const AlbumLibrary = {
     async loadArtists() {
         const grid = document.getElementById('albumsGrid');
         if (!grid) return;
-        grid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка артистов...</div>';
+        grid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка артистов... <span id="artistProgress">0</span> найдено</div>';
         try {
             const response = await fetch(`${this.getServerUrl()}/api/music/artists`, {
                 method: 'GET',
@@ -36,7 +39,8 @@ const AlbumLibrary = {
             const data = await response.json();
             if (data.status === 'success' && data.artists) {
                 this.artists = data.artists;
-                await this.loadAlbumsForAllArtists();
+                this.totalArtists = this.artists.length;
+                await this.loadAlbumsSequentially();
             } else {
                 grid.innerHTML = '<div class="empty"><i class="fas fa-folder-open"></i> Не удалось загрузить артистов</div>';
             }
@@ -46,15 +50,27 @@ const AlbumLibrary = {
         }
     },
 
-    async loadAlbumsForAllArtists() {
+    async loadAlbumsSequentially() {
         const grid = document.getElementById('albumsGrid');
         if (!grid) return;
-        grid.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка альбомов...</div>';
         this.albums = [];
         const uniqueAlbums = new Map();
-        for (const artist of this.artists) {
+        grid.innerHTML = `
+            <div class="loading" style="grid-column: 1/-1;">
+                <i class="fas fa-spinner fa-spin"></i>
+                Загрузка альбомов...
+                <span id="albumProgress">0</span>/<span id="albumTotal">${this.totalArtists}</span> артистов
+                <div style="margin-top: 10px;">
+                    <span id="albumsFound">0</span> альбомов найдено
+                </div>
+            </div>
+        `;
+        const progressSpan = document.getElementById('albumProgress');
+        const foundSpan = document.getElementById('albumsFound');
+        for (let i = 0; i < this.artists.length; i++) {
+            const artist = this.artists[i];
             try {
-                const url = `${this.getServerUrl()}/api/music/albums${artist ? `?artist=${encodeURIComponent(artist)}` : ''}`;
+                const url = `${this.getServerUrl()}/api/music/albums?artist=${encodeURIComponent(artist)}`;
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
@@ -75,20 +91,106 @@ const AlbumLibrary = {
                                 coverUrl: coverUrl,
                                 trackCount: tracks.length
                             });
+                            this.albums = Array.from(uniqueAlbums.values());
+                            this.filteredAlbums = [...this.albums];
+                            this.renderAlbumsIncremental();
+                            if (foundSpan) foundSpan.textContent = this.albums.length;
                         }
                     }
                 }
             } catch (error) {
                 console.error(`Error loading albums for artist ${artist}:`, error);
             }
+            this.loadedArtists = i + 1;
+            if (progressSpan) progressSpan.textContent = this.loadedArtists;
         }
-        this.albums = Array.from(uniqueAlbums.values());
         this.albums.sort((a, b) => {
             if (a.artist !== b.artist) return a.artist.localeCompare(b.artist);
             if (a.year !== b.year) return a.year.localeCompare(b.year);
             return a.title.localeCompare(b.title);
         });
         this.filteredAlbums = [...this.albums];
+        this.renderAlbums();
+    },
+
+    renderAlbumsIncremental() {
+        const grid = document.getElementById('albumsGrid');
+        if (!grid) return;
+        const loadingDiv = grid.querySelector('.loading');
+        if (this.albums.length === 0) return;
+        const albumsHtml = this.albums.map(album => `
+            <div class="album-card" data-artist="${Utils.escapeHtml(album.artist)}" data-album="${Utils.escapeHtml(album.title)}">
+                <div class="album-cover">
+                    ${album.coverUrl ?
+                        `<img src="${album.coverUrl}" alt="${Utils.escapeHtml(album.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` :
+                        `<i class="fas fa-album fallback-icon"></i>`
+                    }
+                    ${album.coverUrl ? `<i class="fas fa-album fallback-icon" style="display: none;"></i>` : ''}
+                </div>
+                <div class="album-info">
+                    <div class="album-title" title="${Utils.escapeHtml(album.title)}">${Utils.escapeHtml(album.title)}</div>
+                    <div class="album-artist">${Utils.escapeHtml(album.artist || 'Unknown')}</div>
+                    <div class="album-year">${album.year}</div>
+                    <div class="track-count"><i class="fas fa-headphones"></i> ${album.trackCount} треков</div>
+                </div>
+            </div>
+        `).join('');
+        if (loadingDiv) {
+            grid.innerHTML = albumsHtml + loadingDiv.outerHTML;
+        } else {
+            grid.innerHTML = albumsHtml;
+        }
+        this.attachAlbumCardEvents();
+    },
+
+    attachAlbumCardEvents() {
+        document.querySelectorAll('.album-card').forEach(card => {
+            card.removeEventListener('click', this.handleAlbumClick);
+            card.addEventListener('click', this.handleAlbumClick.bind(this));
+        });
+    },
+
+    handleAlbumClick(event) {
+        const card = event.currentTarget;
+        const artist = card.dataset.artist;
+        const albumTitle = card.dataset.album;
+        const album = this.albums.find(a => a.artist === artist && a.title === albumTitle);
+        if (album) this.showAlbumModal(album);
+    },
+
+    renderAlbums() {
+        const grid = document.getElementById('albumsGrid');
+        if (!grid) return;
+        if (this.filteredAlbums.length === 0) {
+            grid.innerHTML = '<div class="empty"><i class="fas fa-music"></i> Альбомы не найдены</div>';
+            return;
+        }
+        grid.innerHTML = this.filteredAlbums.map(album => `
+            <div class="album-card" data-artist="${Utils.escapeHtml(album.artist)}" data-album="${Utils.escapeHtml(album.title)}">
+                <div class="album-cover">
+                    ${album.coverUrl ?
+                        `<img src="${album.coverUrl}" alt="${Utils.escapeHtml(album.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` :
+                        `<i class="fas fa-album fallback-icon"></i>`
+                    }
+                    ${album.coverUrl ? `<i class="fas fa-album fallback-icon" style="display: none;"></i>` : ''}
+                </div>
+                <div class="album-info">
+                    <div class="album-title" title="${Utils.escapeHtml(album.title)}">${Utils.escapeHtml(album.title)}</div>
+                    <div class="album-artist">${Utils.escapeHtml(album.artist || 'Unknown')}</div>
+                    <div class="album-year">${album.year}</div>
+                    <div class="track-count"><i class="fas fa-headphones"></i> ${album.trackCount} треков</div>
+                </div>
+            </div>
+        `).join('');
+        this.attachAlbumCardEvents();
+    },
+
+    filterAlbums(searchTerm) {
+        const term = searchTerm.toLowerCase();
+        this.filteredAlbums = this.albums.filter(album =>
+            album.title.toLowerCase().includes(term) ||
+            (album.artist && album.artist.toLowerCase().includes(term))
+        );
         this.renderAlbums();
     },
 
@@ -128,49 +230,6 @@ const AlbumLibrary = {
             console.debug('No album art found');
         }
         return '';
-    },
-
-    renderAlbums() {
-        const grid = document.getElementById('albumsGrid');
-        if (!grid) return;
-        if (this.filteredAlbums.length === 0) {
-            grid.innerHTML = '<div class="empty"><i class="fas fa-music"></i> Альбомы не найдены</div>';
-            return;
-        }
-        grid.innerHTML = this.filteredAlbums.map(album => `
-            <div class="album-card" data-artist="${Utils.escapeHtml(album.artist)}" data-album="${Utils.escapeHtml(album.title)}">
-                <div class="album-cover">
-                    ${album.coverUrl ?
-                        `<img src="${album.coverUrl}" alt="${Utils.escapeHtml(album.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` :
-                        `<i class="fas fa-album fallback-icon"></i>`
-                    }
-                    ${album.coverUrl ? `<i class="fas fa-album fallback-icon" style="display: none;"></i>` : ''}
-                </div>
-                <div class="album-info">
-                    <div class="album-title" title="${Utils.escapeHtml(album.title)}">${Utils.escapeHtml(album.title)}</div>
-                    <div class="album-artist">${Utils.escapeHtml(album.artist || 'Unknown')}</div>
-                    <div class="album-year">${album.year}</div>
-                    <div class="track-count"><i class="fas fa-headphones"></i> ${album.trackCount} треков</div>
-                </div>
-            </div>
-        `).join('');
-        document.querySelectorAll('.album-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const artist = card.dataset.artist;
-                const albumTitle = card.dataset.album;
-                const album = this.albums.find(a => a.artist === artist && a.title === albumTitle);
-                if (album) this.showAlbumModal(album);
-            });
-        });
-    },
-
-    filterAlbums(searchTerm) {
-        const term = searchTerm.toLowerCase();
-        this.filteredAlbums = this.albums.filter(album =>
-            album.title.toLowerCase().includes(term) ||
-            (album.artist && album.artist.toLowerCase().includes(term))
-        );
-        this.renderAlbums();
     },
 
     showAlbumModal(album) {
