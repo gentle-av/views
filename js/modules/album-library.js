@@ -47,6 +47,10 @@ const AlbumLibrary = {
     },
 
     openPlaylistSidebar() {
+        const modal = document.getElementById('albumModal');
+        if (modal && modal.classList.contains('active')) {
+            modal.classList.remove('active');
+        }
         const sidebar = document.getElementById('playlistSidebar');
         if (sidebar) {
             sidebar.classList.add('open');
@@ -88,7 +92,38 @@ const AlbumLibrary = {
     },
 
     showPlaylistSection() {
-        this.openPlaylistSidebar();
+        console.log('showPlaylistSection called');
+        const modal = document.getElementById('albumModal');
+        if (modal && modal.classList.contains('active')) {
+            modal.classList.remove('active');
+        }
+        const playlistSection = document.getElementById('playlistSection');
+        if (playlistSection) {
+            playlistSection.style.display = 'block';
+            const playlistToggleBtn = document.getElementById('playlistToggleBtn');
+            if (playlistToggleBtn) {
+                playlistToggleBtn.classList.add('active');
+            }
+            if (typeof PlaylistViewer !== 'undefined') {
+                console.log('Calling PlaylistViewer.init()');
+                PlaylistViewer.init();
+                setTimeout(() => {
+                    PlaylistViewer.refresh();
+                }, 100);
+            }
+            setTimeout(() => {
+                playlistSection.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                    inline: 'nearest'
+                });
+            }, 200);
+            if (window.innerWidth <= 768) {
+                setTimeout(() => {
+                    playlistSection.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }, 200);
+            }
+        }
     },
 
     async loadArtists() {

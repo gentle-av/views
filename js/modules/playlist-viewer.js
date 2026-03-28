@@ -32,11 +32,19 @@ const PlaylistViewer = {
                 return this.musiumAvailable;
             }
         } catch (error) {
-            console.log('Musium not running');
+            console.log('Musium not running:', error.message);
         }
         this.musiumAvailable = false;
         this.stopAutoUpdate();
         return false;
+    },
+
+    async refresh() {
+        console.log('PlaylistViewer.refresh called');
+        await this.checkMusiumAvailable();
+        if (this.musiumAvailable) {
+            await this.updateDisplay();
+        }
     },
 
     async fetchPlaylist() {
@@ -86,12 +94,15 @@ const PlaylistViewer = {
     async sendCommand(endpoint, data = {}) {
         if (!this.musiumAvailable) return null;
         try {
+            console.log(`Sending command to ${endpoint}:`, data);
             const response = await fetch(`${this.getMusiumUrl()}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            return await response.json();
+            const result = await response.json();
+            console.log(`Response from ${endpoint}:`, result);
+            return result;
         } catch (error) {
             console.error(`Error sending command ${endpoint}:`, error);
             return null;
@@ -99,44 +110,56 @@ const PlaylistViewer = {
     },
 
     async playTrack(index) {
+        console.log(`Play track at index: ${index}`);
         await this.sendCommand('/api/replacePlaylist', { tracks: [this.playlist[index].path] });
         await this.sendCommand('/api/play');
         await this.updateDisplay();
     },
 
     async removeTrack(index) {
+        console.log(`Remove track at index: ${index}`);
         await this.sendCommand('/api/remove', { index: index });
         await this.fetchPlaylist();
         await this.updateDisplay();
     },
 
     async clearPlaylist() {
+        console.log('Clear playlist');
         await this.sendCommand('/api/clear');
         await this.fetchPlaylist();
         await this.updateDisplay();
     },
 
     async previousTrack() {
+        console.log('Previous track');
         await this.sendCommand('/api/previous');
         await this.updateDisplay();
     },
 
     async nextTrack() {
+        console.log('Next track');
         await this.sendCommand('/api/next');
         await this.updateDisplay();
     },
 
     async playPause() {
+        console.log('playPause called');
         const status = await this.fetchStatus();
+        console.log('Current status:', status);
         if (status && status.isPlaying) {
+            console.log('Currently playing, sending pause');
             await this.sendCommand('/api/pause');
         } else {
+            console.log('Currently paused, sending play');
             await this.sendCommand('/api/play');
         }
+        const newStatus = await this.fetchStatus();
+        console.log('New status after command:', newStatus);
         await this.updateProgress();
     },
 
     async stopPlayback() {
+        console.log('Stop playback');
         await this.sendCommand('/api/stop');
         await this.updateDisplay();
     },
@@ -156,11 +179,17 @@ const PlaylistViewer = {
     },
 
     async updateDisplay() {
+        console.log('updateDisplay called');
         const container = document.getElementById('playlistContainer');
-        if (!container) return;
+        if (!container) {
+            console.log('playlistContainer not found');
+            return;
+        }
 
         const playlistData = await this.fetchPlaylist();
         const status = await this.fetchStatus();
+        console.log('playlistData:', playlistData);
+        console.log('status:', status);
 
         if (!playlistData || playlistData.playlist.length === 0) {
             container.innerHTML = `
@@ -230,6 +259,7 @@ const PlaylistViewer = {
         html += `</div>`;
         container.innerHTML = html;
         this.attachEventListeners();
+        console.log('updateDisplay finished');
     },
 
     attachEventListeners() {
@@ -347,6 +377,7 @@ const PlaylistViewer = {
     },
 
     async init() {
+        console.log('PlaylistViewer.init called');
         await this.checkMusiumAvailable();
         if (this.musiumAvailable) {
             await this.updateDisplay();
