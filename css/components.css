@@ -22,7 +22,6 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-shrink: 0;
 }
 
 .library-header h2 i {
@@ -31,49 +30,29 @@
 
 .search-box {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     background: var(--bg2);
     border-radius: var(--radius-xl);
     padding: 8px 16px;
     gap: 8px;
     border: 1px solid var(--bg3);
-    max-width: 400px;
-    min-width: 250px;
-    width: auto;
-    flex-shrink: 0;
 }
 
 .search-box i {
     color: var(--fg3);
-    flex-shrink: 0;
-    margin-top: 4px;
 }
 
-.search-box textarea {
+.search-box input {
     background: transparent;
     border: none;
     color: var(--fg1);
     font-size: 1rem;
     outline: none;
-    width: 100%;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    word-break: break-word;
-    line-height: 1.4;
-    padding: 0;
-    resize: none;
-    overflow: hidden;
-    font-family: inherit;
-    height: auto;
-    min-height: 24px;
-    max-height: 120px;
+    min-width: 200px;
 }
 
-.search-box textarea::placeholder {
+.search-box input::placeholder {
     color: var(--fg4);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .notification {

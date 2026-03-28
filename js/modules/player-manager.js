@@ -12,27 +12,21 @@ const PlayerManager = {
     fullscreenRetryInterval: null,
     currentMediaType: 'video',
     updatingStatus: false,
-    pendingStatusRequest: null,
-
     init() {
         this.setupEventListeners();
         this.checkMobile();
         console.log('PlayerManager initialized, server port:', this.serverPort);
         this.checkPlayerAvailability();
     },
-
     getPlayerUrl() {
         return `http://${this.serverHost}:8082`;
     },
-
     getServerUrl() {
         return `http://${this.serverHost}:${this.serverPort}`;
     },
-
     checkMobile() {
         this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     },
-
     setupEventListeners() {
         const elements = {
             playPauseBtn: 'playPauseBtn',
@@ -58,14 +52,17 @@ const PlayerManager = {
         }
         document.addEventListener('keydown', (e) => this.handleKeyPress(e));
     },
-
     async checkPlayerAvailability() {
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
             const response = await fetch(`${this.getPlayerUrl()}/api/status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
+                body: JSON.stringify({}),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             if (response.ok) {
                 const status = await response.json();
                 if (status && status.available === true) {
@@ -84,7 +81,6 @@ const PlayerManager = {
             this.showLibrary();
         }
     },
-
     showLibrary() {
         const pageContainer = document.querySelector('.page-container');
         const audioPlayerBar = document.getElementById('audioPlayerBar');
@@ -93,24 +89,18 @@ const PlayerManager = {
         this.playerActive = false;
         this.currentFile = null;
     },
-
     hideLibrary() {
         const pageContainer = document.querySelector('.page-container');
         const audioPlayerBar = document.getElementById('audioPlayerBar');
         if (pageContainer) pageContainer.style.display = 'none';
         if (audioPlayerBar) audioPlayerBar.style.display = 'none';
     },
-
-    async callPlayerApi(endpoint, data = {}, force = false) {
-        if (!force && !this.playerActive) {
-            console.log('Player not active, skipping API call');
-            return null;
-        }
+    async callPlayerApi(endpoint, data = {}) {
+        if (!this.playerActive) return null;
         try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
             const url = `${this.getPlayerUrl()}${endpoint}`;
-            console.log('Calling player API:', url);
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -118,54 +108,42 @@ const PlayerManager = {
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
-            console.log('API response status:', response.status);
-            const result = await response.json();
-            console.log('API response data:', result);
-            return result;
+            return await response.json();
         } catch (error) {
             console.error(`API error on ${endpoint}:`, error);
+            this.handlePlayerDisconnected();
             return null;
         }
     },
-
     handlePlayerDisconnected() {
-        console.log('Player possibly disconnected, checking...');
-        setTimeout(async () => {
-            const isRunning = await this.checkPlayerRunning();
-            if (!isRunning && this.playerActive) {
-                console.log('Player confirmed disconnected, returning to library');
-                this.playerActive = false;
-                this.hideControl();
-                this.showLibrary();
-                Utils.showNotification('Плеер закрыт', 'info');
-            } else if (isRunning) {
-                console.log('Player is still running, keeping active');
-            }
-        }, 1000);
+        console.log('Player disconnected, returning to library');
+        this.playerActive = false;
+        this.hideControl();
+        this.showLibrary();
+        // Utils.showNotification('Плеер закрыт, возврат в библиотеку', 'info');
     },
-
     async seekForward() {
         if (!this.playerActive) return;
         const result = await this.callPlayerApi('/api/seekforward', { seconds: 10 });
         if (result && result.success) {
+            // Utils.showNotification('Вперед 10 секунд', 'success');
         } else if (result === null) {
             this.handlePlayerDisconnected();
         } else {
             Utils.showNotification('Ошибка перемотки', 'error');
         }
     },
-
     async seekBackward() {
         if (!this.playerActive) return;
         const result = await this.callPlayerApi('/api/seekbackward', { seconds: 10 });
         if (result && result.success) {
+            // Utils.showNotification('Назад 10 секунд', 'success');
         } else if (result === null) {
             this.handlePlayerDisconnected();
         } else {
             Utils.showNotification('Ошибка перемотки', 'error');
         }
     },
-
     async toggleFullscreen() {
         if (!this.playerActive) return;
         const newState = !this.isFullscreen;
@@ -173,25 +151,23 @@ const PlayerManager = {
         if (result && result.success) {
             this.isFullscreen = newState;
             this.updateFullscreenButton();
+            // Utils.showNotification(newState ? 'Полноэкранный режим включен' : 'Полноэкранный режим выключен', 'success');
         } else if (result === null) {
             this.handlePlayerDisconnected();
         }
     },
-
     updateFullscreenButton() {
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         if (fullscreenBtn) {
             fullscreenBtn.innerHTML = this.isFullscreen ? '<i class="fas fa-compress"></i>' : '<i class="fas fa-expand"></i>';
         }
     },
-
     updatePlayPauseButton() {
         const btn = document.getElementById('playPauseBtn');
         if (btn) {
             btn.innerHTML = this.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
         }
     },
-
     async togglePlayPause() {
         if (!this.playerActive) return;
         if (this.updatingStatus) return;
@@ -211,55 +187,56 @@ const PlayerManager = {
             setTimeout(() => { this.updatingStatus = false; }, 500);
         }
     },
-
     async closeFile() {
-        try {
-            await this.callPlayerApi('/api/close', {}, true);
-        } catch (error) {
-            console.log('Error closing player:', error);
+        if (!this.playerActive) {
+            this.hideControl();
+            this.showLibrary();
+            return;
         }
-        this.playerActive = false;
+        const result = await this.callPlayerApi('/api/close');
+        if (result && result.success) {
+            // Utils.showNotification('Файл закрыт', 'success');
+        }
         this.hideControl();
         this.showLibrary();
     },
-
     async deleteFile() {
-        if (!confirm('Вы уверены, что хотите переместить файл в корзину?')) return;
-        try {
-            const response = await fetch(`${this.getServerUrl()}/api/trash`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path: this.currentFile })
-            });
-            const data = await response.json();
-            if (data.success) {
-                Utils.showNotification('Файл перемещен в корзину', 'success');
-                if (typeof VideoExplorer !== 'undefined' && VideoExplorer.currentPath) {
-                    VideoExplorer.loadDirectory(VideoExplorer.currentPath);
-                }
-            } else {
-                Utils.showNotification(data.error || 'Ошибка при удалении', 'error');
-            }
-        } catch (error) {
-            console.error('Error deleting file:', error);
-            Utils.showNotification('Ошибка при удалении', 'error');
+        if (!this.playerActive) {
+            this.hideControl();
+            this.showLibrary();
+            return;
         }
-        this.playerActive = false;
+        if (!confirm('Вы уверены, что хотите переместить файл в корзину?')) return;
+        const result = await this.callPlayerApi('/api/closefile');
+        if (result && result.success) {
+            // Utils.showNotification(result.message || 'Файл перемещён в корзину', 'success');
+            if (typeof VideoExplorer !== 'undefined' && VideoExplorer.currentPath) {
+                VideoExplorer.loadDirectory(VideoExplorer.currentPath);
+            }
+        } else if (result === null) {
+            Utils.showNotification('Плеер закрыт, файл не удалён', 'info');
+        } else {
+            Utils.showNotification(result?.error || 'Ошибка при удалении', 'error');
+        }
         this.hideControl();
         this.showLibrary();
     },
-
     async getStatus() {
         if (!this.playerActive) return false;
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
             const url = `${this.getPlayerUrl()}/api/status`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
+                body: JSON.stringify({}),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             if (!response.ok) {
-                return true;
+                this.handlePlayerDisconnected();
+                return false;
             }
             const status = await response.json();
             if (status && status.available === true) {
@@ -275,33 +252,30 @@ const PlayerManager = {
                 }
                 this.updatePlayPauseButton();
                 this.updateFullscreenButton();
+                return true;
+            } else if (status && status.available === false) {
+                this.handlePlayerDisconnected();
+                return false;
             }
-            return true;
         } catch (error) {
-            return true;
+            console.log('Status check failed, player may be closed');
+            this.handlePlayerDisconnected();
         }
+        return false;
     },
-
-    startStatusPolling() {
-        this.stopStatusPolling();
-        this.statusCheckInterval = setInterval(async () => {
-            if (!this.playerActive) return;
-            const isRunning = await this.checkPlayerRunning();
-            if (!isRunning) {
-                console.log('Player no longer running');
-            }
-        }, 5000);
-    },
-
     async checkCurrentPlayback() {
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
             const response = await fetch(`${this.getPlayerUrl()}/api/status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
+                body: JSON.stringify({}),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             if (!response.ok) {
-                console.log('Status check failed, but player might still be running');
+                this.showLibrary();
                 return false;
             }
             const status = await response.json();
@@ -320,52 +294,68 @@ const PlayerManager = {
                 this.updatePlayPauseButton();
                 this.updateFullscreenButton();
                 this.startStatusPolling();
+                if (!this.isFullscreen) {
+                    setTimeout(() => this.toggleFullscreen(), 1000);
+                }
                 return true;
             } else {
-                console.log('Player not running or no file playing');
+                console.log('Player not running');
+                this.playerActive = false;
+                this.hideControl();
+                this.showLibrary();
                 return false;
             }
         } catch (error) {
             console.log('Player not running');
+            this.playerActive = false;
+            this.hideControl();
+            this.showLibrary();
             return false;
         }
     },
-
     async playMedia(path) {
-        console.log('=== playMedia START ===');
-        console.log('Path:', path);
+        console.log('PlayerManager.playMedia called with path:', path);
         try {
             const isAvailable = await this.checkPlayerRunning();
+            console.log('Player running check result:', isAvailable);
             if (!isAvailable) {
-                console.log('Player NOT running, launching...');
+                console.log('Player not running, launching...');
                 const launchResult = await this.launchPlayerWithFile(path);
-                if (!launchResult) {
-                    throw new Error('Failed to launch player');
-                }
-                await this.delay(2000);
-                console.log('Player launched, showing control panel immediately');
+                console.log('Launch result:', launchResult);
+                if (!launchResult) throw new Error('Failed to launch player');
+                await this.waitForPlayer(15000);
             } else {
-                console.log('Player already running');
+                console.log('Player running, opening file...');
+                const openResult = await this.callPlayerApi('/api/openfile', { path: path });
+                console.log('Open result:', openResult);
+                if (!openResult || !openResult.success) throw new Error(openResult?.error || 'Failed to open file');
+                await this.delay(2000);
             }
-            this.playerActive = true;
-            this.currentFile = path;
-            this.isPlaying = true;
-            this.isFullscreen = true;
-            this.hideLibrary();
-            this.showControl();
-            this.updatePlaybackStatus(true);
-            this.updatePlayPauseButton();
-            this.updateFullscreenButton();
-            this.startStatusPolling();
-            console.log('=== playMedia SUCCESS ===');
+            const newStatus = await this.checkPlayerRunningWithStatus();
+            console.log('New status after opening:', newStatus);
+            if (newStatus && newStatus.available === true) {
+                this.playerActive = true;
+                this.currentFile = newStatus.currentFile?.path || path;
+                this.isPlaying = newStatus.isPlaying === true;
+                this.isFullscreen = newStatus.isFullScreen === "true" || newStatus.isFullScreen === true;
+                this.hideLibrary();
+                this.showControl();
+                this.updatePlaybackStatus(this.isPlaying);
+                this.updatePlayPauseButton();
+                this.updateFullscreenButton();
+                this.startStatusPolling();
+                if (!this.isFullscreen) setTimeout(() => this.toggleFullscreen(), 1500);
+                // Utils.showNotification(`Воспроизведение: ${path.split('/').pop()}`, 'success');
+            } else {
+                throw new Error('Player did not load the file');
+            }
         } catch (error) {
-            console.error('=== playMedia ERROR ===', error);
+            console.error('Error playing media:', error);
             Utils.showNotification(error.message || 'Ошибка воспроизведения', 'error');
             this.hideControl();
             this.showLibrary();
         }
     },
-
     async checkPlayerRunning() {
         try {
             const controller = new AbortController();
@@ -381,28 +371,26 @@ const PlayerManager = {
                 const data = await response.json();
                 return data.available === true;
             }
-            return false;
-        } catch (error) {
-            return false;
-        }
+        } catch (error) {}
+        return false;
     },
-
     async checkPlayerRunningWithStatus() {
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
             const response = await fetch(`${this.getPlayerUrl()}/api/status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({})
+                body: JSON.stringify({}),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
             if (response.ok) {
                 return await response.json();
             }
-        } catch (error) {
-            console.log('Player not responding:', error.message);
-        }
+        } catch (error) {}
         return null;
     },
-
     async waitForPlayer(timeoutMs) {
         const startTime = Date.now();
         while (Date.now() - startTime < timeoutMs) {
@@ -416,38 +404,24 @@ const PlayerManager = {
         }
         throw new Error('Player did not start within timeout');
     },
-
     async launchPlayerWithFile(path) {
-        console.log('=== launchPlayerWithFile START ===');
-        console.log('Server URL:', this.getServerUrl());
-        console.log('Full URL:', `${this.getServerUrl()}/api/open`);
-        console.log('Path to send:', path);
         try {
             const response = await fetch(`${this.getServerUrl()}/api/open`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ path: path })
             });
-            console.log('Response status:', response.status);
-            console.log('Response status text:', response.statusText);
             const data = await response.json();
-            console.log('Response data:', data);
-            console.log('=== launchPlayerWithFile END, success =', data.success === true);
             return data.success === true;
         } catch (error) {
-            console.error('=== launchPlayerWithFile ERROR ===');
-            console.error('Error type:', error.name);
-            console.error('Error message:', error.message);
-            console.error('Full error:', error);
+            console.error('Error launching player:', error);
             return false;
         }
     },
-
     showControl() {
         const playerControlPage = document.getElementById('playerControlPage');
         if (playerControlPage) playerControlPage.style.display = 'flex';
     },
-
     hideControl() {
         const playerControlPage = document.getElementById('playerControlPage');
         if (playerControlPage) playerControlPage.style.display = 'none';
@@ -461,14 +435,16 @@ const PlayerManager = {
             this.fullscreenRetryInterval = null;
         }
     },
-
+    startStatusPolling() {
+        this.stopStatusPolling();
+        this.statusCheckInterval = setInterval(() => this.getStatus(), 3000);
+    },
     stopStatusPolling() {
         if (this.statusCheckInterval) {
             clearInterval(this.statusCheckInterval);
             this.statusCheckInterval = null;
         }
     },
-
     handleKeyPress(e) {
         if (!this.playerActive) return;
         switch(e.code) {
@@ -493,7 +469,6 @@ const PlayerManager = {
                 break;
         }
     },
-
     updatePlaybackStatus(isPlaying) {
         this.isPlaying = isPlaying;
         const placeholder = document.querySelector('.player-placeholder');
@@ -510,14 +485,12 @@ const PlayerManager = {
             </div>
         `;
     },
-
     escapeHtml(str) {
         if (!str) return '';
         const div = document.createElement('div');
         div.textContent = str;
         return div.innerHTML;
     },
-
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }

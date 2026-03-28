@@ -3,35 +3,27 @@ const AlbumLibrary = {
     filteredAlbums: [],
     artists: [],
     currentArtist: null,
+
     getServerUrl() {
         return `http://${window.location.hostname}:${window.location.port}`;
     },
+
     async init() {
         const grid = document.getElementById('albumsGrid');
         if (!grid) return;
         await this.loadArtists();
         this.setupEventListeners();
     },
+
     setupEventListeners() {
         const searchInput = document.getElementById('albumSearch');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 this.filterAlbums(e.target.value);
-                this.autoResizeSearchInput(searchInput);
             });
-            this.autoResizeSearchInput(searchInput);
         }
     },
-    autoResizeSearchInput(textarea) {
-        textarea.style.height = 'auto';
-        const newHeight = Math.min(textarea.scrollHeight, 120);
-        textarea.style.height = newHeight + 'px';
-        const searchBox = textarea.closest('.search-box');
-        if (searchBox) {
-            const textareaHeight = textarea.offsetHeight;
-            searchBox.style.alignItems = textareaHeight > 32 ? 'flex-start' : 'center';
-        }
-    },
+
     async loadArtists() {
         const grid = document.getElementById('albumsGrid');
         if (!grid) return;
@@ -53,6 +45,7 @@ const AlbumLibrary = {
             grid.innerHTML = '<div class="empty"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки артистов</div>';
         }
     },
+
     async loadAlbumsForAllArtists() {
         const grid = document.getElementById('albumsGrid');
         if (!grid) return;
@@ -98,6 +91,7 @@ const AlbumLibrary = {
         this.filteredAlbums = [...this.albums];
         this.renderAlbums();
     },
+
     async getTracksFromAlbum(albumName, artist) {
         try {
             const url = `${this.getServerUrl()}/api/music/tracks/album/${encodeURIComponent(albumName)}${artist ? `?artist=${encodeURIComponent(artist)}` : ''}`;
@@ -119,6 +113,7 @@ const AlbumLibrary = {
             return [];
         }
     },
+
     async getAlbumCover(albumName, artist) {
         try {
             const url = `${this.getServerUrl()}/api/music/albumart/album/${encodeURIComponent(albumName)}${artist ? `?artist=${encodeURIComponent(artist)}` : ''}`;
@@ -134,6 +129,7 @@ const AlbumLibrary = {
         }
         return '';
     },
+
     renderAlbums() {
         const grid = document.getElementById('albumsGrid');
         if (!grid) return;
@@ -167,6 +163,7 @@ const AlbumLibrary = {
             });
         });
     },
+
     filterAlbums(searchTerm) {
         const term = searchTerm.toLowerCase();
         this.filteredAlbums = this.albums.filter(album =>
@@ -175,165 +172,137 @@ const AlbumLibrary = {
         );
         this.renderAlbums();
     },
+
     showAlbumModal(album) {
         const modal = document.getElementById('albumModal');
         if (!modal) return;
-        const modalTitle = document.getElementById('modalAlbumTitle');
-        const modalArt = document.getElementById('modalAlbumArt');
-        const tracksList = document.getElementById('modalTracksList');
-        if (modalTitle) modalTitle.textContent = `${album.artist} — ${album.title} (${album.year})`;
-        if (modalArt) {
-            modalArt.src = album.coverUrl || '';
-            modalArt.onerror = () => {
-                modalArt.style.display = 'none';
-            };
-            modalArt.style.display = album.coverUrl ? 'block' : 'none';
-        }
-        const modalBody = document.querySelector('#albumModal .modal-body');
-        if (modalBody && !modalBody.querySelector('.playlist-controls')) {
-            modalBody.innerHTML = `
-                <div class="modal-left">
-                    <div class="album-detail-art">
-                        <img id="modalAlbumArt" src="" alt="Album art">
-                    </div>
+        const modalContent = modal.querySelector('.modal-content');
+        if (!modalContent) return;
+        modalContent.innerHTML = `
+            <div class="album-modal-header">
+                <div class="album-cover-container">
+                    ${album.coverUrl ?
+                        `<img src="${album.coverUrl}" alt="${Utils.escapeHtml(album.title)}" class="album-cover-modal">` :
+                        `<div class="album-cover-placeholder"><i class="fas fa-album"></i></div>`
+                    }
                 </div>
-                <div class="modal-right">
-                    <div class="playlist-controls">
-                        <button class="playlist-control-btn" id="addFullAlbumToQueueBtn" title="Добавить весь альбом в конец плейлиста">
-                            <i class="fas fa-plus-circle"></i> <span>Добавить в плейлист</span>
-                        </button>
-                        <button class="playlist-control-btn" id="replacePlaylistWithAlbumBtn" title="Заменить текущий плейлист этим альбомом">
-                            <i class="fas fa-exchange-alt"></i> <span>Заменить плейлист</span>
-                        </button>
-                        <button class="playlist-control-btn" id="showCurrentPlaylistBtn" title="Показать текущий плейлист">
-                            <i class="fas fa-list"></i> <span>Текущий плейлист</span>
-                        </button>
-                        <button class="playlist-control-btn danger" id="clearPlaylistBtn" title="Очистить текущий плейлист">
-                            <i class="fas fa-trash-alt"></i> <span>Очистить</span>
-                        </button>
-                    </div>
-                    <div class="album-tracks" id="modalTracksList"></div>
+                <div class="album-info-container">
+                    <h2 class="modal-album-title">${Utils.escapeHtml(album.artist)} — ${Utils.escapeHtml(album.title)}</h2>
+                    <div class="modal-album-year">${album.year || 'Год неизвестен'}</div>
+                    <div class="modal-track-count"><i class="fas fa-headphones"></i> ${album.trackCount} треков</div>
                 </div>
-            `;
-            const newModalArt = document.getElementById('modalAlbumArt');
-            if (newModalArt) {
-                newModalArt.src = album.coverUrl || '';
-                newModalArt.onerror = () => {
-                    newModalArt.style.display = 'none';
-                };
-                newModalArt.style.display = album.coverUrl ? 'block' : 'none';
-            }
-            const newTracksList = document.getElementById('modalTracksList');
-            this.renderTracksInModal(album, newTracksList);
-            this.setupPlaylistControls(album, modal);
-            modal.classList.add('active');
-            this.setupModalClose(modal);
-            return;
-        }
-        if (tracksList) {
-            this.renderTracksInModal(album, tracksList);
-            this.setupPlaylistControls(album, modal);
-        }
-        modal.classList.add('active');
-        this.setupModalClose(modal);
-    },
-    renderTracksInModal(album, tracksListElement) {
-        if (!tracksListElement) return;
-        tracksListElement.innerHTML = album.tracks.map((track, idx) => `
-            <div class="track-item" data-track-index="${idx}" data-track-path="${Utils.escapeHtml(track.path)}">
-                <div class="track-number">${String(idx + 1).padStart(2, '0')}</div>
-                <div class="track-name" title="${Utils.escapeHtml(track.name)}">${Utils.escapeHtml(track.name)}</div>
-                <div class="track-actions">
-                    <button class="track-action-btn play-now" title="Заменить плейлист и начать воспроизведение">
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="track-action-btn add-to-queue" title="Добавить в плейлист за текущей композицией">
-                        <i class="fas fa-plus"></i>
-                    </button>
+                <div class="modal-controls">
+                    <button class="modal-control-btn prev-track-btn" title="Предыдущий трек"><i class="fas fa-step-backward"></i></button>
+                    <button class="modal-control-btn add-to-playlist-btn" title="Добавить в плейлист"><i class="fas fa-plus-circle"></i></button>
+                    <button class="modal-control-btn replace-playlist-btn" title="Заменить плейлист"><i class="fas fa-exchange-alt"></i></button>
+                    <button class="modal-control-btn next-track-btn" title="Следующий трек"><i class="fas fa-step-forward"></i></button>
+                    <button class="modal-control-btn show-playlist-btn" title="Показать плейлист"><i class="fas fa-list"></i></button>
+                    <button class="modal-close-btn"><i class="fas fa-times"></i></button>
                 </div>
             </div>
-        `).join('');
-        tracksListElement.querySelectorAll('.track-item').forEach(item => {
-            const idx = parseInt(item.dataset.trackIndex);
-            const playNowBtn = item.querySelector('.play-now');
-            const addToQueueBtn = item.querySelector('.add-to-queue');
-            if (playNowBtn) {
-                playNowBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (typeof AudioPlayer !== 'undefined') {
-                        AudioPlayer.replacePlaylistWithTrack(album, idx);
-                        const modal = document.getElementById('albumModal');
-                        if (modal) modal.classList.remove('active');
+            <div class="tracks-list-container">
+                <h3>Треки</h3>
+                <div class="tracks-list" id="modalTracksList"></div>
+            </div>
+        `;
+        const tracksList = document.getElementById('modalTracksList');
+        if (tracksList) {
+            tracksList.innerHTML = album.tracks.map((track, idx) => `
+                <div class="track-item" data-track-index="${idx}" data-track-name="${Utils.escapeHtml(track.name)}" data-track-path="${track.path}">
+                    <div class="track-number">${String(idx + 1).padStart(2, '0')}</div>
+                    <div class="track-name">${Utils.escapeHtml(track.name)}</div>
+                    <div class="track-controls">
+                        <button class="track-control-btn replace-playlist-with-track" title="Заменить плейлист этим треком"><i class="fas fa-exchange-alt"></i></button>
+                        <button class="track-control-btn add-after-current" title="Добавить после текущего"><i class="fas fa-plus-circle"></i></button>
+                    </div>
+                </div>
+            `).join('');
+            tracksList.querySelectorAll('.track-item').forEach(item => {
+                const idx = parseInt(item.dataset.trackIndex);
+                const trackName = item.dataset.trackName;
+                const trackPath = item.dataset.trackPath;
+                const replacePlaylistBtn = item.querySelector('.replace-playlist-with-track');
+                const addAfterCurrentBtn = item.querySelector('.add-after-current');
+                if (replacePlaylistBtn) {
+                    replacePlaylistBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (typeof AudioPlayer !== 'undefined') {
+                            AudioPlayer.replacePlaylistWithTrack(album, idx);
+                            Utils.showNotification(`Плейлист заменен треком: ${trackName}`, 'success');
+                            modal.classList.remove('active');
+                        }
+                    });
+                }
+                if (addAfterCurrentBtn) {
+                    addAfterCurrentBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (typeof AudioPlayer !== 'undefined') {
+                            AudioPlayer.addTrackAfterCurrent(album, idx);
+                            Utils.showNotification(`Трек добавлен после текущего: ${trackName}`, 'success');
+                        }
+                    });
+                }
+                item.addEventListener('click', (e) => {
+                    if (!e.target.closest('.track-control-btn')) {
+                        if (typeof AudioPlayer !== 'undefined') {
+                            AudioPlayer.loadAlbum(album);
+                            setTimeout(() => AudioPlayer.playTrack(idx), 500);
+                            modal.classList.remove('active');
+                        }
                     }
                 });
-            }
-            if (addToQueueBtn) {
-                addToQueueBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (typeof AudioPlayer !== 'undefined') {
-                        AudioPlayer.addTrackToQueueAfterCurrent(album, idx);
-                        Utils.showNotification(`Трек "${album.tracks[idx].name}" добавлен в очередь`, 'success');
-                    }
-                });
-            }
-            item.addEventListener('click', (e) => {
-                if (!e.target.closest('.track-action-btn')) {
-                    if (typeof AudioPlayer !== 'undefined') {
-                        AudioPlayer.replacePlaylistWithTrack(album, idx);
-                        const modal = document.getElementById('albumModal');
-                        if (modal) modal.classList.remove('active');
-                    }
+            });
+        }
+        const prevBtn = modalContent.querySelector('.prev-track-btn');
+        const nextBtn = modalContent.querySelector('.next-track-btn');
+        const addToPlaylistBtn = modalContent.querySelector('.add-to-playlist-btn');
+        const replacePlaylistBtn = modalContent.querySelector('.replace-playlist-btn');
+        const showPlaylistBtn = modalContent.querySelector('.show-playlist-btn');
+        const closeBtn = modalContent.querySelector('.modal-close-btn');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => {
+                if (typeof AudioPlayer !== 'undefined') {
+                    AudioPlayer.previousTrack();
                 }
             });
-        });
-    },
-    setupPlaylistControls(album, modal) {
-        const addFullAlbumBtn = document.getElementById('addFullAlbumToQueueBtn');
-        const replacePlaylistBtn = document.getElementById('replacePlaylistWithAlbumBtn');
-        const showPlaylistBtn = document.getElementById('showCurrentPlaylistBtn');
-        const clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
-        if (addFullAlbumBtn) {
-            addFullAlbumBtn.onclick = () => {
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => {
                 if (typeof AudioPlayer !== 'undefined') {
-                    AudioPlayer.addAlbumToQueue(album);
+                    AudioPlayer.nextTrack();
+                }
+            });
+        }
+        if (addToPlaylistBtn) {
+            addToPlaylistBtn.addEventListener('click', () => {
+                if (typeof AudioPlayer !== 'undefined') {
+                    AudioPlayer.addAlbumToPlaylist(album);
                     Utils.showNotification(`Альбом "${album.title}" добавлен в плейлист`, 'success');
                 }
-            };
+            });
         }
         if (replacePlaylistBtn) {
-            replacePlaylistBtn.onclick = () => {
+            replacePlaylistBtn.addEventListener('click', () => {
                 if (typeof AudioPlayer !== 'undefined') {
                     AudioPlayer.replacePlaylistWithAlbum(album);
-                    Utils.showNotification(`Плейлист заменен альбомом "${album.title}"`, 'success');
+                    Utils.showNotification(`Плейлист заменен альбомом: ${album.title}`, 'success');
                     modal.classList.remove('active');
                 }
-            };
+            });
         }
         if (showPlaylistBtn) {
-            showPlaylistBtn.onclick = () => {
+            showPlaylistBtn.addEventListener('click', () => {
                 if (typeof AudioPlayer !== 'undefined') {
-                    AudioPlayer.showCurrentPlaylist();
+                    AudioPlayer.showPlaylist();
                 }
-            };
+            });
         }
-        if (clearPlaylistBtn) {
-            clearPlaylistBtn.onclick = () => {
-                if (confirm('Очистить текущий плейлист?')) {
-                    if (typeof AudioPlayer !== 'undefined') {
-                        AudioPlayer.clearPlaylist();
-                        Utils.showNotification('Плейлист очищен', 'info');
-                    }
-                }
-            };
-        }
-    },
-    setupModalClose(modal) {
-        const closeBtn = document.querySelector('#albumModal .modal-close');
         if (closeBtn) {
-            closeBtn.onclick = () => {
+            closeBtn.addEventListener('click', () => {
                 modal.classList.remove('active');
-            };
+            });
         }
+        modal.classList.add('active');
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.classList.remove('active');
         });
