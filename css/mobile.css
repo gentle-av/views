@@ -31,7 +31,7 @@
         background: var(--yellow);
         border-radius: 4px;
     }
-     .sidebar {
+    .sidebar {
         position: fixed;
         top: 0;
         bottom: 0;
@@ -258,6 +258,21 @@
         background: var(--bg1);
         z-index: 10;
     }
+
+    /* Стили для заголовка и поиска в мобильной версии */
+    .library-header {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .library-header h2 {
+        margin-bottom: 0;
+    }
+
+    .search-box {
+        width: 100%;
+    }
 }
 
 @media (max-width: 480px) {
@@ -348,5 +363,17 @@
         width: 44px;
         height: 44px;
         font-size: 1.1rem;
+    }
+
+    .library-header h2 {
+        font-size: 1rem;
+    }
+
+    .search-box {
+        padding: 6px 12px;
+    }
+
+    .search-box input {
+        font-size: 0.9rem;
     }
 }
