@@ -3,6 +3,10 @@
         <div class="library-header">
             <h2><i class="fas fa-album"></i> Альбомы</h2>
             <div class="header-controls">
+                <button class="playlist-toggle-btn" id="playlistToggleBtn" title="Показать плейлист">
+                    <i class="fas fa-list"></i>
+                    <span>Плейлист</span>
+                </button>
                 <button class="refresh-btn" title="Обновить базу данных">
                     <i class="fas fa-sync-alt"></i>
                     <span>Обновить</span>
@@ -16,5 +20,14 @@
         <div class="albums-grid" id="albumsGrid">
             <div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка альбомов...</div>
         </div>
+    </div>
+    <div class="playlist-sidebar" id="playlistSidebar">
+        <div class="playlist-sidebar-header">
+            <h3><i class="fas fa-list"></i> Плейлист</h3>
+            <button class="playlist-sidebar-close" id="playlistSidebarClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="playlistContainer" class="playlist-container"></div>
     </div>
 </div>

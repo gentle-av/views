@@ -1,4 +1,3 @@
-// js/app.js
 const App = {
     currentPage: 'video',
     loadedScripts: {
@@ -93,14 +92,22 @@ const App = {
                 script1.src = 'js/modules/album-library.js';
                 const script2 = document.createElement('script');
                 script2.src = 'js/modules/audio-player.js';
+                const script3 = document.createElement('script');
+                script3.src = 'js/modules/playlist-viewer.js';
                 script1.onload = () => {
                     script2.onload = () => {
-                        if (typeof AlbumLibrary !== 'undefined') {
-                            setTimeout(() => AlbumLibrary.init(), 100);
-                        }
-                        if (typeof AudioPlayer !== 'undefined') {
-                            setTimeout(() => AudioPlayer.init(), 150);
-                        }
+                        script3.onload = () => {
+                            if (typeof AlbumLibrary !== 'undefined') {
+                                setTimeout(() => AlbumLibrary.init(), 100);
+                            }
+                            if (typeof AudioPlayer !== 'undefined') {
+                                setTimeout(() => AudioPlayer.init(), 150);
+                            }
+                            if (typeof PlaylistViewer !== 'undefined') {
+                                setTimeout(() => PlaylistViewer.init(), 200);
+                            }
+                        };
+                        document.body.appendChild(script3);
                     };
                     document.body.appendChild(script2);
                 };

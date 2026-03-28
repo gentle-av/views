@@ -18,6 +18,13 @@ const AlbumLibrary = {
         this.setupEventListeners();
     },
 
+    closePlaylistSidebar() {
+        const sidebar = document.getElementById('playlistSidebar');
+        if (sidebar) {
+            sidebar.classList.remove('open');
+        }
+    },
+
     setupEventListeners() {
         const searchInput = document.getElementById('albumSearch');
         if (searchInput) {
@@ -25,11 +32,63 @@ const AlbumLibrary = {
                 this.filterAlbums(e.target.value);
             });
         }
-
         const refreshBtn = document.querySelector('.refresh-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => this.refreshDatabase());
         }
+        const playlistToggleBtn = document.getElementById('playlistToggleBtn');
+        if (playlistToggleBtn) {
+            playlistToggleBtn.addEventListener('click', () => this.openPlaylistSidebar());
+        }
+        const playlistSidebarClose = document.getElementById('playlistSidebarClose');
+        if (playlistSidebarClose) {
+            playlistSidebarClose.addEventListener('click', () => this.closePlaylistSidebar());
+        }
+    },
+
+    openPlaylistSidebar() {
+        const sidebar = document.getElementById('playlistSidebar');
+        if (sidebar) {
+            sidebar.classList.add('open');
+            if (typeof PlaylistViewer !== 'undefined') {
+                PlaylistViewer.init();
+            }
+        }
+    },
+
+    togglePlaylist() {
+        const playlistSection = document.getElementById('playlistSection');
+        const playlistToggleBtn = document.getElementById('playlistToggleBtn');
+        if (playlistSection) {
+            if (playlistSection.style.display === 'none') {
+                playlistSection.style.display = 'block';
+                if (playlistToggleBtn) playlistToggleBtn.classList.add('active');
+                if (typeof PlaylistViewer !== 'undefined') {
+                    PlaylistViewer.init();
+                }
+                if (window.innerWidth <= 768) {
+                    setTimeout(() => {
+                        playlistSection.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }, 100);
+                }
+            } else {
+                playlistSection.style.display = 'none';
+                if (playlistToggleBtn) playlistToggleBtn.classList.remove('active');
+            }
+        }
+    },
+
+    hidePlaylist() {
+        const playlistSection = document.getElementById('playlistSection');
+        const playlistToggleBtn = document.getElementById('playlistToggleBtn');
+        if (playlistSection) {
+            playlistSection.style.display = 'none';
+            if (playlistToggleBtn) playlistToggleBtn.classList.remove('active');
+        }
+    },
+
+    showPlaylistSection() {
+        this.openPlaylistSidebar();
     },
 
     async loadArtists() {
@@ -238,6 +297,7 @@ const AlbumLibrary = {
     },
 
     showAlbumModal(album) {
+        console.log('showAlbumModal called');
         const modal = document.getElementById('albumModal');
         if (!modal) return;
         const modalContent = modal.querySelector('.modal-content');
@@ -259,8 +319,8 @@ const AlbumLibrary = {
                     <button class="modal-control-btn prev-track-btn" title="Предыдущий трек"><i class="fas fa-step-backward"></i></button>
                     <button class="modal-control-btn add-to-playlist-btn" title="Добавить в плейлист"><i class="fas fa-plus-circle"></i></button>
                     <button class="modal-control-btn replace-playlist-btn" title="Заменить плейлист"><i class="fas fa-exchange-alt"></i></button>
-                    <button class="modal-control-btn next-track-btn" title="Следующий трек"><i class="fas fa-step-forward"></i></button>
                     <button class="modal-control-btn show-playlist-btn" title="Показать плейлист"><i class="fas fa-list"></i></button>
+                    <button class="modal-control-btn next-track-btn" title="Следующий трек"><i class="fas fa-step-forward"></i></button>
                     <button class="modal-close-btn"><i class="fas fa-times"></i></button>
                 </div>
             </div>
@@ -278,39 +338,72 @@ const AlbumLibrary = {
                     <div class="track-controls">
                         <button class="track-control-btn replace-playlist-with-track" title="Заменить плейлист этим треком"><i class="fas fa-exchange-alt"></i></button>
                         <button class="track-control-btn add-after-current" title="Добавить после текущего"><i class="fas fa-plus-circle"></i></button>
+                        <button class="track-control-btn show-playlist-from-track" title="Показать плейлист"><i class="fas fa-list"></i></button>
                     </div>
                 </div>
             `).join('');
             tracksList.querySelectorAll('.track-item').forEach(item => {
                 const idx = parseInt(item.dataset.trackIndex);
                 const trackName = item.dataset.trackName;
-                const trackPath = item.dataset.trackPath;
                 const replacePlaylistBtn = item.querySelector('.replace-playlist-with-track');
                 const addAfterCurrentBtn = item.querySelector('.add-after-current');
+                const showPlaylistBtn = item.querySelector('.show-playlist-from-track');
                 if (replacePlaylistBtn) {
-                    replacePlaylistBtn.addEventListener('click', (e) => {
+                    replacePlaylistBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
+                        console.log('replacePlaylistWithTrack clicked for track:', trackName);
                         if (typeof AudioPlayer !== 'undefined') {
                             AudioPlayer.replacePlaylistWithTrack(album, idx);
                             Utils.showNotification(`Плейлист заменен треком: ${trackName}`, 'success');
                             modal.classList.remove('active');
+                            console.log('Calling showPlaylistSection from replacePlaylist');
+                            if (typeof AlbumLibrary !== 'undefined' && AlbumLibrary.showPlaylistSection) {
+                                AlbumLibrary.showPlaylistSection();
+                            } else {
+                                console.log('AlbumLibrary.showPlaylistSection not available');
+                            }
                         }
                     });
                 }
                 if (addAfterCurrentBtn) {
-                    addAfterCurrentBtn.addEventListener('click', (e) => {
+                    addAfterCurrentBtn.addEventListener('click', function(e) {
                         e.stopPropagation();
+                        console.log('addAfterCurrent clicked for track:', trackName);
                         if (typeof AudioPlayer !== 'undefined') {
                             AudioPlayer.addTrackAfterCurrent(album, idx);
                             Utils.showNotification(`Трек добавлен после текущего: ${trackName}`, 'success');
+                            console.log('Calling showPlaylistSection from addAfterCurrent');
+                            if (typeof AlbumLibrary !== 'undefined' && AlbumLibrary.showPlaylistSection) {
+                                AlbumLibrary.showPlaylistSection();
+                            } else {
+                                console.log('AlbumLibrary.showPlaylistSection not available');
+                            }
                         }
                     });
                 }
-                item.addEventListener('click', (e) => {
+                if (showPlaylistBtn) {
+                    showPlaylistBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        console.log('showPlaylistFromTrack clicked');
+                        if (typeof AlbumLibrary !== 'undefined' && AlbumLibrary.showPlaylistSection) {
+                            AlbumLibrary.showPlaylistSection();
+                        } else {
+                            console.log('AlbumLibrary.showPlaylistSection not available');
+                        }
+                        if (typeof PlaylistViewer !== 'undefined') {
+                            PlaylistViewer.init();
+                        }
+                        modal.classList.remove('active');
+                    });
+                }
+                item.addEventListener('click', function(e) {
                     if (!e.target.closest('.track-control-btn')) {
+                        console.log('Track item clicked, playing track:', trackName);
                         if (typeof AudioPlayer !== 'undefined') {
                             AudioPlayer.loadAlbum(album);
-                            setTimeout(() => AudioPlayer.playTrack(idx), 500);
+                            setTimeout(function() {
+                                AudioPlayer.playTrack(idx);
+                            }, 500);
                             modal.classList.remove('active');
                         }
                     }
@@ -324,89 +417,104 @@ const AlbumLibrary = {
         const showPlaylistBtn = modalContent.querySelector('.show-playlist-btn');
         const closeBtn = modalContent.querySelector('.modal-close-btn');
         if (prevBtn) {
-            prevBtn.addEventListener('click', () => {
+            prevBtn.addEventListener('click', function() {
+                console.log('prevTrack clicked');
                 if (typeof AudioPlayer !== 'undefined') {
                     AudioPlayer.previousTrack();
                 }
             });
         }
         if (nextBtn) {
-            nextBtn.addEventListener('click', () => {
+            nextBtn.addEventListener('click', function() {
+                console.log('nextTrack clicked');
                 if (typeof AudioPlayer !== 'undefined') {
                     AudioPlayer.nextTrack();
                 }
             });
         }
         if (addToPlaylistBtn) {
-            addToPlaylistBtn.addEventListener('click', () => {
+            addToPlaylistBtn.addEventListener('click', function() {
+                console.log('addToPlaylist clicked for album:', album.title);
                 if (typeof AudioPlayer !== 'undefined') {
                     AudioPlayer.addAlbumToPlaylist(album);
                     Utils.showNotification(`Альбом "${album.title}" добавлен в плейлист`, 'success');
+                    console.log('Calling showPlaylistSection from addToPlaylist');
+                    if (typeof AlbumLibrary !== 'undefined' && AlbumLibrary.showPlaylistSection) {
+                        AlbumLibrary.showPlaylistSection();
+                    } else {
+                        console.log('AlbumLibrary.showPlaylistSection not available');
+                    }
                 }
             });
         }
         if (replacePlaylistBtn) {
-            replacePlaylistBtn.addEventListener('click', () => {
+            replacePlaylistBtn.addEventListener('click', function() {
+                console.log('replacePlaylist clicked for album:', album.title);
                 if (typeof AudioPlayer !== 'undefined') {
                     AudioPlayer.replacePlaylistWithAlbum(album);
                     Utils.showNotification(`Плейлист заменен альбомом: ${album.title}`, 'success');
                     modal.classList.remove('active');
+                    console.log('Calling showPlaylistSection from replacePlaylist');
+                    if (typeof AlbumLibrary !== 'undefined' && AlbumLibrary.showPlaylistSection) {
+                        AlbumLibrary.showPlaylistSection();
+                    } else {
+                        console.log('AlbumLibrary.showPlaylistSection not available');
+                    }
                 }
             });
         }
         if (showPlaylistBtn) {
-            showPlaylistBtn.addEventListener('click', () => {
-                if (typeof AudioPlayer !== 'undefined') {
-                    AudioPlayer.showPlaylist();
+            showPlaylistBtn.addEventListener('click', function() {
+                console.log('showPlaylistBtn clicked');
+                if (typeof AlbumLibrary !== 'undefined' && AlbumLibrary.showPlaylistSection) {
+                    AlbumLibrary.showPlaylistSection();
+                } else {
+                    console.log('AlbumLibrary.showPlaylistSection not available');
                 }
+                if (typeof PlaylistViewer !== 'undefined') {
+                    PlaylistViewer.init();
+                }
+                modal.classList.remove('active');
             });
         }
         if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
+            closeBtn.addEventListener('click', function() {
+                console.log('closeBtn clicked');
                 modal.classList.remove('active');
             });
         }
         modal.classList.add('active');
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.remove('active');
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                console.log('modal background clicked');
+                modal.classList.remove('active');
+            }
         });
     },
 
     async refreshDatabase() {
         const refreshBtn = document.querySelector('.refresh-btn');
         if (!refreshBtn) return;
-
         refreshBtn.classList.add('refreshing');
         refreshBtn.disabled = true;
-
         try {
             const scanResponse = await fetch('/api/music/scan', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Content-Type': 'application/json' }
             });
-
             if (!scanResponse.ok) {
                 throw new Error('Ошибка при сканировании');
             }
-
             const scanResult = await scanResponse.json();
-
             if (scanResult.status === 'success') {
                 const removeResponse = await fetch('/api/music/remove-missing', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Content-Type': 'application/json' }
                 });
-
                 if (!removeResponse.ok) {
                     throw new Error('Ошибка при удалении отсутствующих файлов');
                 }
-
                 const removeResult = await removeResponse.json();
-
                 if (removeResult.status === 'success') {
                     Utils.showNotification('База данных обновлена успешно', 'success');
                     await this.loadArtists();

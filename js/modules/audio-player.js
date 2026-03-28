@@ -143,6 +143,9 @@ const AudioPlayer = {
             await this.sendToMusium('/api/add', { path: track.path });
         }
         Utils.showNotification(`Добавлено ${tracksToAdd.length} треков в плейлист`, 'success');
+        if (typeof PlaylistViewer !== 'undefined') {
+            PlaylistViewer.refresh();
+        }
     },
 
     async replacePlaylist(album, trackIndex = null) {
@@ -352,6 +355,16 @@ const AudioPlayer = {
 
     addAlbumToPlaylist(album) {
         this.addToPlaylist(album);
+        setTimeout(() => {
+            const playlistSection = document.getElementById('playlistSection');
+            if (playlistSection && playlistSection.style.display === 'none') {
+                playlistSection.style.display = 'block';
+            }
+            if (typeof PlaylistViewer !== 'undefined') {
+                PlaylistViewer.refresh();
+            }
+            playlistSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 500);
     },
 
     replacePlaylistWithAlbum(album) {
