@@ -310,7 +310,7 @@ const AudioPlayer = {
 
     async stop() {
         if (this.musiumAvailable) {
-            await this.stopMusium();
+             await this.stopMusium();
         }
         this.audioElement.pause();
         this.audioElement.src = '';
@@ -319,6 +319,9 @@ const AudioPlayer = {
         this.updatePlayerUI();
         const playerBar = document.getElementById('audioPlayerBar');
         if (playerBar) playerBar.style.display = 'none';
+        if (typeof PlaylistViewer !== 'undefined') {
+            PlaylistViewer.refresh();
+        }
     },
 
     setVolume(event) {

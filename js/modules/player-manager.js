@@ -376,17 +376,24 @@ const PlayerManager = {
             console.log('Player running check result:', isAvailable);
             if (!isAvailable) {
                 console.log('Player not running, launching...');
-                const launchResult = await this.launchPlayerWithFile(path);
+                const launchResult = await this.launchPlayerDirect(path);
                 console.log('Launch result:', launchResult);
-                if (!launchResult) throw new Error('Failed to launch player');
-                await this.waitForPlayer(15000);
-            } else {
-                console.log('Player running, opening file...');
-                const openResult = await this.callPlayerApi('/api/openfile', { path: path });
-                console.log('Open result:', openResult);
-                if (!openResult || !openResult.success) throw new Error(openResult?.error || 'Failed to open file');
-                await this.delay(2000);
+                if (!launchResult) {
+                    Utils.showNotification('Не удалось запустить плеер', 'error');
+                    return;
+                }
+                const started = await this.waitForPlayer(30000);
+                if (!started) {
+                    Utils.showNotification('Плеер не запустился', 'error');
+                    return;
+                }
             }
+            const openResult = await this.openFileInPlayer(path);
+            console.log('Open result:', openResult);
+            if (!openResult || !openResult.success) {
+                throw new Error(openResult?.error || 'Failed to open file');
+            }
+            await this.delay(2000);
             const newStatus = await this.checkPlayerRunningWithStatus();
             console.log('New status after opening:', newStatus);
             if (newStatus && newStatus.available === true) {
@@ -402,6 +409,7 @@ const PlayerManager = {
                 this.startStatusPolling();
                 this.consecutiveErrors = 0;
                 if (!this.isFullscreen) setTimeout(() => this.toggleFullscreen(), 1500);
+                Utils.showNotification(`Воспроизведение: ${path.split('/').pop()}`, 'success');
             } else {
                 throw new Error('Player did not load the file');
             }
@@ -410,6 +418,49 @@ const PlayerManager = {
             Utils.showNotification(error.message || 'Ошибка воспроизведения', 'error');
             this.hideControl();
             this.showLibrary();
+        }
+    },
+
+    async launchPlayerDirect(path) {
+        try {
+            console.log('Launching player via /api/open');
+            const response = await fetch(`${this.getServerUrl()}/api/open`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: path })
+            });
+            const data = await response.json();
+            console.log('Launch response:', data);
+            if (data.success && data.pid) {
+                console.log('Player started with PID:', data.pid);
+                return true;
+            }
+            return data.success === true;
+        } catch (error) {
+            console.error('Error launching player:', error);
+            return false;
+        }
+    },
+
+    async openFileInPlayer(path) {
+        try {
+            console.log('Opening file in player via /api/openfile');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(`${this.getPlayerUrl()}/api/openfile`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: path }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error opening file in player:', error);
+            return null;
         }
     },
 
@@ -452,31 +503,20 @@ const PlayerManager = {
 
     async waitForPlayer(timeoutMs) {
         const startTime = Date.now();
+        let attempts = 0;
         while (Date.now() - startTime < timeoutMs) {
+            attempts++;
+            console.log(`Waiting for player, attempt ${attempts}...`);
             const isRunning = await this.checkPlayerRunning();
             if (isRunning) {
                 console.log('Player is now running');
-                await this.delay(2000);
+                await this.delay(1000);
                 return true;
             }
-            await this.delay(1000);
+            await this.delay(2000);
         }
-        throw new Error('Player did not start within timeout');
-    },
-
-    async launchPlayerWithFile(path) {
-        try {
-            const response = await fetch(`${this.getServerUrl()}/api/open`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path: path })
-            });
-            const data = await response.json();
-            return data.success === true;
-        } catch (error) {
-            console.error('Error launching player:', error);
-            return false;
-        }
+        console.log('Player did not start within timeout');
+        return false;
     },
 
     showControl() {

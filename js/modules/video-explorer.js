@@ -1,15 +1,21 @@
 const VideoExplorer = {
     currentPath: '/mnt/video',
     history: [],
+
     getServerUrl() {
         return `http://${window.location.hostname}:${window.location.port}`;
     },
+
     async init() {
         const videoContent = document.getElementById('videoContent');
         if (videoContent) {
+            if (typeof PlayerManager !== 'undefined' && PlayerManager.init) {
+                PlayerManager.init();
+            }
             await this.loadDirectory(this.currentPath);
         }
     },
+
     async loadDirectory(path, addToHistory = true) {
         const videoContent = document.getElementById('videoContent');
         if (!videoContent) {
@@ -41,6 +47,7 @@ const VideoExplorer = {
             videoContent.innerHTML = '<div class="empty"><i class="fas fa-wifi"></i> Ошибка подключения к серверу: ' + error.message + '</div>';
         }
     },
+
     renderContent(items) {
         const content = document.getElementById('videoContent');
         if (!content) return;
@@ -50,46 +57,69 @@ const VideoExplorer = {
             return;
         }
         content.innerHTML = visibleItems.map(item => `
-            <div class="item-card" data-path="${item.path}" data-is-dir="${item.isDirectory}">
+            <div class="item-card" data-path="${item.path}" data-is-dir="${item.isDirectory}" data-name="${Utils.escapeHtml(item.name)}">
                 <i class="fas ${item.isDirectory ? 'fa-folder folder-icon' : 'fa-file-video video-icon'}"></i>
                 <div class="item-name" title="${Utils.escapeHtml(item.name)}">${Utils.escapeHtml(Utils.shortenName(item.name))}</div>
                 ${!item.isDirectory ? `<div class="item-size">${item.size || ''}</div>` : ''}
             </div>
         `).join('');
         document.querySelectorAll('.item-card').forEach(card => {
-            card.addEventListener('click', () => {
+            card.addEventListener('click', async (e) => {
+                e.stopPropagation();
                 const path = card.dataset.path;
                 const isDir = card.dataset.isDir === 'true';
+                const fileName = card.dataset.name || path.split('/').pop();
+                console.log('Card clicked:', { path, isDir, fileName });
                 if (isDir) {
-                    this.loadDirectory(path, true);
+                    await this.loadDirectory(path, true);
                 } else {
-                    this.playVideo(path);
+                    console.log('Calling playVideo with path:', path);
+                    await this.playVideo(path, fileName);
                 }
             });
         });
     },
-    async playVideo(path) {
+
+    async playVideo(path, fileName = null) {
+        console.log('playVideo called with path:', path);
+        const displayName = fileName || path.split('/').pop();
+
         try {
-            if (typeof PlayerManager !== 'undefined') {
-                await PlayerManager.playMedia(path);
-            } else {
+            if (typeof PlayerManager === 'undefined') {
+                console.error('PlayerManager is not defined');
+                Utils.showNotification('Плеер недоступен', 'error');
+                return;
+            }
+
+            console.log('PlayerManager exists, calling playMedia');
+            await PlayerManager.playMedia(path);
+            console.log('playMedia completed successfully');
+
+        } catch (error) {
+            console.error('Error playing video:', error);
+            Utils.showNotification(`Ошибка воспроизведения: ${error.message || 'неизвестная ошибка'}`, 'error');
+
+            try {
+                console.log('Trying fallback via /api/open...');
                 const response = await fetch(`${this.getServerUrl()}/api/open`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path: path })
                 });
                 const data = await response.json();
+                console.log('Fallback response:', data);
                 if (data.success) {
-                    Utils.showNotification(`Воспроизведение: ${path.split('/').pop()}`, 'success');
+                    Utils.showNotification(`Воспроизведение: ${displayName}`, 'success');
                 } else {
                     Utils.showNotification(data.error || 'Ошибка воспроизведения', 'error');
                 }
+            } catch (fallbackError) {
+                console.error('Fallback also failed:', fallbackError);
+                Utils.showNotification('Ошибка подключения к серверу', 'error');
             }
-        } catch (error) {
-            console.error('Error playing video:', error);
-            Utils.showNotification('Ошибка подключения к серверу', 'error');
         }
     },
+
     updateBreadcrumbs() {
         const breadcrumbs = document.getElementById('videoBreadcrumbs');
         if (!breadcrumbs) return;

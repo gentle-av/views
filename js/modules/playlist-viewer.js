@@ -64,7 +64,14 @@ async checkMusiumAvailable() {
 async refresh() {
     console.log('PlaylistViewer.refresh called');
     await this.checkMusiumAvailable();
-    if (this.musiumAvailable) { await this.updateDisplay(); }
+    if (this.musiumAvailable) {
+        await this.updateDisplay();
+    } else {
+        const container = document.getElementById('playlistContainer');
+        if (container) {
+            container.innerHTML = `<div class="playlist-empty"><i class="fas fa-exclamation-triangle"></i><p>Аудиоплеер не запущен</p><p class="playlist-empty-hint">Нажмите "Добавить в плейлист" чтобы запустить</p></div>`;
+        }
+    }
 },
 
 async fetchPlaylist() {
@@ -97,7 +104,12 @@ async sendCommand(endpoint, data = {}) {
         const result = await response.json();
         console.log(`Response from ${endpoint}:`, result);
         return result;
-    } catch (error) { console.error(`Error sending command ${endpoint}:`, error); return null; }
+    } catch (error) {
+        console.error(`Error sending command ${endpoint}:`, error);
+        this.musiumAvailable = false;
+        this.stopAutoUpdate();
+        return null;
+    }
 },
 
 async playTrack(index) {
@@ -146,7 +158,7 @@ async playPause() {
 async stopPlayback() {
     console.log('Stop playback');
     await this.sendCommand('/api/stop');
-    await this.updateDisplay();
+    await this.refresh();
 },
 
 formatTime(seconds) {
