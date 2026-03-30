@@ -114,8 +114,7 @@ async sendCommand(endpoint, data = {}) {
 
 async playTrack(index) {
     console.log(`Play track at index: ${index}`);
-    await this.sendCommand('/api/replacePlaylist', { tracks: [this.playlist[index].path] });
-    await this.sendCommand('/api/play');
+    await this.sendCommand('/api/playIndex', { index: index });
     await this.updateDisplay();
 },
 
@@ -197,7 +196,7 @@ async updateDisplay() {
         const trackArtist = track.artist && track.artist !== 'Unknown' ? track.artist : '';
         let trackDisplay = `${trackNumber} - ${trackName}`;
         if (trackArtist) trackDisplay += ` - ${trackArtist}`;
-        html += `<div class="playlist-track ${isCurrent ? 'current' : ''}" data-index="${idx}"><div class="playlist-track-name" title="${this.escapeHtml(trackDisplay)}">${this.escapeHtml(trackDisplay)}</div><div class="playlist-track-controls"><button class="playlist-track-play" data-index="${idx}" title="Воспроизвести"><i class="fas fa-play"></i></button><button class="playlist-track-remove" data-index="${idx}" title="Удалить"><i class="fas fa-trash"></i></button></div></div>`;
+        html += `<div class="playlist-track ${isCurrent ? 'current' : ''}" data-index="${idx}"><div class="playlist-track-name" title="${this.escapeHtml(trackDisplay)}">${this.escapeHtml(trackDisplay)}</div><div class="playlist-track-controls"><button class="playlist-track-play" data-index="${idx}" title="Воспроизвести"><i class="fas fa-play"></i></button></div></div>`;
     }
     html += `</div>`;
     container.innerHTML = html;
@@ -217,7 +216,6 @@ attachEventListeners() {
     const clearBtn = document.getElementById('playlistClearBtn');
     if (clearBtn) { clearBtn.addEventListener('click', () => this.clearPlaylist()); }
     document.querySelectorAll('.playlist-track-play').forEach(btn => { btn.addEventListener('click', async (e) => { e.stopPropagation(); const index = parseInt(btn.dataset.index); await this.playTrack(index); }); });
-    document.querySelectorAll('.playlist-track-remove').forEach(btn => { btn.addEventListener('click', async (e) => { e.stopPropagation(); const index = parseInt(btn.dataset.index); await this.removeTrack(index); }); });
     document.querySelectorAll('.playlist-track').forEach(track => { track.addEventListener('click', async () => { const index = parseInt(track.dataset.index); await this.playTrack(index); }); });
 },
 
