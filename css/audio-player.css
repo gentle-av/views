@@ -1,35 +1,34 @@
-.audio-player-bar {
+.audio-player-control-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     background: var(--bg1);
     border-top: 2px solid var(--yellow);
     padding: 12px 20px;
+    z-index: 100;
+    transform: translateY(100%);
+    transition: transform var(--transition-normal);
+}
+.audio-player-control-panel.active {
+    transform: translateY(0);
+}
+.player-panel-content {
     display: flex;
     align-items: center;
     gap: 20px;
-    flex-shrink: 0;
-    z-index: 100;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
 }
-
-.player-album-art {
-    width: 56px;
-    height: 56px;
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    background: var(--bg2);
-    flex-shrink: 0;
+.player-panel-info {
+    flex: 2;
+    min-width: 200px;
 }
-
-.player-album-art img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.player-panel-track-info {
+    margin-bottom: 8px;
 }
-
-.player-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.player-track {
+.player-panel-track-name {
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--fg0);
@@ -37,69 +36,96 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-.player-album {
+.player-panel-track-artist {
     font-size: 0.8rem;
-    color: var(--fg3);
+    color: var(--yellow);
 }
-
-.player-artist {
+.player-panel-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.player-panel-time-current,
+.player-panel-time-total {
     font-size: 0.75rem;
-    color: var(--yellow);
+    color: var(--fg3);
+    min-width: 40px;
 }
-
-.player-controls {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-}
-
-.player-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-round);
-    background: var(--bg2);
-    border: 1px solid var(--bg3);
-    color: var(--fg1);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    font-size: 1rem;
-}
-
-.player-btn:hover {
-    background: var(--bg3);
-    border-color: var(--yellow);
-    color: var(--yellow);
-}
-
-.player-btn.primary {
-    background: var(--yellow);
-    border-color: var(--orange);
-    color: var(--bg0);
-}
-
-.player-btn.primary:hover {
-    transform: scale(1.05);
-}
-
-.player-volume {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.volume-slider {
-    width: 80px;
+.player-panel-progress-bar {
+    flex: 1;
     height: 4px;
     background: var(--bg3);
     border-radius: 2px;
     cursor: pointer;
     position: relative;
 }
-
-.volume-progress {
+.player-panel-progress-fill {
     height: 100%;
     background: var(--yellow);
     border-radius: 2px;
-    width: 70%;
+    width: 0%;
+}
+.player-panel-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+.player-panel-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg2);
+    border: 1px solid var(--bg3);
+    color: var(--fg1);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.player-panel-btn:hover {
+    background: var(--bg3);
+    border-color: var(--yellow);
+    color: var(--yellow);
+    transform: scale(1.05);
+}
+.player-panel-play {
+    background: var(--yellow);
+    border-color: var(--orange);
+    color: var(--bg0);
+}
+.player-panel-play:hover {
+    transform: scale(1.1);
+}
+@media (max-width: 768px) {
+    .audio-player-control-panel {
+        padding: 10px 15px;
+    }
+    .player-panel-content {
+        gap: 12px;
+    }
+    .player-panel-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .player-panel-track-name {
+        font-size: 0.85rem;
+    }
+    .player-panel-track-artist {
+        font-size: 0.7rem;
+    }
+    .player-panel-btn {
+        width: 36px;
+        height: 36px;
+    }
+}
+@media (max-width: 480px) {
+    .player-panel-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .player-panel-controls {
+        justify-content: center;
+        order: -1;
+    }
 }

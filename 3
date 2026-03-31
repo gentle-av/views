@@ -8,8 +8,6 @@ const AudioPlayer = {
     musiumUrl: null,
     musiumAvailable: false,
     pendingAction: null,
-    panelUpdateInterval: null,
-    lastPlaylistLength: 0,
 
     getServerUrl() {
         return `http://${window.location.hostname}:${window.location.port}`;
@@ -174,7 +172,6 @@ const AudioPlayer = {
         if (typeof PlaylistViewer !== 'undefined') {
             PlaylistViewer.refresh();
         }
-        this.refreshPanel();
     },
 
     async replacePlaylist(album, trackIndex = null) {
@@ -189,7 +186,6 @@ const AudioPlayer = {
         await this.sendToMusium('/api/replacePlaylist', { tracks: trackPaths });
         await this.sendToMusium('/api/play', {});
         Utils.showNotification(`Плейлист заменен ${tracksToReplace.length} треками`, 'success');
-        this.refreshPanel();
     },
 
     async addAfterCurrent(album, trackIndex) {
@@ -198,14 +194,6 @@ const AudioPlayer = {
         if (!started) return;
         await this.sendToMusium('/api/addAfterCurrent', { path: track.path });
         Utils.showNotification(`Трек "${track.name}" добавлен после текущего`, 'success');
-        this.refreshPanel();
-    },
-
-    async clearPlaylist() {
-        await this.sendToMusium('/api/clear');
-        if (typeof PlaylistViewer !== 'undefined') PlaylistViewer.refresh();
-        Utils.showNotification('Плейлист очищен', 'success');
-        this.refreshPanel();
     },
 
     async playTrackInMusium(album, trackIndex) {
@@ -215,7 +203,6 @@ const AudioPlayer = {
         await this.sendToMusium('/api/replacePlaylist', { tracks: [track.path] });
         await this.sendToMusium('/api/play', {});
         Utils.showNotification(`Воспроизведение: ${track.name}`, 'success');
-        this.refreshPanel();
     },
 
     async playSingleTrack(album, trackIndex) {
@@ -274,7 +261,6 @@ const AudioPlayer = {
         if (artistName) artistName.textContent = album.artist;
         if (playerBar) playerBar.style.display = 'flex';
         this.updateTrackInfo();
-        this.refreshPanel();
     },
 
     async playAlbumInMusium(album) {
@@ -285,37 +271,31 @@ const AudioPlayer = {
         await this.sendToMusium('/api/replacePlaylist', { tracks: trackPaths });
         await this.sendToMusium('/api/play', {});
         Utils.showNotification(`Воспроизведение альбома: ${album.title}`, 'success');
-        this.refreshPanel();
     },
 
     async previousTrackMusium() {
         if (!this.musiumAvailable) return;
         await this.sendToMusium('/api/previous', {});
-        this.refreshPanel();
     },
 
     async nextTrackMusium() {
         if (!this.musiumAvailable) return;
         await this.sendToMusium('/api/next', {});
-        this.refreshPanel();
     },
 
     async pauseMusium() {
         if (!this.musiumAvailable) return;
         await this.sendToMusium('/api/pause', {});
-        this.refreshPanel();
     },
 
     async playMusium() {
         if (!this.musiumAvailable) return;
         await this.sendToMusium('/api/play', {});
-        this.refreshPanel();
     },
 
     async stopMusium() {
         if (!this.musiumAvailable) return;
         await this.sendToMusium('/api/stop', {});
-        this.refreshPanel();
     },
 
     init() {
@@ -323,9 +303,6 @@ const AudioPlayer = {
         this.setupEventListeners();
         this.createAudioElement();
         this.checkMusiumAvailable();
-        this.initPanel();
-        const panel = document.getElementById('audioPlayerControlPanel');
-        if (panel) panel.classList.remove('active');
     },
 
     createAudioElement() {
@@ -531,84 +508,68 @@ const AudioPlayer = {
     },
 
     initPanel() {
+        this.panelActive = false;
         this.panelPlayPauseBtn = document.getElementById('panelPlayPauseBtn');
         this.panelPrevBtn = document.getElementById('panelPrevBtn');
         this.panelNextBtn = document.getElementById('panelNextBtn');
         this.panelStopBtn = document.getElementById('panelStopBtn');
         this.panelClearBtn = document.getElementById('panelClearBtn');
         this.panelProgressBar = document.getElementById('panelProgressBar');
+        this.panelVolumeSlider = document.getElementById('panelVolumeSlider');
         this.panelTrackName = document.getElementById('panelTrackName');
         this.panelTrackArtist = document.getElementById('panelTrackArtist');
         this.panelTimeCurrent = document.getElementById('panelTimeCurrent');
         this.panelTimeTotal = document.getElementById('panelTimeTotal');
         this.panelProgressFill = document.getElementById('panelProgressFill');
+        this.panelVolumeProgress = document.getElementById('panelVolumeProgress');
         if (this.panelPlayPauseBtn) this.panelPlayPauseBtn.addEventListener('click', () => this.togglePlayPause());
         if (this.panelPrevBtn) this.panelPrevBtn.addEventListener('click', () => this.previousTrack());
         if (this.panelNextBtn) this.panelNextBtn.addEventListener('click', () => this.nextTrack());
         if (this.panelStopBtn) this.panelStopBtn.addEventListener('click', () => this.stop());
         if (this.panelClearBtn) this.panelClearBtn.addEventListener('click', () => this.clearPlaylist());
         if (this.panelProgressBar) this.panelProgressBar.addEventListener('click', (e) => this.seekTo(e));
-        const panel = document.getElementById('audioPlayerControlPanel');
-        if (panel) panel.classList.remove('active');
-        if (this.panelTrackName) this.panelTrackName.textContent = 'Плейлист пуст';
-        if (this.panelTrackArtist) this.panelTrackArtist.textContent = '';
-        this.lastPlaylistLength = 0;
+        if (this.panelVolumeSlider) this.panelVolumeSlider.addEventListener('click', (e) => this.setPanelVolume(e));
+        this.updatePanel();
+        setInterval(() => this.updatePanel(), 1000);
     },
 
-    async refreshPanel() {
+    updatePanel() {
         if (!this.musiumAvailable) {
-            const panel = document.getElementById('audioPlayerControlPanel');
-            if (panel && panel.classList.contains('active')) {
-                panel.classList.remove('active');
-            }
             if (this.panelTrackName) this.panelTrackName.textContent = 'Аудиоплеер не запущен';
             if (this.panelTrackArtist) this.panelTrackArtist.textContent = '';
+            const panel = document.getElementById('audioPlayerControlPanel');
+            if (panel) panel.classList.remove('active');
             return;
         }
-        const playlistData = await this.getMusiumPlaylist();
-        const hasTracks = playlistData && playlistData.data && playlistData.data.playlist && playlistData.data.playlist.length > 0;
         const panel = document.getElementById('audioPlayerControlPanel');
-        if (!hasTracks) {
-            if (panel && panel.classList.contains('active')) {
-                panel.classList.remove('active');
-            }
-            if (this.panelTrackName && this.panelTrackName.textContent !== 'Плейлист пуст') {
-                this.panelTrackName.textContent = 'Плейлист пуст';
-            }
-            if (this.panelTrackArtist) this.panelTrackArtist.textContent = '';
-            this.lastPlaylistLength = 0;
-            return;
-        }
-        if (panel && !panel.classList.contains('active')) {
-            panel.classList.add('active');
-        }
-        const status = await this.getMusiumStatus();
-        if (status && status.data) {
-            const currentTrack = status.data.currentTrack;
-            if (currentTrack) {
-                if (this.panelTrackName) this.panelTrackName.textContent = currentTrack.title || currentTrack.name || '—';
-                if (this.panelTrackArtist) this.panelTrackArtist.textContent = currentTrack.artist || '';
-                if (this.panelTimeCurrent) this.panelTimeCurrent.textContent = this.formatTime(status.data.position);
-                if (this.panelTimeTotal) this.panelTimeTotal.textContent = this.formatTime(status.data.duration);
-                if (this.panelProgressFill && status.data.duration > 0) {
-                    const percent = (status.data.position / status.data.duration) * 100;
-                    this.panelProgressFill.style.width = percent + '%';
-                }
-                if (this.panelPlayPauseBtn) {
-                    if (status.data.isPlaying) {
-                        this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                        this.panelPlayPauseBtn.title = 'Пауза';
-                    } else {
-                        this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-                        this.panelPlayPauseBtn.title = 'Воспроизвести';
+        if (panel) panel.classList.add('active');
+        this.getMusiumStatus().then(status => {
+            if (status && status.data) {
+                const currentTrack = status.data.currentTrack;
+                if (currentTrack) {
+                    if (this.panelTrackName) this.panelTrackName.textContent = currentTrack.title || currentTrack.name || '—';
+                    if (this.panelTrackArtist) this.panelTrackArtist.textContent = currentTrack.artist || '';
+                    if (this.panelTimeCurrent) this.panelTimeCurrent.textContent = this.formatTime(status.data.position);
+                    if (this.panelTimeTotal) this.panelTimeTotal.textContent = this.formatTime(status.data.duration);
+                    if (this.panelProgressFill && status.data.duration > 0) {
+                        const percent = (status.data.position / status.data.duration) * 100;
+                        this.panelProgressFill.style.width = percent + '%';
                     }
+                    if (this.panelPlayPauseBtn) {
+                        if (status.data.isPlaying) {
+                            this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                            this.panelPlayPauseBtn.title = 'Пауза';
+                        } else {
+                            this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                            this.panelPlayPauseBtn.title = 'Воспроизвести';
+                        }
+                    }
+                } else {
+                    if (this.panelTrackName) this.panelTrackName.textContent = 'Нет трека';
+                    if (this.panelTrackArtist) this.panelTrackArtist.textContent = '';
                 }
-            } else {
-                if (this.panelTrackName) this.panelTrackName.textContent = 'Нет трека';
-                if (this.panelTrackArtist) this.panelTrackArtist.textContent = '';
             }
-        }
-        this.lastPlaylistLength = playlistData?.data?.playlist?.length || 0;
+        });
     },
 
     seekTo(event) {
@@ -618,9 +579,21 @@ const AudioPlayer = {
             if (status && status.data && status.data.duration) {
                 const position = percent * status.data.duration;
                 this.sendToMusium('/api/seek', { position: position });
-                setTimeout(() => this.refreshPanel(), 100);
             }
         });
+    },
+
+    setPanelVolume(event) {
+        const rect = this.panelVolumeSlider.getBoundingClientRect();
+        const percent = Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100));
+        if (this.panelVolumeProgress) this.panelVolumeProgress.style.width = percent + '%';
+        this.sendToMusium('/api/setVolume', { volume: percent / 100 });
+    },
+
+    async clearPlaylist() {
+        await this.sendToMusium('/api/clear');
+        if (typeof PlaylistViewer !== 'undefined') PlaylistViewer.refresh();
+        Utils.showNotification('Плейлист очищен', 'success');
     },
 
     formatTime(seconds) {
