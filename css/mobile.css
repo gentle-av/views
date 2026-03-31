@@ -270,6 +270,30 @@
         background: var(--bg1);
         z-index: 10;
     }
+    .explorer-header {
+        margin-left: 0;
+        padding: 8px 12px;
+    }
+
+    .breadcrumb {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+    }
+
+    .breadcrumb .breadcrumb-text {
+        max-width: 180px;
+    }
+
+    .breadcrumb-root {
+        margin-right: 2px;
+        padding: 5px 10px;
+    }
+
+    .breadcrumbs {
+        gap: 6px;
+        margin: 0;
+        padding: 6px 0;
+    }
 }
 
 @media (max-width: 480px) {

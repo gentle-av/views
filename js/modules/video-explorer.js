@@ -127,7 +127,7 @@ const VideoExplorer = {
         const rootPath = '/mnt/video';
         const rootBreadcrumb = document.createElement('div');
         rootBreadcrumb.className = 'breadcrumb-root';
-        rootBreadcrumb.innerHTML = '<i class="fas fa-film" title="Корневая папка видео"></i>';
+        rootBreadcrumb.innerHTML = '<i class="fas fa-film"></i><span>Главная</span>';
         rootBreadcrumb.addEventListener('click', () => {
             this.loadDirectory(rootPath, true);
         });
@@ -142,11 +142,10 @@ const VideoExplorer = {
             currentPath += '/' + part;
             const crumb = document.createElement('div');
             crumb.className = 'breadcrumb';
+            crumb.innerHTML = `<i class="fas fa-folder"></i><span class="breadcrumb-text" title="${Utils.escapeHtml(part)}">${Utils.escapeHtml(part)}</span>`;
             if (i === pathParts.length - 1) {
-                crumb.innerHTML = `<i class="fas fa-folder"></i><span class="breadcrumb-text" title="${Utils.escapeHtml(part)}">${Utils.escapeHtml(Utils.shortenName(part))}</span>`;
                 crumb.classList.add('active');
             } else {
-                crumb.innerHTML = `<i class="fas fa-folder"></i>`;
                 crumb.addEventListener('click', (e) => {
                     e.stopPropagation();
                     this.loadDirectory(currentPath, true);
