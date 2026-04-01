@@ -9,13 +9,6 @@
     align-content: start;
 }
 
-.content-grid::after {
-    content: '';
-    display: block;
-    height: 1px;
-    margin-bottom: -1px;
-}
-
 .item-card {
     display: flex;
     flex-direction: column;
@@ -92,11 +85,4 @@
     gap: 16px;
     padding: 4px;
     align-content: start;
-}
-
-.albums-grid::after {
-    content: '';
-    display: block;
-    height: 1px;
-    margin-bottom: -1px;
 }
