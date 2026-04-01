@@ -95,6 +95,7 @@
         margin-bottom: 0;
     }
     .item-card .item-name {
+        max-height: calc(1.3em * 3);
         font-size: 1.1rem;
         text-align: left;
         flex: 1;
@@ -130,7 +131,7 @@
     .album-title {
         font-size: 1.1rem;
         white-space: normal;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 3;
         display: -webkit-box;
         -webkit-box-orient: vertical;
         color: var(--fg0);
