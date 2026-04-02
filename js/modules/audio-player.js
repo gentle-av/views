@@ -338,20 +338,6 @@ const AudioPlayer = {
     await this.updateUI();
   },
 
-  async previousTrackMusium() {
-    if (!this.musiumAvailable) return;
-    await this.sendToMusium("/api/previous", {});
-    await this.delay(200);
-    await this.updateUI();
-  },
-
-  async nextTrackMusium() {
-    if (!this.musiumAvailable) return;
-    await this.sendToMusium("/api/next", {});
-    await this.delay(200);
-    await this.updateUI();
-  },
-
   async pauseMusium() {
     if (!this.musiumAvailable) return;
     await this.sendToMusium("/api/pause", {});
@@ -379,11 +365,21 @@ const AudioPlayer = {
     this.setupEventListeners();
     this.createAudioElement();
     this.initUI();
+    setTimeout(() => {
+      this.checkMusiumAvailable().then(() => {
+        if (this.musiumAvailable) {
+          this.updateUI();
+        }
+      });
+    }, 1000);
   },
 
   createAudioElement() {
     this.audioElement = new Audio();
-    this.audioElement.addEventListener("ended", () => this.nextTrack());
+    this.audioElement.addEventListener("ended", () => {
+      this.nextTrack();
+      setTimeout(() => this.updateUI(), 100);
+    });
     this.audioElement.addEventListener("timeupdate", () =>
       this.updateProgress(),
     );
@@ -633,6 +629,27 @@ const AudioPlayer = {
       clearInterval(this.panelUpdateInterval);
     }
     this.panelUpdateInterval = setInterval(() => this.updateUI(), 1000);
+    setTimeout(() => {
+      this.checkMusiumAvailable().then(() => {
+        if (this.musiumAvailable) {
+          this.updateUI();
+        }
+      });
+    }, 500);
+  },
+
+  async previousTrackMusium() {
+    if (!this.musiumAvailable) return;
+    await this.sendToMusium("/api/previous", {});
+    await this.delay(200);
+    await this.updateUI();
+  },
+
+  async nextTrackMusium() {
+    if (!this.musiumAvailable) return;
+    await this.sendToMusium("/api/next", {});
+    await this.delay(200);
+    await this.updateUI();
   },
 
   seekTo(e) {
@@ -640,7 +657,9 @@ const AudioPlayer = {
     const rect = this.panelProgressBar.getBoundingClientRect();
     const percent = (e.clientX - rect.left) / rect.width;
     if (this.musiumAvailable) {
-      this.sendToMusium("/api/seek", { position: percent });
+      this.sendToMusium("/api/seek", { position: percent }).then(() => {
+        setTimeout(() => this.updateUI(), 100);
+      });
     }
   },
 
@@ -699,6 +718,8 @@ const AudioPlayer = {
     let trackPath = "";
     if (trackResponse && trackResponse.success && trackResponse.data.path) {
       trackPath = trackResponse.data.path;
+    } else if (this.lastCurrentFilePath) {
+      trackPath = this.lastCurrentFilePath;
     } else {
       const playlistData = await this.getMusiumPlaylist();
       if (
@@ -707,7 +728,12 @@ const AudioPlayer = {
         playlistData.data.playlist &&
         playlistData.data.playlist.length > 0
       ) {
-        trackPath = playlistData.data.playlist[0].path;
+        const currentIndex = playlistData.data.currentIndex || 0;
+        if (playlistData.data.playlist[currentIndex]) {
+          trackPath = playlistData.data.playlist[currentIndex].path;
+        } else if (playlistData.data.playlist.length > 0) {
+          trackPath = playlistData.data.playlist[0].path;
+        }
       }
     }
     if (trackPath) {
