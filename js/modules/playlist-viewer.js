@@ -6,9 +6,19 @@ const PlaylistViewer = {
   updateInterval: null,
   mediaServerUrl: null,
   initialized: false,
+
   getMusiumUrl() {
     if (this.musiumUrl) return this.musiumUrl;
+    if (typeof AudioPlayer !== "undefined" && AudioPlayer.musiumUrl) {
+      this.musiumUrl = AudioPlayer.musiumUrl;
+      return this.musiumUrl;
+    }
     return `http://${window.location.hostname}:8084`;
+  },
+
+  setMusiumUrl(url) {
+    this.musiumUrl = url;
+    console.log("PlaylistViewer: Musium URL set to", url);
   },
 
   getMediaServerUrl() {
@@ -71,8 +81,12 @@ const PlaylistViewer = {
       if (response.ok) {
         const data = await response.json();
         this.musiumAvailable = data.success === true;
-        if (this.musiumAvailable) this.startAutoUpdate();
-        else this.stopAutoUpdate();
+        if (this.musiumAvailable) {
+          this.startAutoUpdate();
+          this.retryCount = 0;
+        } else {
+          this.stopAutoUpdate();
+        }
         return this.musiumAvailable;
       }
     } catch (error) {
@@ -85,8 +99,8 @@ const PlaylistViewer = {
 
   async refresh() {
     console.log("PlaylistViewer.refresh called");
-    await this.checkMusiumAvailable();
-    if (this.musiumAvailable) {
+    const available = await this.checkMusiumAvailable();
+    if (available) {
       await this.updateDisplay();
       if (typeof AudioPlayer !== "undefined") {
         setTimeout(() => {
@@ -96,7 +110,13 @@ const PlaylistViewer = {
     } else {
       const container = document.getElementById("playlistContainer");
       if (container) {
-        container.innerHTML = `<div class="playlist-empty"><i class="fas fa-exclamation-triangle"></i><p>Аудиоплеер не запущен</p><p class="playlist-empty-hint">Нажмите "Добавить в плейлист" чтобы запустить</p></div>`;
+        if (this.retryCount < this.maxRetries) {
+          this.retryCount++;
+          container.innerHTML = `<div class="playlist-empty"><i class="fas fa-spinner fa-spin"></i><p>Подключение к аудиоплееру... (${this.retryCount}/${this.maxRetries})</p></div>`;
+          setTimeout(() => this.refresh(), 2000);
+        } else {
+          container.innerHTML = `<div class="playlist-empty"><i class="fas fa-exclamation-triangle"></i><p>Аудиоплеер не запущен</p><p class="playlist-empty-hint">Нажмите "Добавить в плейлист" чтобы запустить</p></div>`;
+        }
       }
       if (typeof AudioPlayer !== "undefined") {
         setTimeout(() => {
@@ -125,6 +145,7 @@ const PlaylistViewer = {
       return null;
     } catch (error) {
       console.error("Error fetching playlist:", error);
+      this.musiumAvailable = false;
       return null;
     }
   },
@@ -263,13 +284,11 @@ const PlaylistViewer = {
     }
     let playlistData = await this.fetchPlaylist();
     const status = await this.fetchStatus();
-    console.log("playlistData before enrich:", playlistData);
-    playlistData = await this.enrichPlaylistWithMetadata(playlistData);
-    console.log("playlistData after enrich:", playlistData);
     if (!playlistData || playlistData.playlist.length === 0) {
       container.innerHTML = `<div class="playlist-empty"><i class="fas fa-music"></i><p>Плейлист пуст</p><p class="playlist-empty-hint">Добавьте треки из библиотеки</p></div>`;
       return;
     }
+    playlistData = await this.enrichPlaylistWithMetadata(playlistData);
     let currentTrackName = "—";
     let currentArtistName = "";
     if (
@@ -433,24 +452,9 @@ const PlaylistViewer = {
     if (this.initialized) return;
     this.initialized = true;
     console.log("PlaylistViewer.init called");
-    await this.checkMusiumAvailable();
-    if (this.musiumAvailable) {
-      await this.updateDisplay();
-      if (typeof AudioPlayer !== "undefined") {
-        setTimeout(() => {
-          AudioPlayer.updateUI();
-        }, 300);
-      }
-    } else {
-      const container = document.getElementById("playlistContainer");
-      if (container) {
-        container.innerHTML = `<div class="playlist-empty"><i class="fas fa-exclamation-triangle"></i><p>Аудиоплеер не запущен</p><p class="playlist-empty-hint">Нажмите "Добавить в плейлист" чтобы запустить</p></div>`;
-      }
-      if (typeof AudioPlayer !== "undefined") {
-        setTimeout(() => {
-          AudioPlayer.updateUI();
-        }, 300);
-      }
+    if (typeof AudioPlayer !== "undefined" && AudioPlayer.musiumUrl) {
+      this.setMusiumUrl(AudioPlayer.musiumUrl);
     }
+    await this.refresh();
   },
 };
