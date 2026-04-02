@@ -5,6 +5,7 @@ playlist: [],
 currentIndex: -1,
 updateInterval: null,
 mediaServerUrl: null,
+initialized: false,
 getMusiumUrl() {
     if (this.musiumUrl) return this.musiumUrl;
     return `http://${window.location.hostname}:8084`;
@@ -250,6 +251,8 @@ async updateCurrentTrackHighlight() {
 },
 
 async init() {
+    if (this.initialized) return;
+    this.initialized = true;
     console.log('PlaylistViewer.init called');
     await this.checkMusiumAvailable();
     if (this.musiumAvailable) { await this.updateDisplay(); } else { const container = document.getElementById('playlistContainer'); if (container) { container.innerHTML = `<div class="playlist-empty"><i class="fas fa-exclamation-triangle"></i><p>Аудиоплеер не запущен</p><p class="playlist-empty-hint">Нажмите "Добавить в плейлист" чтобы запустить</p></div>`; } }

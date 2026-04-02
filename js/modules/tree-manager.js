@@ -2,8 +2,11 @@ const TreeManager = {
     treeContainer: null,
     currentPath: CONFIG.ROOT_PATH,
     currentMediaType: 'video',
+    initialized: false,
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         this.treeContainer = document.getElementById('treeContainer');
     },
 
@@ -43,7 +46,6 @@ const TreeManager = {
         const musicFolders = musicItems.filter(item => item.isDirectory && !Utils.isHiddenFile(item.name));
         let html = '<div class="tree-root">';
 
-        // Video section
         html += `
             <div class="tree-group">
                 <div class="tree-group-header ${this.currentMediaType === 'video' ? 'active' : ''}"
@@ -76,7 +78,6 @@ const TreeManager = {
         });
         html += '</div></div>';
 
-        // Music section
         html += `
             <div class="tree-group">
                 <div class="tree-group-header ${this.currentMediaType === 'audio' ? 'active' : ''}"

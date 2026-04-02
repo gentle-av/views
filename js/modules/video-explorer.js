@@ -2,17 +2,17 @@ const VideoExplorer = {
     currentPath: '/mnt/video',
     history: [],
     isPlayingVideo: false,
+    initialized: false,
 
     getServerUrl() {
         return `http://${window.location.hostname}:${window.location.port}`;
     },
 
     async init() {
+        if (this.initialized) return;
+        this.initialized = true;
         const videoContent = document.getElementById('videoContent');
         if (videoContent) {
-            if (typeof PlayerManager !== 'undefined' && PlayerManager.init) {
-                PlayerManager.init();
-            }
             await this.loadDirectory(this.currentPath);
         }
     },

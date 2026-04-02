@@ -11,6 +11,7 @@ const AudioPlayer = {
     panelUpdateInterval: null,
     lastPlaylistLength: 0,
     lastCurrentFilePath: null,
+    initialized: false,
 
     getServerUrl() {
         return `http://${window.location.hostname}:${window.location.port}`;
@@ -24,14 +25,10 @@ const AudioPlayer = {
     async checkMusiumAvailable() {
         console.log('[DEBUG] checkMusiumAvailable called, URL:', this.getMusiumUrl());
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 2000);
             const response = await fetch(`${this.getMusiumUrl()}/api/getStatus`, {
                 method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                signal: controller.signal
+                headers: { 'Content-Type': 'application/json' }
             });
-            clearTimeout(timeoutId);
             console.log('[DEBUG] checkMusiumAvailable response status:', response.status);
             if (response.ok) {
                 const data = await response.json();
@@ -59,14 +56,10 @@ const AudioPlayer = {
             attempt++;
             console.log(`[DEBUG] waitForMusium attempt ${attempt}`);
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1000);
                 const response = await fetch(`${this.getMusiumUrl()}/api/getStatus`, {
                     method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                    signal: controller.signal
+                    headers: { 'Content-Type': 'application/json' }
                 });
-                clearTimeout(timeoutId);
                 if (response.ok) {
                     const data = await response.json();
                     console.log('[DEBUG] waitForMusium response:', data);
@@ -104,6 +97,10 @@ const AudioPlayer = {
             const data = await response.json();
             console.log('[DEBUG] Launch response data:', data);
             if (data.status === 'success') {
+                if (data.musiumUrl) {
+                    this.musiumUrl = data.musiumUrl;
+                    console.log('[DEBUG] Musium URL from response:', this.musiumUrl);
+                }
                 const started = await this.waitForMusium(10000);
                 if (started) {
                     Utils.showNotification('Аудиоплеер запущен', 'success');
@@ -328,10 +325,11 @@ const AudioPlayer = {
     },
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         console.log('[DEBUG] AudioPlayer.init called');
         this.setupEventListeners();
         this.createAudioElement();
-        this.checkMusiumAvailable();
         this.initUI();
     },
 
