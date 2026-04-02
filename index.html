@@ -1,159 +1,212 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
     <title>Media Center</title>
-    <meta name="theme-color" content="#fabd2f">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Media Center">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
+    <meta name="theme-color" content="#fabd2f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Media Center" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
     <div class="app">
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h2><i class="fas fa-play-circle"></i> Media Center</h2>
-                <div class="profile-indicator" id="profileIndicator"></div>
-            </div>
-            <div class="sidebar-nav">
-                <button class="sidebar-btn active" data-page="video" id="navVideo">
-                    <i class="fas fa-video"></i>
-                    <span>Видео</span>
-                </button>
-                <button class="sidebar-btn" data-page="audio" id="navAudio">
-                    <i class="fas fa-music"></i>
-                    <span>Аудио</span>
-                </button>
-            </div>
+      <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <h2><i class="fas fa-play-circle"></i> Media Center</h2>
+          <div class="profile-indicator" id="profileIndicator"></div>
         </div>
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
-        <button class="menu-toggle" id="menuToggle">
-            <i class="fas fa-bars"></i>
-        </button>
-        <div class="main-content">
-            <div class="app-header" id="appHeader">
-                <div class="header-title-section">
-                    <h1 class="page-title" id="pageTitle">Видео</h1>
-                </div>
-                <div class="header-controls-section">
-                    <div class="mobile-nav-buttons" id="mobileNavButtons">
-                        <button class="header-btn nav-video-btn active" id="navVideoBtn">
-                            <i class="fas fa-video"></i>
-                            <span>Видео</span>
-                        </button>
-                        <button class="header-btn nav-audio-btn" id="navAudioBtn">
-                            <i class="fas fa-music"></i>
-                            <span>Аудио</span>
-                        </button>
-                    </div>
-                    <div class="search-box" id="globalSearchBox" style="display: none;">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="globalSearchInput">
-                    </div>
-                    <button class="header-btn playlist-toggle-header" id="headerPlaylistBtn" title="Плейлист" style="display: none;">
-                        <i class="fas fa-list"></i>
-                        <span>Плейлист</span>
-                    </button>
-                    <button class="header-btn refresh-header" id="headerRefreshBtn" title="Обновить" style="display: none;">
-                        <i class="fas fa-sync-alt"></i>
-                        <span>Обновить</span>
-                    </button>
-                </div>
-            </div>
-            <div class="scrollable-content" id="scrollableContent">
-                <div class="page-container" id="pageContainer"></div>
-            </div>
-            <div class="audio-player-bar" id="audioPlayerBar" style="display: none;">
-                <div class="player-album-art">
-                    <img id="playerAlbumArt" src="" alt="Album art">
-                </div>
-                <div class="player-info">
-                    <div class="player-track" id="playerTrack">—</div>
-                    <div class="player-album" id="playerAlbum">—</div>
-                    <div class="player-artist" id="playerArtist">—</div>
-                </div>
-                <div class="player-controls">
-                    <button class="player-btn" id="playerPrevBtn">
-                        <i class="fas fa-backward-step"></i>
-                    </button>
-                    <button class="player-btn primary" id="playerPlayBtn">
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="player-btn" id="playerNextBtn">
-                        <i class="fas fa-forward-step"></i>
-                    </button>
-                    <button class="player-btn" id="playerStopBtn">
-                        <i class="fas fa-stop"></i>
-                    </button>
-                </div>
-                <div class="player-volume">
-                    <i class="fas fa-volume-up"></i>
-                    <div class="volume-slider" id="volumeSlider">
-                        <div class="volume-progress" id="volumeProgress"></div>
-                    </div>
-                </div>
-            </div>
+        <div class="sidebar-nav">
+          <button class="sidebar-btn active" data-page="video" id="navVideo">
+            <i class="fas fa-video"></i>
+            <span>Видео</span>
+          </button>
+          <button class="sidebar-btn" data-page="audio" id="navAudio">
+            <i class="fas fa-music"></i>
+            <span>Аудио</span>
+          </button>
         </div>
-        <div id="albumModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="modalAlbumTitle"></h3>
-                    <button class="modal-close">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="album-detail-art">
-                        <img id="modalAlbumArt" src="" alt="Album art">
-                    </div>
-                    <div class="album-tracks">
-                        <div id="modalTracksList"></div>
-                    </div>
-                </div>
+      </div>
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+      <button class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="main-content">
+        <div class="app-header" id="appHeader">
+          <div class="header-title-section">
+            <h1 class="page-title" id="pageTitle">Видео</h1>
+          </div>
+          <div class="header-controls-section">
+            <div class="mobile-nav-buttons" id="mobileNavButtons">
+              <button class="header-btn nav-video-btn active" id="navVideoBtn">
+                <i class="fas fa-video"></i>
+                <span>Видео</span>
+              </button>
+              <button class="header-btn nav-audio-btn" id="navAudioBtn">
+                <i class="fas fa-music"></i>
+                <span>Аудио</span>
+              </button>
             </div>
-        </div>
-        <div id="playerControlPage" class="player-control-page" style="display: none;">
-            <div class="player-control-header">
-                <div class="player-controls-center">
-                    <button class="control-btn" id="seekBackwardBtn" title="Назад 10 секунд">
-                        <i class="fas fa-backward"></i>
-                    </button>
-                    <button class="control-btn" id="playPauseBtn" title="Воспроизведение/Пауза">
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="control-btn" id="seekForwardBtn" title="Вперед 10 секунд">
-                        <i class="fas fa-forward"></i>
-                    </button>
-                    <button class="control-btn" id="fullscreenBtn" title="Полноэкранный режим">
-                        <i class="fas fa-expand"></i>
-                    </button>
-                    <button class="control-btn close-file" id="closeFileBtn" title="Закрыть файл">
-                        <i class="fas fa-times"></i>
-                    </button>
-                    <button class="control-btn delete-file" id="deleteFileBtn" title="Удалить файл">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </div>
+            <div class="search-box" id="globalSearchBox" style="display: none">
+              <i class="fas fa-search"></i>
+              <input type="text" id="globalSearchInput" />
             </div>
-            <div class="player-placeholder">
-                <i class="fas fa-play-circle"></i>
-                <div>Видео воспроизводится в Mediateka</div>
-                <div style="font-size: 1rem; margin-top: 20px; color: var(--fg3);">Используйте кнопки управления выше</div>
-            </div>
-            <button class="close-control-page" id="closeControlPage" title="Закрыть панель управления">
-                <i class="fas fa-arrow-left"></i>
+            <button
+              class="header-btn playlist-toggle-header"
+              id="headerPlaylistBtn"
+              title="Плейлист"
+              style="display: none"
+            >
+              <i class="fas fa-list"></i>
+              <span>Плейлист</span>
             </button>
+            <button
+              class="header-btn refresh-header"
+              id="headerRefreshBtn"
+              title="Обновить"
+              style="display: none"
+            >
+              <i class="fas fa-sync-alt"></i>
+              <span>Обновить</span>
+            </button>
+          </div>
         </div>
-        <div class="loading-progress" id="loadingProgress">
-            <div class="loading-progress-bar"></div>
+        <div class="scrollable-content" id="scrollableContent">
+          <div class="page-container" id="pageContainer"></div>
         </div>
-        <div id="notification" class="notification" style="display: none;"></div>
+        <div class="audio-player-bar" id="audioPlayerBar" style="display: none">
+          <div class="player-album-art">
+            <img id="playerAlbumArt" src="" alt="Album art" />
+          </div>
+          <div class="player-info">
+            <div class="player-track" id="playerTrack">—</div>
+            <div class="player-album" id="playerAlbum">—</div>
+            <div class="player-artist" id="playerArtist">—</div>
+          </div>
+          <div class="player-controls">
+            <button class="player-btn" id="playerPrevBtn">
+              <i class="fas fa-backward-step"></i>
+            </button>
+            <button class="player-btn primary" id="playerPlayBtn">
+              <i class="fas fa-play"></i>
+            </button>
+            <button class="player-btn" id="playerNextBtn">
+              <i class="fas fa-forward-step"></i>
+            </button>
+            <button class="player-btn" id="playerStopBtn">
+              <i class="fas fa-stop"></i>
+            </button>
+          </div>
+          <div class="player-volume">
+            <i class="fas fa-volume-up"></i>
+            <div class="volume-slider" id="volumeSlider">
+              <div class="volume-progress" id="volumeProgress"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="albumModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 id="modalAlbumTitle"></h3>
+            <button class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="album-detail-art">
+              <img id="modalAlbumArt" src="" alt="Album art" />
+            </div>
+            <div class="album-tracks">
+              <div id="modalTracksList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        id="playerControlPage"
+        class="player-control-page"
+        style="display: none"
+      >
+        <div class="player-control-header">
+          <div class="player-controls-center">
+            <button
+              class="control-btn"
+              id="seekBackwardBtn"
+              title="Назад 10 секунд"
+            >
+              <i class="fas fa-backward"></i>
+            </button>
+            <button
+              class="control-btn"
+              id="playPauseBtn"
+              title="Воспроизведение/Пауза"
+            >
+              <i class="fas fa-play"></i>
+            </button>
+            <button
+              class="control-btn"
+              id="seekForwardBtn"
+              title="Вперед 10 секунд"
+            >
+              <i class="fas fa-forward"></i>
+            </button>
+            <button
+              class="control-btn"
+              id="fullscreenBtn"
+              title="Полноэкранный режим"
+            >
+              <i class="fas fa-expand"></i>
+            </button>
+            <button
+              class="control-btn close-file"
+              id="closeFileBtn"
+              title="Закрыть файл"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+            <button
+              class="control-btn delete-file"
+              id="deleteFileBtn"
+              title="Удалить файл"
+            >
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+        <div class="player-placeholder">
+          <i class="fas fa-play-circle"></i>
+          <div>Видео воспроизводится в Mediateka</div>
+          <div style="font-size: 1rem; margin-top: 20px; color: var(--fg3)">
+            Используйте кнопки управления выше
+          </div>
+        </div>
+        <button
+          class="close-control-page"
+          id="closeControlPage"
+          title="Закрыть панель управления"
+        >
+          <i class="fas fa-arrow-left"></i>
+        </button>
+      </div>
+      <div class="loading-progress" id="loadingProgress">
+        <div class="loading-progress-bar"></div>
+      </div>
+      <div id="notification" class="notification" style="display: none"></div>
     </div>
     <script src="js/core/config.js"></script>
     <script src="js/core/utils.js"></script>
     <script src="js/modules/player-manager.js"></script>
     <script src="js/modules/tree-manager.js"></script>
     <script src="js/app.js"></script>
-</body>
+  </body>
 </html>
