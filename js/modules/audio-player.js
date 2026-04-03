@@ -235,7 +235,9 @@ const AudioPlayer = {
 
   async clearPlaylist() {
     await this.sendToMusium("/api/clear");
-    if (typeof PlaylistViewer !== "undefined") PlaylistViewer.refresh();
+    if (typeof PlaylistViewer !== "undefined") {
+      PlaylistViewer.refresh();
+    }
     Utils.showNotification("Плейлист очищен", "success");
     await this.delay(300);
     await this.updateUI();
