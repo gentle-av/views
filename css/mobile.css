@@ -1,404 +1,448 @@
 @media (max-width: 768px) {
-    body {
-        overflow-x: hidden;
-        position: relative;
-        overflow: hidden;
-        width: 100%;
-        height: 100%;
-    }
-    .app {
-        overflow-x: hidden;
-        overflow-y: hidden;
-        position: relative;
-        width: 100%;
-    }
-    .main-content {
-        overflow-x: hidden;
-        height: 100vh;
-        width: 100%;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: thin;
-        position: relative;
-    }
-    .main-content::-webkit-scrollbar {
-        width: 4px;
-    }
-    .main-content::-webkit-scrollbar-track {
-        background: var(--bg2);
-    }
-    .main-content::-webkit-scrollbar-thumb {
-        background: var(--yellow);
-        border-radius: 4px;
-    }
+  body {
+    overflow-x: hidden;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+  }
+  .app {
+    overflow-x: hidden;
+    overflow-y: hidden;
+    position: relative;
+    width: 100%;
+  }
+  .main-content {
+    overflow-x: hidden;
+    height: 100vh;
+    width: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    position: relative;
+  }
+  .main-content::-webkit-scrollbar {
+    width: 4px;
+  }
+  .main-content::-webkit-scrollbar-track {
+    background: var(--bg2);
+  }
+  .main-content::-webkit-scrollbar-thumb {
+    background: var(--yellow);
+    border-radius: 4px;
+  }
 
-    .main-content {
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-    .main-content::-webkit-scrollbar {
-        display: none;
-    }
+  .main-content {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .main-content::-webkit-scrollbar {
+    display: none;
+  }
 
-    .albums-grid,
-    .content-grid {
-        scrollbar-width: thin;
-        -webkit-overflow-scrolling: touch;
-    }
+  .albums-grid,
+  .content-grid {
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
 
-    .albums-grid::-webkit-scrollbar,
-    .content-grid::-webkit-scrollbar {
-        width: 4px;
-        height: 4px;
-        display: block !important;
-    }
+  .albums-grid::-webkit-scrollbar,
+  .content-grid::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+    display: block !important;
+  }
 
-    .albums-grid::-webkit-scrollbar-track,
-    .content-grid::-webkit-scrollbar-track {
-        background: var(--bg2);
-        border-radius: 4px;
-    }
+  .albums-grid::-webkit-scrollbar-track,
+  .content-grid::-webkit-scrollbar-track {
+    background: var(--bg2);
+    border-radius: 4px;
+  }
 
-    .albums-grid::-webkit-scrollbar-thumb,
-    .content-grid::-webkit-scrollbar-thumb {
-        background: var(--yellow);
-        border-radius: 4px;
-    }
+  .albums-grid::-webkit-scrollbar-thumb,
+  .content-grid::-webkit-scrollbar-thumb {
+    background: var(--yellow);
+    border-radius: 4px;
+  }
 
-    .sidebar {
-        display: none;
-    }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+    transition: transform var(--transition-normal) ease;
+    width: 280px;
+    background: var(--bg1);
+    border-right: none;
+    box-shadow: none;
+    transform: translateX(-100%);
+    display: flex !important;
+  }
 
-    .sidebar-overlay {
-        display: none;
-    }
+  .sidebar.open {
+    transform: translateX(0);
+    border-right: 1px solid var(--bg3);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+    display: flex !important;
+  }
 
-    .menu-toggle {
-        display: none;
-    }
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none;
+  }
 
-    .content-grid {
-        grid-template-columns: 1fr;
-        gap: 12px;
-        padding: 12px;
-        padding-bottom: 20px;
-        overflow-y: auto;
-    }
+  .sidebar-overlay.open {
+    display: block;
+  }
 
-    #pageVideo .content-grid {
-        padding-bottom: 20px;
-    }
+  .menu-toggle {
+    display: flex;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 1001;
+    background: var(--bg2);
+    border: none;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-round);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
 
-    .item-card {
-        flex-direction: row;
-        align-items: center;
-        gap: 18px;
-        padding: 16px 18px;
-        min-height: auto;
-    }
+  .menu-toggle i {
+    color: var(--yellow);
+  }
 
-    .item-card i {
-        margin-bottom: 0;
-    }
+  .menu-toggle:hover {
+    background: var(--bg3);
+  }
 
-    .item-card .item-name {
-        max-height: calc(1.3em * 3);
-        font-size: 1.1rem;
-        text-align: left;
-        flex: 1;
-    }
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+    padding-bottom: 20px;
+    overflow-y: auto;
+  }
 
-    .item-card .item-size {
-        margin-top: 0;
-        margin-left: auto;
-    }
+  #pageVideo .content-grid {
+    padding-bottom: 20px;
+  }
 
-    .albums-grid {
-        grid-template-columns: 1fr;
-        gap: 14px;
-        padding: 12px;
-        padding-bottom: 100px;
-        overflow-y: auto;
-    }
+  .item-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 18px;
+    min-height: auto;
+  }
 
-    .album-card {
-        flex-direction: row;
-        align-items: center;
-        gap: 18px;
-        padding: 14px;
-        background: var(--bg1);
-    }
+  .item-card i {
+    margin-bottom: 0;
+  }
 
-    .album-cover {
-        width: 90px;
-        height: 90px;
-        flex-shrink: 0;
-        border-radius: var(--radius-md);
-        background: var(--bg2);
-    }
+  .item-card .item-name {
+    max-height: calc(1.3em * 3);
+    font-size: 1.1rem;
+    text-align: left;
+    flex: 1;
+  }
 
-    .album-info {
-        padding: 0;
-    }
+  .item-card .item-size {
+    margin-top: 0;
+    margin-left: auto;
+  }
 
-    .album-title {
-        font-size: 1.1rem;
-        white-space: normal;
-        -webkit-line-clamp: 3;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        color: var(--fg0);
-    }
+  .albums-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 12px;
+    padding-bottom: 100px;
+    overflow-y: auto;
+  }
 
-    .album-artist {
-        font-size: 0.95rem;
-        white-space: normal;
-        color: var(--yellow);
-    }
+  .album-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 18px;
+    padding: 14px;
+    background: var(--bg1);
+  }
 
-    .album-year {
-        font-size: 0.9rem;
-        color: var(--fg3);
-    }
+  .album-cover {
+    width: 90px;
+    height: 90px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    background: var(--bg2);
+  }
 
-    .track-count {
-        font-size: 0.85rem;
-        color: var(--fg4);
-    }
+  .album-info {
+    padding: 0;
+  }
 
-    .audio-player-bar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: var(--bg1);
-    }
+  .album-title {
+    font-size: 1.1rem;
+    white-space: normal;
+    -webkit-line-clamp: 3;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    color: var(--fg0);
+  }
 
-    .explorer-header {
-        margin-left: 0;
-    }
+  .album-artist {
+    font-size: 0.95rem;
+    white-space: normal;
+    color: var(--yellow);
+  }
 
-    .breadcrumb .breadcrumb-text {
-        max-width: 180px;
-    }
+  .album-year {
+    font-size: 0.9rem;
+    color: var(--fg3);
+  }
 
-    .player-controls-center {
-        gap: 12px;
-        padding: 10px 15px;
-        background: var(--bg1);
-    }
+  .track-count {
+    font-size: 0.85rem;
+    color: var(--fg4);
+  }
 
-    .control-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 1.2rem;
-        border-radius: 44px;
-        background: var(--bg2);
-    }
+  .audio-player-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg1);
+  }
 
-    .close-control-page {
-        width: 40px;
-        height: 40px;
-        font-size: 1.2rem;
-        bottom: 20px;
-        left: 20px;
-        right: auto;
-        background: var(--bg1);
-    }
+  .explorer-header {
+    margin-left: 0;
+  }
 
-    .player-placeholder {
-        font-size: 0.9rem;
-        padding: 20px;
-        background: var(--bg1);
-    }
+  .breadcrumb .breadcrumb-text {
+    max-width: 180px;
+  }
 
-    .player-placeholder i {
-        font-size: 40px;
-    }
+  .player-controls-center {
+    gap: 12px;
+    padding: 10px 15px;
+    background: var(--bg1);
+  }
 
-    .player-control-header {
-        padding: 10px;
-    }
+  .control-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
+    border-radius: 44px;
+    background: var(--bg2);
+  }
 
-    .sidebar-header {
-        background: var(--bg1);
-    }
+  .close-control-page {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    bottom: 20px;
+    left: 20px;
+    right: auto;
+    background: var(--bg1);
+  }
 
-    .sidebar-header h2 {
-        color: var(--yellow);
-    }
+  .player-placeholder {
+    font-size: 0.9rem;
+    padding: 20px;
+    background: var(--bg1);
+  }
 
-    .sidebar-nav {
-        background: var(--bg1);
-    }
+  .player-placeholder i {
+    font-size: 40px;
+  }
 
-    .sidebar-btn {
-        background: var(--bg2);
-        color: var(--fg2);
-    }
+  .player-control-header {
+    padding: 10px;
+  }
 
-    .sidebar-btn.active {
-        background: var(--yellow);
-        color: var(--bg0);
-    }
+  .sidebar-header {
+    background: var(--bg1);
+  }
 
+  .sidebar-header h2 {
+    color: var(--yellow);
+  }
 
-    .player-control-page {
-        justify-content: flex-end;
-        padding-bottom: 30px;
-    }
+  .sidebar-nav {
+    background: var(--bg1);
+  }
 
+  .sidebar-btn {
+    background: var(--bg2);
+    color: var(--fg2);
+  }
 
-    .player-control-header {
-        position: relative;
-        top: auto;
-        left: auto;
-        right: auto;
-        margin-bottom: 20px;
-    }
+  .sidebar-btn.active {
+    background: var(--yellow);
+    color: var(--bg0);
+  }
 
+  .player-control-page {
+    justify-content: flex-end;
+    padding-bottom: 30px;
+  }
 
-    .player-controls-center {
-        position: relative;
-        gap: 20px;
-        padding: 15px 25px;
-        margin-bottom: 30px;
-    }
+  .player-control-header {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    margin-bottom: 20px;
+  }
 
+  .player-controls-center {
+    position: relative;
+    gap: 20px;
+    padding: 15px 25px;
+    margin-bottom: 30px;
+  }
 
-    .control-btn {
-        width: 56px;
-        height: 56px;
-        font-size: 1.4rem;
-    }
+  .control-btn {
+    width: 56px;
+    height: 56px;
+    font-size: 1.4rem;
+  }
 
+  .close-control-page {
+    display: none;
+  }
 
-    .close-control-page {
-        display: none;
-    }
+  .control-btn.close-file-mobile {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--bg0);
+    order: -1;
+  }
 
+  .control-btn.close-file-mobile:hover {
+    background: var(--red);
+    transform: scale(1.05);
+  }
 
-    .control-btn.close-file-mobile {
-        background: var(--red);
-        border-color: var(--red);
-        color: var(--bg0);
-        order: -1;
-    }
+  .control-btn.delete-file-mobile {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: var(--bg0);
+  }
 
+  .player-placeholder {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%;
+    max-width: 400px;
+    margin: 0;
+    background: var(--bg1);
+    z-index: 10;
+  }
+  .explorer-header {
+    margin-left: 0;
+    padding: 8px 12px;
+  }
 
-    .control-btn.close-file-mobile:hover {
-        background: var(--red);
-        transform: scale(1.05);
-    }
+  .breadcrumb {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
 
-    .control-btn.delete-file-mobile {
-        background: var(--orange);
-        border-color: var(--orange);
-        color: var(--bg0);
-    }
+  .breadcrumb .breadcrumb-text {
+    max-width: 180px;
+  }
 
-    .player-placeholder {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 85%;
-        max-width: 400px;
-        margin: 0;
-        background: var(--bg1);
-        z-index: 10;
-    }
-    .explorer-header {
-        margin-left: 0;
-        padding: 8px 12px;
-    }
+  .breadcrumb-root {
+    margin-right: 2px;
+    padding: 5px 10px;
+  }
 
-    .breadcrumb {
-        padding: 5px 10px;
-        font-size: 0.75rem;
-    }
-
-    .breadcrumb .breadcrumb-text {
-        max-width: 180px;
-    }
-
-    .breadcrumb-root {
-        margin-right: 2px;
-        padding: 5px 10px;
-    }
-
-    .breadcrumbs {
-        gap: 6px;
-        margin: 0;
-        padding: 6px 0;
-    }
+  .breadcrumbs {
+    gap: 6px;
+    margin: 0;
+    padding: 6px 0;
+  }
 }
 
 @media (max-width: 480px) {
-    .player-controls-center {
-        gap: 15px;
-        padding: 12px 20px;
-        margin-bottom: 20px;
-    }
+  .player-controls-center {
+    gap: 15px;
+    padding: 12px 20px;
+    margin-bottom: 20px;
+  }
 
-    .control-btn {
-        width: 48px;
-        height: 48px;
-        font-size: 1.2rem;
-    }
+  .control-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
 
-    .player-placeholder {
-        width: 90%;
-        padding: 30px;
-    }
+  .player-placeholder {
+    width: 90%;
+    padding: 30px;
+  }
 
-    .player-placeholder i {
-        font-size: 60px;
-    }
+  .player-placeholder i {
+    font-size: 60px;
+  }
 
-    .item-card {
-        padding: 14px 16px;
-        gap: 16px;
-    }
+  .item-card {
+    padding: 14px 16px;
+    gap: 16px;
+  }
 
-    .item-card i {
-        font-size: 36px;
-    }
+  .item-card i {
+    font-size: 36px;
+  }
 
-    .album-cover {
-        width: 80px;
-        height: 80px;
-    }
+  .album-cover {
+    width: 80px;
+    height: 80px;
+  }
 
-    .breadcrumb .breadcrumb-text {
-        max-width: 150px;
-    }
+  .breadcrumb .breadcrumb-text {
+    max-width: 150px;
+  }
 
-    .player-controls-center {
-        gap: 8px;
-        padding: 8px 12px;
-    }
+  .player-controls-center {
+    gap: 8px;
+    padding: 8px 12px;
+  }
 
-    .control-btn {
-        width: 38px;
-        height: 38px;
-        font-size: 1rem;
-    }
+  .control-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+  }
 
-    .close-control-page {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
-    }
+  .close-control-page {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
 
-    .player-controls-center {
-        gap: 12px;
-        padding: 10px 20px;
-    }
+  .player-controls-center {
+    gap: 12px;
+    padding: 10px 20px;
+  }
 
-    .control-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 1.1rem;
-    }
+  .control-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1.1rem;
+  }
 }
