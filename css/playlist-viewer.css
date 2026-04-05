@@ -359,3 +359,25 @@
 .playlist-overlay.open {
   display: block;
 }
+
+.playlist-artist-header .group-arrow {
+  display: none;
+}
+
+.playlist-artist-name {
+  flex: 1;
+  font-weight: 600;
+  color: var(--fg0);
+  font-size: 0.95rem;
+  margin-right: 8px;
+}
+
+.playlist-artist-count {
+  font-size: 0.75rem;
+  color: var(--fg3);
+  background: var(--bg1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}

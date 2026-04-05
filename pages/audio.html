@@ -1,50 +1,67 @@
 <div class="page audio-page">
-    <div class="audio-library">
-        <div class="albums-grid" id="albumsGrid">
-            <div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка альбомов...</div>
-        </div>
+  <div class="audio-library">
+    <div class="albums-grid" id="albumsGrid">
+      <div class="loading">
+        <i class="fas fa-spinner fa-spin"></i> Загрузка альбомов...
+      </div>
     </div>
-    <div class="audio-player-control-panel" id="audioPlayerControlPanel">
-        <div class="player-panel-content">
-            <div class="player-panel-info">
-                <div class="player-panel-track-info">
-                    <div class="player-panel-track-name" id="panelTrackName">Не воспроизводится</div>
-                    <div class="player-panel-track-artist" id="panelTrackArtist"></div>
-                </div>
-                <div class="player-panel-progress">
-                    <span class="player-panel-time-current" id="panelTimeCurrent">0:00</span>
-                    <div class="player-panel-progress-bar" id="panelProgressBar">
-                        <div class="player-panel-progress-fill" id="panelProgressFill"></div>
-                    </div>
-                    <span class="player-panel-time-total" id="panelTimeTotal">0:00</span>
-                </div>
-            </div>
-            <div class="player-panel-controls">
-                <button class="player-panel-btn" id="panelPrevBtn" title="Предыдущий">
-                    <i class="fas fa-step-backward"></i>
-                </button>
-                <button class="player-panel-btn player-panel-play" id="panelPlayPauseBtn" title="Воспроизвести">
-                    <i class="fas fa-play"></i>
-                </button>
-                <button class="player-panel-btn" id="panelNextBtn" title="Следующий">
-                    <i class="fas fa-step-forward"></i>
-                </button>
-                <button class="player-panel-btn" id="panelStopBtn" title="Стоп">
-                    <i class="fas fa-stop"></i>
-                </button>
-                <button class="player-panel-btn" id="panelClearBtn" title="Очистить плейлист">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-            </div>
+  </div>
+  <div class="audio-player-control-panel" id="audioPlayerControlPanel">
+    <div class="player-panel-content">
+      <div class="player-panel-info">
+        <div class="player-panel-track-info">
+          <div class="player-panel-track-name" id="panelTrackName">
+            Не воспроизводится
+          </div>
+          <div class="player-panel-track-artist" id="panelTrackArtist"></div>
         </div>
-    </div>
-    <div class="playlist-sidebar" id="playlistSidebar">
-        <div class="playlist-sidebar-header">
-            <h3><i class="fas fa-list"></i> Плейлист</h3>
-            <button class="playlist-sidebar-close" id="playlistSidebarClose">
-                <i class="fas fa-times"></i>
-            </button>
+        <div class="player-panel-progress">
+          <span class="player-panel-time-current" id="panelTimeCurrent"
+            >0:00</span
+          >
+          <div class="player-panel-progress-bar" id="panelProgressBar">
+            <div
+              class="player-panel-progress-fill"
+              id="panelProgressFill"
+            ></div>
+          </div>
+          <span class="player-panel-time-total" id="panelTimeTotal">0:00</span>
         </div>
-        <div id="playlistContainer" class="playlist-container"></div>
+      </div>
+      <div class="player-panel-controls">
+        <button class="player-panel-btn" id="panelPrevBtn" title="Предыдущий">
+          <i class="fas fa-step-backward"></i>
+        </button>
+        <button
+          class="player-panel-btn player-panel-play"
+          id="panelPlayPauseBtn"
+          title="Воспроизвести"
+        >
+          <i class="fas fa-play"></i>
+        </button>
+        <button class="player-panel-btn" id="panelNextBtn" title="Следующий">
+          <i class="fas fa-step-forward"></i>
+        </button>
+        <button class="player-panel-btn" id="panelStopBtn" title="Стоп">
+          <i class="fas fa-stop"></i>
+        </button>
+        <button
+          class="player-panel-btn"
+          id="panelClearBtn"
+          title="Очистить плейлист"
+        >
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
     </div>
+  </div>
+  <div class="playlist-sidebar" id="playlistSidebar">
+    <div class="playlist-sidebar-header">
+      <h3><i class="fas fa-list"></i> Плейлист</h3>
+      <button class="playlist-sidebar-close" id="playlistSidebarClose">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div id="playlistContainer" class="playlist-container"></div>
+  </div>
 </div>

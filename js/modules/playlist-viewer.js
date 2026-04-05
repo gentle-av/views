@@ -41,6 +41,7 @@ const PlaylistViewer = {
               name: file.title || file.filename,
               artist: file.artist || "Unknown",
               track: file.track,
+              duration: file.duration || 0,
             };
           }
         }
@@ -55,14 +56,26 @@ const PlaylistViewer = {
     if (!playlistData || !playlistData.playlist) return playlistData;
     for (let i = 0; i < playlistData.playlist.length; i++) {
       const track = playlistData.playlist[i];
-      if (!track.artist || track.artist === "Unknown" || !track.title) {
+      if (
+        !track.artist ||
+        track.artist === "Unknown" ||
+        !track.title ||
+        !track.duration
+      ) {
         const metadata = await this.fetchTrackMetadata(track.path);
         if (metadata) {
           track.title = metadata.name || track.title;
+          if (track.title && track.title.match(/\.(flac|mp3|m4a|wav)$/i)) {
+            track.title = track.title.replace(/\.(flac|mp3|m4a|wav)$/i, "");
+          }
           track.name = metadata.name || track.name;
           track.artist = metadata.artist || track.artist;
           if (metadata.track) track.track = metadata.track;
+          if (metadata.duration) track.duration = metadata.duration;
         }
+      } else if (track.title && track.title.match(/\.(flac|mp3|m4a|wav)$/i)) {
+        track.title = track.title.replace(/\.(flac|mp3|m4a|wav)$/i, "");
+        track.name = track.title;
       }
     }
     return playlistData;
@@ -299,7 +312,8 @@ const PlaylistViewer = {
       return;
     }
     playlistData = await this.enrichPlaylistWithMetadata(playlistData);
-    let currentTrackName = "—";
+    let currentTrackNumber = "";
+    let currentTrackDisplay = "—";
     let currentArtistName = "";
     let currentTrackId = null;
     if (
@@ -307,25 +321,52 @@ const PlaylistViewer = {
       playlistData.playlist[playlistData.currentIndex]
     ) {
       const currentTrack = playlistData.playlist[playlistData.currentIndex];
-      currentTrackName =
+      let trackName =
         currentTrack.title || currentTrack.name || currentTrack.filename || "—";
+      if (trackName && trackName.match(/\.(flac|mp3|m4a|wav)$/i)) {
+        trackName = trackName.replace(/\.(flac|mp3|m4a|wav)$/i, "");
+      }
+      currentTrackDisplay = trackName;
       if (currentTrack.artist && currentTrack.artist !== "Unknown")
         currentArtistName = currentTrack.artist;
       currentTrackId = `track-${playlistData.currentIndex}`;
     }
-    let html = `<div class="playlist-controls"><button class="playlist-control-btn" id="playlistPlayPauseBtn" title="${status && status.isPlaying ? "Пауза" : "Воспроизвести"}"><i class="fas ${status && status.isPlaying ? "fa-pause" : "fa-play"}"></i></button><button class="playlist-control-btn" id="playlistPrevBtn" title="Предыдущий"><i class="fas fa-step-backward"></i></button><button class="playlist-control-btn" id="playlistNextBtn" title="Следующий"><i class="fas fa-step-forward"></i></button><button class="playlist-control-btn" id="playlistStopBtn" title="Стоп"><i class="fas fa-stop"></i></button><button class="playlist-control-btn" id="playlistClearBtn" title="Очистить плейлист"><i class="fas fa-trash-alt"></i></button></div><div class="playlist-info"><div class="playlist-current-track"><i class="fas fa-headphones"></i><div class="playlist-current-info"><div class="playlist-current-name" id="playlistCurrentName">${this.escapeHtml(currentTrackName)}</div>${currentArtistName ? `<div class="playlist-current-artist" id="playlistCurrentArtist">${this.escapeHtml(currentArtistName)}</div>` : ""}</div></div><div class="playlist-progress"><span id="playlistCurrentTime">${this.formatTime(status ? status.position : 0)}</span><div class="progress-bar" id="playlistProgressBar"><div class="progress-fill" id="playlistProgressFill" style="width: ${status && status.duration ? (status.position / status.duration) * 100 : 0}%"></div></div><span id="playlistTotalTime">${this.formatTime(status ? status.duration : 0)}</span></div></div><div class="playlist-tracks" id="playlistTracksList">`;
+    let html = `<div class="playlist-controls"><button class="playlist-control-btn" id="playlistPlayPauseBtn" title="${status && status.isPlaying ? "Пауза" : "Воспроизвести"}"><i class="fas ${status && status.isPlaying ? "fa-pause" : "fa-play"}"></i></button><button class="playlist-control-btn" id="playlistPrevBtn" title="Предыдущий"><i class="fas fa-step-backward"></i></button><button class="playlist-control-btn" id="playlistNextBtn" title="Следующий"><i class="fas fa-step-forward"></i></button><button class="playlist-control-btn" id="playlistStopBtn" title="Стоп"><i class="fas fa-stop"></i></button><button class="playlist-control-btn" id="playlistClearBtn" title="Очистить плейлист"><i class="fas fa-trash-alt"></i></button></div><div class="playlist-info"><div class="playlist-current-track"><i class="fas fa-headphones"></i><div class="playlist-current-info"><div class="playlist-current-name" id="playlistCurrentName">${this.escapeHtml(currentTrackDisplay)}</div>${currentArtistName ? `<div class="playlist-current-artist" id="playlistCurrentArtist">${this.escapeHtml(currentArtistName)}</div>` : ""}</div></div><div class="playlist-progress"><span id="playlistCurrentTime">${this.formatTime(status ? status.position : 0)}</span><div class="progress-bar" id="playlistProgressBar"><div class="progress-fill" id="playlistProgressFill" style="width: ${status && status.duration ? (status.position / status.duration) * 100 : 0}%"></div></div><span id="playlistTotalTime">${this.formatTime(status ? status.duration : 0)}</span></div></div><div class="playlist-tracks" id="playlistTracksList">`;
+    const tracksByArtist = new Map();
     for (let idx = 0; idx < playlistData.playlist.length; idx++) {
       const track = playlistData.playlist[idx];
-      const isCurrent = idx === playlistData.currentIndex;
-      const trackNumber = track.track || idx + 1;
-      const trackName =
-        track.title || track.name || track.filename || `Трек ${idx + 1}`;
-      const trackArtist =
-        track.artist && track.artist !== "Unknown" ? track.artist : "";
-      let trackDisplay = `${trackNumber} - ${trackName}`;
-      if (trackArtist) trackDisplay += ` - ${trackArtist}`;
-      const currentClass = isCurrent ? "current" : "";
-      html += `<div class="playlist-track ${currentClass}" data-index="${idx}" id="track-${idx}"><div class="playlist-track-name" title="${this.escapeHtml(trackDisplay)}">${this.escapeHtml(trackDisplay)}</div><div class="playlist-track-controls"><button class="playlist-track-play" data-index="${idx}" title="Воспроизвести"><i class="fas fa-play"></i></button><button class="playlist-track-remove" data-index="${idx}" title="Удалить"><i class="fas fa-trash-alt"></i></button></div></div>`;
+      const artist =
+        track.artist && track.artist !== "Unknown" ? track.artist : "Разное";
+      if (!tracksByArtist.has(artist)) {
+        tracksByArtist.set(artist, []);
+      }
+      tracksByArtist.get(artist).push({ idx, track });
+    }
+    let globalTrackIndex = 0;
+    for (const [artist, tracks] of tracksByArtist) {
+      html += `<div class="playlist-artist-group"><div class="playlist-artist-header" data-artist="${this.escapeHtml(artist)}"><i class="fas fa-chevron-right group-arrow"></i><i class="fas fa-user group-icon"></i><span class="playlist-artist-name">${this.escapeHtml(artist)}</span><span class="playlist-artist-count">${tracks.length} ${this.getTracksWord(tracks.length)}</span></div><div class="playlist-artist-tracks">`;
+      for (const { idx, track } of tracks) {
+        const isCurrent = idx === playlistData.currentIndex;
+        const trackNumber = track.track || globalTrackIndex + 1;
+        const trackName =
+          track.title ||
+          track.name ||
+          track.filename ||
+          `Трек ${globalTrackIndex + 1}`;
+        const trackDuration = track.duration || 0;
+        const currentClass = isCurrent ? "current" : "";
+        html += `<div class="playlist-track ${currentClass}" data-index="${idx}" id="track-${idx}">
+            <div class="playlist-track-number">${trackNumber}</div>
+            <div class="playlist-track-name" title="${this.escapeHtml(trackName)}">${this.escapeHtml(trackName)}</div>
+            <div class="playlist-track-duration">${this.formatTime(trackDuration)}</div>
+            <div class="playlist-track-controls">
+                <button class="playlist-track-play" data-index="${idx}" title="Воспроизвести"><i class="fas fa-play"></i></button>
+                <button class="playlist-track-remove" data-index="${idx}" title="Удалить"><i class="fas fa-trash-alt"></i></button>
+            </div>
+        </div>`;
+        globalTrackIndex++;
+      }
+      html += `</div></div>`;
     }
     html += `</div>`;
     container.innerHTML = html;
@@ -341,7 +382,51 @@ const PlaylistViewer = {
       container.scrollTop = savedScrollTop;
     }
     this.attachEventListeners();
+    this.attachGroupToggleListeners();
     console.log("updateDisplay finished");
+  },
+
+  attachGroupToggleListeners() {
+    document.querySelectorAll(".playlist-artist-header").forEach((header) => {
+      header.removeEventListener("click", this.handleGroupToggle);
+      this.handleGroupToggle = (e) => {
+        e.stopPropagation();
+        header.classList.toggle("collapsed");
+        const tracksContainer = header.nextElementSibling;
+        if (
+          tracksContainer &&
+          tracksContainer.classList.contains("playlist-artist-tracks")
+        ) {
+          tracksContainer.classList.toggle("collapsed");
+        }
+        const arrow = header.querySelector(".group-arrow");
+        if (arrow) {
+          arrow.classList.toggle("rotated");
+        }
+      };
+      header.addEventListener("click", this.handleGroupToggle);
+      const tracksContainer = header.nextElementSibling;
+      const isCurrentGroup =
+        tracksContainer &&
+        tracksContainer.querySelector(".playlist-track.current");
+      if (!isCurrentGroup) {
+        header.classList.add("collapsed");
+        if (tracksContainer) tracksContainer.classList.add("collapsed");
+        const arrow = header.querySelector(".group-arrow");
+        if (arrow) arrow.classList.add("rotated");
+      }
+    });
+  },
+
+  getTracksWord(count) {
+    if (count % 10 === 1 && count % 100 !== 11) return "трек";
+    if (
+      count % 10 >= 2 &&
+      count % 10 <= 4 &&
+      (count % 100 < 10 || count % 100 >= 20)
+    )
+      return "трека";
+    return "треков";
   },
 
   attachEventListeners() {
@@ -456,11 +541,14 @@ const PlaylistViewer = {
       playlistData.playlist[currentIndex]
     ) {
       const currentTrackData = playlistData.playlist[currentIndex];
-      const trackName =
+      let trackName =
         currentTrackData.title ||
         currentTrackData.name ||
         currentTrackData.filename ||
         "—";
+      if (trackName && trackName.match(/\.(flac|mp3|m4a|wav)$/i)) {
+        trackName = trackName.replace(/\.(flac|mp3|m4a|wav)$/i, "");
+      }
       const trackArtist =
         currentTrackData.artist && currentTrackData.artist !== "Unknown"
           ? currentTrackData.artist

@@ -623,7 +623,10 @@ const AlbumLibrary = {
       const data = await response.json();
       if (data.status === "success" && data.tracks) {
         return data.tracks.map((track, idx) => ({
-          name: track.title || track.filename || `Track ${idx + 1}`,
+          name:
+            track.title ||
+            track.filename?.replace(/\.(flac|mp3|m4a|wav)$/i, "") ||
+            `Track ${idx + 1}`,
           path: track.path,
           number: track.track || idx + 1,
         }));
