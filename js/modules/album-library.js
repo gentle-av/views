@@ -66,13 +66,14 @@ const AlbumLibrary = {
   },
 
   reset() {
+    console.log("[RESET] Сброс состояния");
     this.albums = [];
     this.filteredAlbums = [];
     this.artists = [];
     this.allTracks = [];
     this.loadedArtists = 0;
     this.totalArtists = 0;
-    this.initialized = false;
+    this.currentArtist = null;
     if (this.loadingTaskId) {
       cancelIdleCallback(this.loadingTaskId);
       this.loadingTaskId = null;
@@ -268,8 +269,15 @@ const AlbumLibrary = {
   },
 
   async loadAlbumsSequentially() {
+    console.log(
+      "[LOAD_ALBUMS] 1. Начало загрузки альбомов, totalArtists:",
+      this.totalArtists,
+    );
     const grid = document.getElementById("albumsGrid");
-    if (!grid) return;
+    if (!grid) {
+      console.log("[LOAD_ALBUMS] Ошибка: grid не найден");
+      return;
+    }
     this.albums = [];
     const uniqueAlbums = new Map();
     grid.innerHTML = `
@@ -296,6 +304,7 @@ const AlbumLibrary = {
     const loadNextBatch = async (deadline) => {
       const grid = document.getElementById("albumsGrid");
       if (!grid || !this.initialized) {
+        console.log("[LOAD_ALBUMS] Прерываем: grid нет или не инициализирован");
         return;
       }
       let batchSize = 0;
@@ -304,6 +313,9 @@ const AlbumLibrary = {
         currentIndex < this.artists.length
       ) {
         const artist = this.artists[currentIndex];
+        console.log(
+          `[LOAD_ALBUMS] Загружаем артиста ${currentIndex + 1}/${this.artists.length}: ${artist}`,
+        );
         await this.loadArtistAlbumsNonBlocking(artist, uniqueAlbums, foundSpan);
         currentIndex++;
         batchSize++;
@@ -319,10 +331,14 @@ const AlbumLibrary = {
         }
       }
       if (currentIndex < this.artists.length) {
+        console.log(
+          `[LOAD_ALBUMS] Продолжаем, загружено ${currentIndex}/${this.artists.length}`,
+        );
         this.loadingTaskId = requestIdleCallback(loadNextBatch, {
           timeout: 100,
         });
       } else {
+        console.log("[LOAD_ALBUMS] Загрузка завершена, финализируем");
         this.finalizeLoading();
         this.loadingTaskId = null;
       }
@@ -852,43 +868,91 @@ const AlbumLibrary = {
   },
 
   async refreshDatabase() {
-    const refreshBtn = document.querySelector(".refresh-btn");
-    if (!refreshBtn) return;
+    let refreshBtn = document.querySelector(".refresh-btn");
+    if (!refreshBtn) {
+      const refreshBtnAlt = document.querySelector("#refreshBtn");
+      const refreshBtnAlt2 = document.querySelector(".btn-refresh");
+      const refreshBtnAlt3 = document.querySelector("button[title='Обновить']");
+      const refreshBtnAlt4 = document
+        .querySelector("button i.fa-sync-alt")
+        ?.closest("button");
+      refreshBtn =
+        refreshBtnAlt || refreshBtnAlt2 || refreshBtnAlt3 || refreshBtnAlt4;
+      if (!refreshBtn) {
+        console.log("[REFRESH] Кнопка обновления не найдена, выходим");
+        return;
+      }
+      console.log("[REFRESH] Найдена кнопка:", refreshBtn);
+    }
     refreshBtn.classList.add("refreshing");
     refreshBtn.disabled = true;
     try {
+      const grid = document.getElementById("albumsGrid");
+      if (grid) {
+        grid.innerHTML =
+          '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Обновление базы данных...</div>';
+      }
+      console.log("[REFRESH] Вызываем /api/music/scan");
       const scanResponse = await fetch("/api/music/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
       if (!scanResponse.ok) {
-        throw new Error("Ошибка при сканировании");
+        throw new Error(`HTTP ${scanResponse.status} при сканировании`);
       }
       const scanResult = await scanResponse.json();
-      if (scanResult.status === "success") {
-        const removeResponse = await fetch("/api/music/remove-missing", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!removeResponse.ok) {
-          throw new Error("Ошибка при удалении отсутствующих файлов");
-        }
-        const removeResult = await removeResponse.json();
-        if (removeResult.status === "success") {
-          Utils.showNotification("База данных обновлена успешно", "success");
-          await this.loadArtists();
-        } else {
-          throw new Error(removeResult.message || "Ошибка при удалении файлов");
-        }
-      } else {
+      console.log("[REFRESH] scanResult:", scanResult);
+      if (scanResult.status !== "success") {
         throw new Error(scanResult.message || "Ошибка при сканировании");
       }
+      console.log("[REFRESH] Вызываем /api/music/remove-missing");
+      const removeResponse = await fetch("/api/music/remove-missing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!removeResponse.ok) {
+        throw new Error(`HTTP ${removeResponse.status} при удалении`);
+      }
+      const removeResult = await removeResponse.json();
+      console.log("[REFRESH] removeResult:", removeResult);
+      if (removeResult.status !== "success") {
+        throw new Error(removeResult.message || "Ошибка при удалении файлов");
+      }
+      console.log("[REFRESH] Сбрасываем состояние");
+      this.reset();
+      console.log("[REFRESH] Восстанавливаем initialized");
+      this.initialized = true;
+      console.log("[REFRESH] Загружаем артистов");
+      const artistsResponse = await fetch("/api/music/artists", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      const artistsData = await artistsResponse.json();
+      console.log("[REFRESH] artistsData:", artistsData);
+      if (artistsData.status === "success" && artistsData.artists) {
+        console.log("[REFRESH] Найдено артистов:", artistsData.artists.length);
+        this.artists = artistsData.artists;
+        this.totalArtists = this.artists.length;
+        this.loadedArtists = 0;
+        this.albums = [];
+        this.filteredAlbums = [];
+        this.allTracks = [];
+        console.log("[REFRESH] Загружаем альбомы");
+        await this.loadAlbumsSequentially();
+        Utils.showNotification("База данных обновлена успешно", "success");
+      } else {
+        throw new Error("Не удалось получить список артистов");
+      }
     } catch (error) {
-      console.error("Error refreshing database:", error);
+      console.error("[REFRESH] ОШИБКА:", error);
       Utils.showNotification(
         "Ошибка при обновлении базы данных: " + error.message,
         "error",
       );
+      const grid = document.getElementById("albumsGrid");
+      if (grid) {
+        grid.innerHTML = `<div class="empty"><i class="fas fa-exclamation-triangle"></i> Ошибка: ${Utils.escapeHtml(error.message)}</div>`;
+      }
     } finally {
       refreshBtn.classList.remove("refreshing");
       refreshBtn.disabled = false;
