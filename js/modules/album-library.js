@@ -712,29 +712,24 @@ const AlbumLibrary = {
         if (replacePlaylistBtn) {
           replacePlaylistBtn.addEventListener("click", function (e) {
             e.stopPropagation();
-            console.log(
-              "replacePlaylistWithTrack clicked for track:",
-              trackName,
-            );
+            e.preventDefault();
+            console.log("replacePlaylist clicked for album:", album.title);
             if (typeof AudioPlayer !== "undefined") {
-              AudioPlayer.replacePlaylistWithTrack(album, idx);
+              AudioPlayer.replacePlaylistWithAlbum(album);
               Utils.showNotification(
-                `Плейлист заменен треком: ${trackName}`,
+                `Плейлист заменен альбомом: ${album.title}`,
                 "success",
               );
-              modal.classList.remove("active");
-              if (
-                typeof AlbumLibrary !== "undefined" &&
-                AlbumLibrary.showPlaylistSection
-              ) {
-                AlbumLibrary.showPlaylistSection();
-              }
+              setTimeout(() => {
+                modal.classList.remove("active");
+              }, 500);
             }
           });
         }
         if (addAfterCurrentBtn) {
           addAfterCurrentBtn.addEventListener("click", function (e) {
             e.stopPropagation();
+            e.preventDefault();
             console.log("addAfterCurrent clicked for track:", trackName);
             if (typeof AudioPlayer !== "undefined") {
               AudioPlayer.addTrackAfterCurrent(album, idx);
@@ -754,6 +749,7 @@ const AlbumLibrary = {
         if (showPlaylistBtn) {
           showPlaylistBtn.addEventListener("click", function (e) {
             e.stopPropagation();
+            e.preventDefault();
             console.log("showPlaylistFromTrack clicked");
             if (
               typeof AlbumLibrary !== "undefined" &&
@@ -788,7 +784,9 @@ const AlbumLibrary = {
     const showPlaylistBtn = modalContent.querySelector(".show-playlist-btn");
     const closeBtn = modalContent.querySelector(".modal-close-btn");
     if (prevBtn) {
-      prevBtn.addEventListener("click", function () {
+      prevBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        e.preventDefault();
         console.log("prevTrack clicked");
         if (typeof AudioPlayer !== "undefined") {
           AudioPlayer.previousTrack();
@@ -796,7 +794,9 @@ const AlbumLibrary = {
       });
     }
     if (nextBtn) {
-      nextBtn.addEventListener("click", function () {
+      nextBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        e.preventDefault();
         console.log("nextTrack clicked");
         if (typeof AudioPlayer !== "undefined") {
           AudioPlayer.nextTrack();
@@ -804,7 +804,9 @@ const AlbumLibrary = {
       });
     }
     if (addToPlaylistBtn) {
-      addToPlaylistBtn.addEventListener("click", function () {
+      addToPlaylistBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        e.preventDefault();
         console.log("addToPlaylist clicked for album:", album.title);
         if (typeof AudioPlayer !== "undefined") {
           AudioPlayer.addAlbumToPlaylist(album);
@@ -822,7 +824,9 @@ const AlbumLibrary = {
       });
     }
     if (replacePlaylistBtn) {
-      replacePlaylistBtn.addEventListener("click", function () {
+      replacePlaylistBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        e.preventDefault();
         console.log("replacePlaylist clicked for album:", album.title);
         if (typeof AudioPlayer !== "undefined") {
           AudioPlayer.replacePlaylistWithAlbum(album);
@@ -830,18 +834,22 @@ const AlbumLibrary = {
             `Плейлист заменен альбомом: ${album.title}`,
             "success",
           );
-          modal.classList.remove("active");
-          if (
-            typeof AlbumLibrary !== "undefined" &&
-            AlbumLibrary.showPlaylistSection
-          ) {
-            AlbumLibrary.showPlaylistSection();
-          }
+          setTimeout(() => {
+            modal.classList.remove("active");
+            if (
+              typeof AlbumLibrary !== "undefined" &&
+              AlbumLibrary.showPlaylistSection
+            ) {
+              AlbumLibrary.showPlaylistSection();
+            }
+          }, 100);
         }
       });
     }
     if (showPlaylistBtn) {
-      showPlaylistBtn.addEventListener("click", function () {
+      showPlaylistBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        e.preventDefault();
         console.log("showPlaylistBtn clicked");
         if (
           typeof AlbumLibrary !== "undefined" &&
@@ -856,7 +864,8 @@ const AlbumLibrary = {
       });
     }
     if (closeBtn) {
-      closeBtn.addEventListener("click", function () {
+      closeBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
         console.log("closeBtn clicked");
         modal.classList.remove("active");
       });

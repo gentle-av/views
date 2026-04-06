@@ -228,39 +228,59 @@ const AudioPlayer = {
   },
 
   async replacePlaylist(album, trackIndex = null) {
-    console.log(
-      "[DEBUG] replacePlaylist called, album:",
-      album?.title,
-      "trackIndex:",
-      trackIndex,
-    );
+    console.log("[REPLACE_PLAYLIST] ========== START ==========");
+    console.log("[REPLACE_PLAYLIST] album:", album?.title);
+    console.log("[REPLACE_PLAYLIST] trackIndex:", trackIndex);
     const tracksToReplace =
       trackIndex !== null ? [album.tracks[trackIndex]] : album.tracks;
-    console.log("[DEBUG] tracksToReplace count:", tracksToReplace.length);
+    console.log(
+      "[REPLACE_PLAYLIST] tracksToReplace count:",
+      tracksToReplace.length,
+    );
+    if (tracksToReplace.length > 0) {
+      console.log("[REPLACE_PLAYLIST] first track:", tracksToReplace[0].name);
+    }
+    console.log("[REPLACE_PLAYLIST] Calling ensureMusiumRunning...");
     const started = await this.ensureMusiumRunning(tracksToReplace);
+    console.log("[REPLACE_PLAYLIST] ensureMusiumRunning result:", started);
     if (!started) {
       Utils.showNotification("Не удалось запустить аудиоплеер", "error");
+      console.log("[REPLACE_PLAYLIST] FAILED: Musium not started");
       return;
     }
+    console.log("[REPLACE_PLAYLIST] Waiting 500ms...");
     await this.delay(500);
     const trackPaths = tracksToReplace.map((t) => t.path);
-    console.log("[DEBUG] Sending replacePlaylist with paths:", trackPaths);
+    console.log(
+      "[REPLACE_PLAYLIST] Sending replacePlaylist with",
+      trackPaths.length,
+      "paths",
+    );
+    console.log("[REPLACE_PLAYLIST] First path:", trackPaths[0]);
     const result = await this.sendToMusium("/api/replacePlaylist", {
       tracks: trackPaths,
+      noAutoPlay: false,
     });
+    console.log("[REPLACE_PLAYLIST] sendToMusium result:", result);
     if (result && result.success) {
       Utils.showNotification(
         `Плейлист заменен ${tracksToReplace.length} треками`,
         "success",
       );
+      console.log("[REPLACE_PLAYLIST] SUCCESS: Playlist replaced");
     } else {
       Utils.showNotification("Ошибка при замене плейлиста", "error");
+      console.log("[REPLACE_PLAYLIST] ERROR: Replace failed");
     }
+    console.log("[REPLACE_PLAYLIST] Waiting 500ms after replace...");
     await this.delay(500);
+    console.log("[REPLACE_PLAYLIST] Calling updateUI...");
     await this.updateUI();
     if (typeof PlaylistViewer !== "undefined") {
+      console.log("[REPLACE_PLAYLIST] Calling PlaylistViewer.refresh...");
       PlaylistViewer.refresh();
     }
+    console.log("[REPLACE_PLAYLIST] ========== END ==========");
   },
 
   async addAfterCurrent(album, trackIndex) {
