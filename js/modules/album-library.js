@@ -895,8 +895,8 @@ const AlbumLibrary = {
         grid.innerHTML =
           '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Обновление базы данных...</div>';
       }
-      console.log("[REFRESH] Вызываем /api/music/scan");
-      const scanResponse = await fetch("/api/music/scan", {
+      console.log("[REFRESH] Вызываем /api/music/force-rescan");
+      const scanResponse = await fetch("/api/music/force-rescan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
@@ -907,19 +907,6 @@ const AlbumLibrary = {
       console.log("[REFRESH] scanResult:", scanResult);
       if (scanResult.status !== "success") {
         throw new Error(scanResult.message || "Ошибка при сканировании");
-      }
-      console.log("[REFRESH] Вызываем /api/music/remove-missing");
-      const removeResponse = await fetch("/api/music/remove-missing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!removeResponse.ok) {
-        throw new Error(`HTTP ${removeResponse.status} при удалении`);
-      }
-      const removeResult = await removeResponse.json();
-      console.log("[REFRESH] removeResult:", removeResult);
-      if (removeResult.status !== "success") {
-        throw new Error(removeResult.message || "Ошибка при удалении файлов");
       }
       console.log("[REFRESH] Сбрасываем состояние");
       this.reset();
@@ -942,7 +929,10 @@ const AlbumLibrary = {
         this.allTracks = [];
         console.log("[REFRESH] Загружаем альбомы");
         await this.loadAlbumsSequentially();
-        Utils.showNotification("База данных обновлена успешно", "success");
+        Utils.showNotification(
+          `База данных обновлена: ${scanResult.updated_files || 0} файлов обновлено`,
+          "success",
+        );
       } else {
         throw new Error("Не удалось получить список артистов");
       }
