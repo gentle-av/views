@@ -360,6 +360,25 @@
   display: block;
 }
 
+.playlist-artist-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 4px;
+}
+
+.playlist-artist-header .group-icon {
+  color: var(--yellow);
+  font-size: 0.9rem;
+  width: 20px;
+  flex-shrink: 0;
+}
+
 .playlist-artist-header .group-arrow {
   display: none;
 }
@@ -370,6 +389,16 @@
   color: var(--fg0);
   font-size: 0.95rem;
   margin-right: 8px;
+}
+
+.playlist-artist-name {
+  font-weight: 600;
+  color: var(--fg0);
+  font-size: 0.95rem;
+}
+
+.playlist-artist-header .group-arrow {
+  display: none;
 }
 
 .playlist-artist-count {

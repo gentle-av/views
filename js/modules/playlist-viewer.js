@@ -344,7 +344,7 @@ const PlaylistViewer = {
     }
     let globalTrackIndex = 0;
     for (const [artist, tracks] of tracksByArtist) {
-      html += `<div class="playlist-artist-group"><div class="playlist-artist-header" data-artist="${this.escapeHtml(artist)}"><i class="fas fa-chevron-right group-arrow"></i><i class="fas fa-user group-icon"></i><span class="playlist-artist-name">${this.escapeHtml(artist)}</span><span class="playlist-artist-count">${tracks.length} ${this.getTracksWord(tracks.length)}</span></div><div class="playlist-artist-tracks">`;
+      html += `<div class="playlist-artist-group"><div class="playlist-artist-header" data-artist="${this.escapeHtml(artist)}"><i class="fas fa-user group-icon"></i><span class="playlist-artist-name">${this.escapeHtml(artist)}</span></div><div class="playlist-artist-tracks">`;
       for (const { idx, track } of tracks) {
         const isCurrent = idx === playlistData.currentIndex;
         const trackNumber = track.track || globalTrackIndex + 1;
@@ -359,10 +359,6 @@ const PlaylistViewer = {
             <div class="playlist-track-number">${trackNumber}</div>
             <div class="playlist-track-name" title="${this.escapeHtml(trackName)}">${this.escapeHtml(trackName)}</div>
             <div class="playlist-track-duration">${this.formatTime(trackDuration)}</div>
-            <div class="playlist-track-controls">
-                <button class="playlist-track-play" data-index="${idx}" title="Воспроизвести"><i class="fas fa-play"></i></button>
-                <button class="playlist-track-remove" data-index="${idx}" title="Удалить"><i class="fas fa-trash-alt"></i></button>
-            </div>
         </div>`;
         globalTrackIndex++;
       }
