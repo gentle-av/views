@@ -1,47 +1,59 @@
 const TagEditor = {
+  getBaseUrl() {
+    return `http://${window.location.hostname}:${window.location.port}`;
+  },
+
+  async updateTags(filePath, tags) {
+    try {
+      const payload = {
+        path: filePath,
+        ...tags,
+      };
+      console.log("[TagEditor] Updating tags:", payload);
+      const response = await fetch(
+        `${this.getBaseUrl()}/api/music/update-tags`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
+      const data = await response.json();
+      console.log("[TagEditor] Update response:", data);
+      if (data.status === "success") {
+        return true;
+      } else {
+        console.error("[TagEditor] Update failed:", data.message);
+        return false;
+      }
+    } catch (error) {
+      console.error("[TagEditor] Error updating tags:", error);
+      return false;
+    }
+  },
+
   async getTags(filePath) {
     try {
       const response = await fetch(
-        `/api/tags?file=${encodeURIComponent(filePath)}`,
+        `${this.getBaseUrl()}/api/music/file-metadata?path=${encodeURIComponent(filePath)}`,
       );
       const data = await response.json();
-      if (data.success) {
-        return data.data;
+      if (data.status === "success" && data.data) {
+        const fileData = data.data.file;
+        const dbData = data.data.database;
+        return {
+          title: fileData.title || dbData.title,
+          artist: fileData.artist || dbData.artist,
+          album: fileData.album || dbData.album,
+          track: fileData.track || dbData.track,
+          year: fileData.year || dbData.year,
+          genre: fileData.genre || dbData.genre,
+        };
       }
       return null;
     } catch (error) {
       console.error("Error fetching tags:", error);
       return null;
-    }
-  },
-
-  async setTag(filePath, tag, value) {
-    try {
-      const response = await fetch("/api/tag/set", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file: filePath, tag: tag, value: value }),
-      });
-      const data = await response.json();
-      return data.success;
-    } catch (error) {
-      console.error("Error setting tag:", error);
-      return false;
-    }
-  },
-
-  async setMultipleTags(filePath, tags) {
-    try {
-      const response = await fetch("/api/tags/set", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file: filePath, tags: tags }),
-      });
-      const data = await response.json();
-      return data.success;
-    } catch (error) {
-      console.error("Error setting multiple tags:", error);
-      return false;
     }
   },
 
@@ -99,9 +111,9 @@ const TagEditor = {
         const tags = {};
         if (newTitle && newTitle !== album.title) tags.album = newTitle;
         if (newArtist && newArtist !== album.artist) tags.artist = newArtist;
-        if (newYear && newYear !== album.year) tags.date = newYear;
+        if (newYear && newYear !== album.year) tags.year = parseInt(newYear);
         if (Object.keys(tags).length > 0) {
-          const result = await this.setMultipleTags(track.path, tags);
+          const result = await this.updateTags(track.path, tags);
           if (result) successCount++;
         }
       }
@@ -122,8 +134,8 @@ const TagEditor = {
         const tags = {};
         if (newTitle) tags.album = newTitle;
         if (newArtist) tags.artist = newArtist;
-        if (newYear) tags.date = newYear;
-        const result = await this.setMultipleTags(track.path, tags);
+        if (newYear) tags.year = parseInt(newYear);
+        const result = await this.updateTags(track.path, tags);
         if (result) successCount++;
       }
       if (successCount > 0) {
@@ -196,13 +208,13 @@ const TagEditor = {
       if (newArtist) tags.artist = newArtist;
       if (newAlbum) tags.album = newAlbum;
       if (newTrackNumber) tags.track = parseInt(newTrackNumber);
-      if (newYear) tags.date = newYear;
+      if (newYear) tags.year = parseInt(newYear);
       if (Object.keys(tags).length === 0) {
         Utils.showNotification("Нет изменений для сохранения", "info");
         closeModal();
         return;
       }
-      const success = await this.setMultipleTags(track.path, tags);
+      const success = await this.updateTags(track.path, tags);
       if (success) {
         Utils.showNotification("Теги трека обновлены", "success");
         setTimeout(() => location.reload(), 1000);

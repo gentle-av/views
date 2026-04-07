@@ -39,6 +39,26 @@ export class AlbumUIRenderer {
     `;
   }
 
+  generateAlbumCardHtml(album) {
+    return `
+      <div class="album-card" data-artist="${Utils.escapeHtml(album.artist)}" data-album="${Utils.escapeHtml(album.title)}">
+        <div class="album-cover">
+          ${album.coverUrl ? `<img src="${album.coverUrl}" alt="${Utils.escapeHtml(album.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : `<i class="fas fa-album fallback-icon"></i>`}
+          ${album.coverUrl ? `<i class="fas fa-album fallback-icon" style="display: none;"></i>` : ""}
+          <button class="album-edit-tags-btn" title="Редактировать теги альбома">
+            <i class="fas fa-edit"></i>
+          </button>
+        </div>
+        <div class="album-info">
+          <div class="album-title" title="${Utils.escapeHtml(album.title)}">${Utils.escapeHtml(album.title)}</div>
+          <div class="album-artist">${Utils.escapeHtml(album.artist || "Unknown")}</div>
+          <div class="album-year">${album.year}</div>
+          <div class="track-count"><i class="fas fa-headphones"></i> ${album.trackCount} треков</div>
+        </div>
+      </div>
+    `;
+  }
+
   renderAlbums() {
     const grid = document.getElementById("albumsGrid");
     if (!grid) return;
@@ -160,19 +180,29 @@ export class AlbumUIRenderer {
     return album.tracks
       .map(
         (track, idx) => `
-      <div class="track-item" data-track-index="${idx}" data-track-name="${Utils.escapeHtml(track.name)}" data-track-path="${track.path}">
-        <div class="track-number">${String(idx + 1).padStart(2, "0")}</div>
-        <div class="track-name">${Utils.escapeHtml(track.name)}</div>
-        <div class="track-controls">
-          <button class="track-control-btn edit-track-tags" data-track-index="${idx}" title="Редактировать теги трека"><i class="fas fa-edit"></i></button>
-          <button class="track-control-btn replace-playlist-with-track" title="Заменить плейлист этим треком"><i class="fas fa-exchange-alt"></i></button>
-          <button class="track-control-btn add-after-current" title="Добавить после текущего"><i class="fas fa-plus-circle"></i></button>
-          <button class="track-control-btn show-playlist-from-track" title="Показать плейлист"><i class="fas fa-list"></i></button>
-        </div>
-      </div>
-    `,
+            <div class="track-item" data-track-index="${idx}" data-track-name="${Utils.escapeHtml(track.name)}" data-track-path="${track.path}">
+                <div class="track-left">
+                    <div class="track-number">${String(idx + 1).padStart(2, "0")}</div>
+                    <div class="track-name">${Utils.escapeHtml(track.name)}</div>
+                    <div class="track-duration">${track.duration ? this.formatDuration(track.duration) : ""}</div>
+                </div>
+                <div class="track-right">
+                    <button class="track-control-btn edit-track-tags" data-track-index="${idx}" title="Редактировать теги трека"><i class="fas fa-edit"></i></button>
+                    <button class="track-control-btn replace-playlist-with-track" title="Заменить плейлист этим треком"><i class="fas fa-exchange-alt"></i></button>
+                    <button class="track-control-btn add-after-current" title="Добавить после текущего"><i class="fas fa-plus-circle"></i></button>
+                    <button class="track-control-btn show-playlist-from-track" title="Показать плейлист"><i class="fas fa-list"></i></button>
+                </div>
+            </div>
+        `,
       )
       .join("");
+  }
+
+  formatDuration(seconds) {
+    if (!seconds) return "";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   }
 
   attachTrackEventListeners(modal, album, tracksList) {

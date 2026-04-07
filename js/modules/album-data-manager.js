@@ -54,14 +54,24 @@ export class AlbumDataManager {
       });
       const data = await response.json();
       if (data.status === "success" && data.tracks) {
-        return data.tracks.map((track, idx) => ({
-          name:
-            track.title ||
-            track.filename?.replace(/\.(flac|mp3|m4a|wav)$/i, "") ||
-            `Track ${idx + 1}`,
-          path: track.path,
-          number: track.track || idx + 1,
-        }));
+        const tracksWithDuration = await Promise.all(
+          data.tracks.map(async (track, idx) => {
+            let duration = track.duration || 0;
+            if (!duration && track.path) {
+              duration = await this.getTrackDuration(track.path);
+            }
+            return {
+              name:
+                track.title ||
+                track.filename?.replace(/\.(flac|mp3|m4a|wav)$/i, "") ||
+                `Track ${idx + 1}`,
+              path: track.path,
+              number: track.track || idx + 1,
+              duration: duration,
+            };
+          }),
+        );
+        return tracksWithDuration;
       }
       return [];
     } catch (error) {
@@ -70,6 +80,23 @@ export class AlbumDataManager {
     }
   }
 
+  async getTrackDuration(filePath) {
+    try {
+      const url = `${this.library.getServerUrl()}/api/music/info?path=${encodeURIComponent(filePath)}`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await response.json();
+      if (data.status === "success" && data.duration) {
+        return data.duration;
+      }
+      return 0;
+    } catch (error) {
+      console.error("Error fetching track duration:", error);
+      return 0;
+    }
+  }
   async getAlbumCover(albumName, artist) {
     try {
       const url = `${this.library.getServerUrl()}/api/music/albumart/album/${encodeURIComponent(albumName)}${artist ? `?artist=${encodeURIComponent(artist)}` : ""}`;
