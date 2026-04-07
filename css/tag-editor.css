@@ -1,0 +1,226 @@
+.tag-editor-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tag-editor-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.tag-editor-container {
+  position: relative;
+  background: var(--bg1);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.2s ease;
+}
+
+.tag-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tag-editor-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--fg0);
+}
+
+.tag-editor-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--fg3);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.tag-editor-close:hover {
+  background: var(--bg2);
+  color: var(--fg0);
+}
+
+.tag-editor-content {
+  padding: 24px;
+}
+
+.tag-editor-field {
+  margin-bottom: 20px;
+}
+
+.tag-editor-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--fg2);
+}
+
+.tag-editor-field input,
+.tag-editor-field select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg0);
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.tag-editor-field input:focus,
+.tag-editor-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(0, 150, 255, 0.2);
+}
+
+.tag-editor-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.tag-editor-actions button {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tag-editor-save {
+  background: var(--accent);
+  color: white;
+}
+
+.tag-editor-save:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.tag-editor-save-all {
+  background: var(--green);
+  color: white;
+}
+
+.tag-editor-save-all:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.tag-editor-cancel {
+  background: var(--bg2);
+  color: var(--fg2);
+}
+
+.tag-editor-cancel:hover {
+  background: var(--bg3);
+}
+
+.tag-editor-note {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(0, 150, 255, 0.1);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--fg2);
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.tag-editor-note i {
+  color: var(--accent);
+  margin-top: 2px;
+}
+
+/* Album card edit button */
+.album-cover {
+  position: relative;
+}
+
+.album-edit-tags-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  z-index: 10;
+}
+
+.album-card:hover .album-edit-tags-btn {
+  opacity: 1;
+}
+
+.album-edit-tags-btn:hover {
+  background: var(--accent);
+  transform: scale(1.05);
+}
+
+/* Track edit button */
+.track-control-btn.edit-track-tags {
+  background: none;
+  border: none;
+  color: var(--fg2);
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.track-control-btn.edit-track-tags:hover {
+  background: var(--accent);
+  color: white;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

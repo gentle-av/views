@@ -39,20 +39,13 @@ const App = {
     }
     if (typeof NavigationManager !== "undefined") {
       NavigationManager.init();
-      if (typeof NavigationManager !== "undefined") {
-        NavigationManager.init();
-        NavigationManager.onPageChange((page) => {
-          this.log("onPageChange received:", page);
-          this.loadPage(page);
-        });
-        setTimeout(() => {
-          NavigationManager.attachButtonHandlers();
-        }, 1000);
-      }
       NavigationManager.onPageChange((page) => {
         this.log("onPageChange received:", page);
         this.loadPage(page);
       });
+      setTimeout(() => {
+        NavigationManager.attachButtonHandlers();
+      }, 1000);
     }
     this.setupMobileMenu();
     this.log("Calling loadPage video");
@@ -232,23 +225,17 @@ const App = {
   loadVideoPage() {
     this.log("loadVideoPage called, scripts loaded:", this.loadedScripts.video);
     if (!this.loadedScripts.video) {
-      const script = document.createElement("script");
-      script.src = "js/modules/video-explorer.js";
-      script.onload = () => {
-        this.log("video-explorer.js loaded");
-        setTimeout(() => {
-          if (typeof VideoExplorer !== "undefined") {
-            this.log("Calling VideoExplorer.init");
-            VideoExplorer.init();
-          }
-          if (typeof NavigationManager !== "undefined") {
-            this.log("Calling NavigationManager.attachButtonHandlers");
-            NavigationManager.attachButtonHandlers();
-          }
-        }, 100);
+      setTimeout(() => {
+        if (typeof VideoExplorer !== "undefined") {
+          this.log("Calling VideoExplorer.init");
+          VideoExplorer.init();
+        }
+        if (typeof NavigationManager !== "undefined") {
+          this.log("Calling NavigationManager.attachButtonHandlers");
+          NavigationManager.attachButtonHandlers();
+        }
         this.loadedScripts.video = true;
-      };
-      document.body.appendChild(script);
+      }, 100);
     } else {
       this.log("Scripts already loaded, reinitializing");
       setTimeout(() => {
@@ -273,67 +260,35 @@ const App = {
   loadAudioPage() {
     this.log("loadAudioPage called, scripts loaded:", this.loadedScripts.audio);
     if (!this.loadedScripts.audio) {
-      const script1 = document.createElement("script");
-      script1.src = "js/modules/album-library.js";
-      const script2 = document.createElement("script");
-      script2.src = "js/modules/audio-player.js";
-      const script3 = document.createElement("script");
-      script3.src = "js/modules/playlist-viewer.js";
-      let scriptsLoaded = 0;
-      const checkAllLoaded = () => {
-        scriptsLoaded++;
-        this.log("Script loaded:", scriptsLoaded, "/3");
-        if (scriptsLoaded === 3) {
-          setTimeout(() => {
-            this.log("All scripts loaded, initializing modules");
-            if (typeof AlbumLibrary !== "undefined") {
-              AlbumLibrary.initialized = false;
-              AlbumLibrary.init();
-            }
-            if (typeof AudioPlayer !== "undefined") {
-              AudioPlayer.initialized = false;
-              AudioPlayer.init();
-            }
-            if (typeof PlaylistViewer !== "undefined") {
-              PlaylistViewer.initialized = false;
-              PlaylistViewer.init();
-            }
-            if (typeof NavigationManager !== "undefined") {
-              NavigationManager.attachButtonHandlers();
-            }
-          }, 200);
-          this.loadedScripts.audio = true;
-        }
-      };
-      script1.onload = checkAllLoaded;
-      script2.onload = checkAllLoaded;
-      script3.onload = checkAllLoaded;
-      document.body.appendChild(script1);
-      document.body.appendChild(script2);
-      document.body.appendChild(script3);
-    } else {
-      this.log("Scripts already loaded, reinitializing");
       setTimeout(() => {
-        const grid = document.getElementById("albumsGrid");
-        if (grid) {
-          grid.innerHTML =
-            '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка альбомов...</div>';
-        }
         if (typeof AlbumLibrary !== "undefined") {
-          AlbumLibrary.initialized = false;
-          AlbumLibrary.albums = [];
-          AlbumLibrary.filteredAlbums = [];
-          AlbumLibrary.artists = [];
-          AlbumLibrary.allTracks = [];
           AlbumLibrary.init();
         }
         if (typeof AudioPlayer !== "undefined") {
-          AudioPlayer.initialized = false;
           AudioPlayer.init();
         }
         if (typeof PlaylistViewer !== "undefined") {
-          PlaylistViewer.initialized = false;
           PlaylistViewer.init();
+        }
+        if (typeof NavigationManager !== "undefined") {
+          NavigationManager.attachButtonHandlers();
+        }
+        this.loadedScripts.audio = true;
+      }, 100);
+    } else {
+      this.log("Scripts already loaded, reinitializing");
+      setTimeout(() => {
+        if (typeof AlbumLibrary !== "undefined") {
+          AlbumLibrary.reloadAlbums();
+        }
+        if (typeof AudioPlayer !== "undefined" && AudioPlayer.initialized) {
+          AudioPlayer.updateUI();
+        }
+        if (
+          typeof PlaylistViewer !== "undefined" &&
+          PlaylistViewer.initialized
+        ) {
+          PlaylistViewer.refresh();
         }
         if (typeof NavigationManager !== "undefined") {
           NavigationManager.attachButtonHandlers();

@@ -6,7 +6,6 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no"
     />
-    <title>Media Center</title>
     <meta name="theme-color" content="#fabd2f" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
@@ -14,6 +13,9 @@
       content="black-translucent"
     />
     <meta name="apple-mobile-web-app-title" content="Media Center" />
+
+    <title>Media Center</title>
+
     <link rel="icon" type="image/x-icon" href="favicon.ico?v=2" />
     <link
       rel="stylesheet"
@@ -23,12 +25,13 @@
   </head>
   <body>
     <div class="app">
-      <div class="sidebar" id="sidebar">
+      <!-- ==================== БОКОВАЯ ПАНЕЛЬ ==================== -->
+      <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
           <h2><i class="fas fa-play-circle"></i> Media Center</h2>
           <div class="profile-indicator" id="profileIndicator"></div>
         </div>
-        <div class="sidebar-nav">
+        <nav class="sidebar-nav">
           <button class="sidebar-btn active" data-page="video" id="navVideo">
             <i class="fas fa-video"></i>
             <span>Видео</span>
@@ -37,18 +40,26 @@
             <i class="fas fa-music"></i>
             <span>Аудио</span>
           </button>
-        </div>
-      </div>
+        </nav>
+      </aside>
+
       <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+      <!-- ==================== КНОПКА МЕНЮ (мобильная) ==================== -->
       <button class="menu-toggle" id="menuToggle">
         <i class="fas fa-bars"></i>
       </button>
-      <div class="main-content">
-        <div class="app-header" id="appHeader">
+
+      <!-- ==================== ОСНОВНОЙ КОНТЕНТ ==================== -->
+      <main class="main-content">
+        <!-- ШАПКА -->
+        <header class="app-header" id="appHeader">
           <div class="header-title-section">
             <h1 class="page-title" id="pageTitle">Видео</h1>
           </div>
+
           <div class="header-controls-section">
+            <!-- Мобильные кнопки навигации -->
             <div class="mobile-nav-buttons" id="mobileNavButtons">
               <button class="header-btn nav-video-btn active" id="navVideoBtn">
                 <i class="fas fa-video"></i>
@@ -59,10 +70,18 @@
                 <span>Аудио</span>
               </button>
             </div>
+
+            <!-- Поиск -->
             <div class="search-box" id="globalSearchBox" style="display: none">
               <i class="fas fa-search"></i>
-              <input type="text" id="globalSearchInput" />
+              <input
+                type="text"
+                id="globalSearchInput"
+                placeholder="Поиск..."
+              />
             </div>
+
+            <!-- Плейлист -->
             <button
               class="header-btn playlist-toggle-header"
               id="headerPlaylistBtn"
@@ -72,6 +91,8 @@
               <i class="fas fa-list"></i>
               <span>Плейлист</span>
             </button>
+
+            <!-- Обновление -->
             <button
               class="header-btn refresh-header refresh-btn"
               id="headerRefreshBtn"
@@ -82,13 +103,17 @@
               <span>Обновить</span>
             </button>
           </div>
-        </div>
+        </header>
+
+        <!-- ПРОКРУЧИВАЕМАЯ ОБЛАСТЬ -->
         <div class="scrollable-content" id="scrollableContent">
           <div class="page-container" id="pageContainer"></div>
         </div>
+
+        <!-- АУДИОПЛЕЕР -->
         <div class="audio-player-bar" id="audioPlayerBar" style="display: none">
           <div class="player-album-art">
-            <img id="playerAlbumArt" src="" alt="Album art" />
+            <img id="playerAlbumArt" src="" alt="Обложка альбома" />
           </div>
           <div class="player-info">
             <div class="player-track" id="playerTrack">—</div>
@@ -116,7 +141,9 @@
             </div>
           </div>
         </div>
-      </div>
+      </main>
+
+      <!-- ==================== МОДАЛЬНОЕ ОКНО АЛЬБОМА ==================== -->
       <div id="albumModal" class="modal">
         <div class="modal-content">
           <div class="modal-header">
@@ -125,7 +152,7 @@
           </div>
           <div class="modal-body">
             <div class="album-detail-art">
-              <img id="modalAlbumArt" src="" alt="Album art" />
+              <img id="modalAlbumArt" src="" alt="Обложка альбома" />
             </div>
             <div class="album-tracks">
               <div id="modalTracksList"></div>
@@ -133,6 +160,8 @@
           </div>
         </div>
       </div>
+
+      <!-- ==================== ПАНЕЛЬ УПРАВЛЕНИЯ ПЛЕЕРОМ ==================== -->
       <div
         id="playerControlPage"
         class="player-control-page"
@@ -187,9 +216,7 @@
         <div class="player-placeholder">
           <i class="fas fa-play-circle"></i>
           <div>Видео воспроизводится в Mediateka</div>
-          <div style="font-size: 1rem; margin-top: 20px; color: var(--fg3)">
-            Используйте кнопки управления выше
-          </div>
+          <div class="player-hint">Используйте кнопки управления выше</div>
         </div>
         <button
           class="close-control-page"
@@ -199,20 +226,35 @@
           <i class="fas fa-arrow-left"></i>
         </button>
       </div>
+
+      <!-- ==================== ИНДИКАТОР ЗАГРУЗКИ ==================== -->
       <div class="loading-progress" id="loadingProgress">
         <div class="loading-progress-bar"></div>
       </div>
+
+      <!-- ==================== УВЕДОМЛЕНИЯ ==================== -->
       <div id="notification" class="notification" style="display: none"></div>
     </div>
+
+    <!-- ==================== СКРИПТЫ ==================== -->
     <script src="js/core/config.js"></script>
     <script src="js/core/utils.js"></script>
     <script src="js/modules/player-manager.js"></script>
     <script src="js/modules/tree-manager.js"></script>
     <script src="js/modules/navigation-manager.js"></script>
     <script src="js/modules/audio-player.js"></script>
-    <script src="js/modules/album-library.js"></script>
+    <script type="module">
+      import { AlbumLibrary } from "./js/modules/album-core.js";
+      window.AlbumLibrary = AlbumLibrary;
+      document.addEventListener("DOMContentLoaded", () => {
+        if (!window.AlbumLibrary.initialized) {
+          window.AlbumLibrary.init();
+        }
+      });
+    </script>
     <script src="js/modules/playlist-viewer.js"></script>
     <script src="js/modules/video-explorer.js"></script>
+    <script src="js/modules/tag-editor.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>
