@@ -1,4 +1,4 @@
-export class AlbumDataManager {
+class AlbumDataManager {
   constructor(library) {
     this.library = library;
   }
@@ -69,8 +69,9 @@ export class AlbumDataManager {
             name:
               track.title ||
               track.name ||
-              track.filename?.replace(/\.(flac|mp3|m4a|wav)$/i, "") ||
-              `Track ${idx + 1}`,
+              (track.filename
+                ? track.filename.replace(/\.(flac|mp3|m4a|wav)$/i, "")
+                : `Track ${idx + 1}`),
             path: track.path,
             number: track.track || idx + 1,
             duration: duration,

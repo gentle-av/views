@@ -1,8 +1,5 @@
 const App = {
-  loadedScripts: {
-    video: false,
-    audio: false,
-  },
+  loadedScripts: new Set(),
   initializing: false,
   pageLoading: false,
   debug: true,
@@ -34,18 +31,12 @@ const App = {
     }
     this.setupHeaderControls();
     this.showProfileIndicator();
-    if (typeof PlayerManager !== "undefined") {
-      PlayerManager.init();
-    }
     if (typeof NavigationManager !== "undefined") {
       NavigationManager.init();
       NavigationManager.onPageChange((page) => {
         this.log("onPageChange received:", page);
         this.loadPage(page);
       });
-      setTimeout(() => {
-        NavigationManager.attachButtonHandlers();
-      }, 1000);
     }
     this.setupMobileMenu();
     this.log("Calling loadPage video");
@@ -90,7 +81,7 @@ const App = {
           ? NavigationManager.getCurrentPage()
           : null;
         if (currentPage === "audio" && typeof AlbumLibrary !== "undefined") {
-          AlbumLibrary.filterAlbums(e.target.value);
+          AlbumLibrary.performSearch(e.target.value);
         }
       });
     }
@@ -110,11 +101,9 @@ const App = {
       if (refreshBtn) refreshBtn.style.display = "none";
       if (navVideoBtn) {
         navVideoBtn.classList.add("active");
-        navVideoBtn.style.display = "flex";
       }
       if (navAudioBtn) {
         navAudioBtn.classList.remove("active");
-        navAudioBtn.style.display = "flex";
       }
     } else if (page === "audio") {
       if (pageTitle)
@@ -124,11 +113,9 @@ const App = {
       if (refreshBtn) refreshBtn.style.display = "flex";
       if (navVideoBtn) {
         navVideoBtn.classList.remove("active");
-        navVideoBtn.style.display = "flex";
       }
       if (navAudioBtn) {
         navAudioBtn.classList.add("active");
-        navAudioBtn.style.display = "flex";
       }
       const searchInput = document.getElementById("globalSearchInput");
       if (searchInput) searchInput.value = "";
@@ -190,9 +177,9 @@ const App = {
       pageContainer.innerHTML = html;
       this.log("Page HTML loaded");
       if (page === "video") {
-        this.loadVideoPage();
+        await this.loadVideoPage();
       } else if (page === "audio") {
-        this.loadAudioPage();
+        await this.loadAudioPage();
       }
     } catch (error) {
       console.error("Error loading page:", error);
@@ -222,78 +209,95 @@ const App = {
     }
   },
 
-  loadVideoPage() {
-    this.log("loadVideoPage called, scripts loaded:", this.loadedScripts.video);
-    if (!this.loadedScripts.video) {
-      setTimeout(() => {
-        if (typeof VideoExplorer !== "undefined") {
-          this.log("Calling VideoExplorer.init");
-          VideoExplorer.init();
-        }
-        if (typeof NavigationManager !== "undefined") {
-          this.log("Calling NavigationManager.attachButtonHandlers");
-          NavigationManager.attachButtonHandlers();
-        }
-        this.loadedScripts.video = true;
-      }, 100);
-    } else {
-      this.log("Scripts already loaded, reinitializing");
-      setTimeout(() => {
-        const videoContent = document.getElementById("videoContent");
-        if (videoContent) {
-          videoContent.innerHTML =
-            '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
-        }
-        if (typeof VideoExplorer !== "undefined") {
-          VideoExplorer.initialized = false;
-          VideoExplorer.currentPath = "/mnt/video";
-          VideoExplorer.history = [];
-          VideoExplorer.init();
-        }
-        if (typeof NavigationManager !== "undefined") {
-          NavigationManager.attachButtonHandlers();
-        }
-      }, 100);
+  async loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const existingScript = document.querySelector(`script[src="${src}"]`);
+      if (existingScript) {
+        resolve();
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = src;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+      document.head.appendChild(script);
+    });
+  },
+
+  // app.js - исправленные пути
+
+  async loadVideoPage() {
+    this.log("loadVideoPage called");
+    const scriptFiles = [
+      "js/modules/video-explorer.js",
+      "js/modules/player-manager.js",
+    ];
+    for (const scriptFile of scriptFiles) {
+      if (!this.loadedScripts.has(scriptFile)) {
+        await this.loadScript(scriptFile);
+        this.loadedScripts.add(scriptFile);
+      }
+    }
+    if (typeof VideoExplorer !== "undefined") {
+      if (VideoExplorer.initialized) {
+        VideoExplorer.initialized = false;
+      }
+      VideoExplorer.currentPath = "/mnt/video";
+      VideoExplorer.history = [];
+      await VideoExplorer.init();
+    }
+    if (typeof PlayerManager !== "undefined") {
+      if (PlayerManager.initialized) {
+        PlayerManager.initialized = false;
+      }
+      await PlayerManager.init();
+    }
+    if (typeof NavigationManager !== "undefined") {
+      NavigationManager.attachButtonHandlers();
     }
   },
 
-  loadAudioPage() {
-    this.log("loadAudioPage called, scripts loaded:", this.loadedScripts.audio);
-    if (!this.loadedScripts.audio) {
-      setTimeout(() => {
-        if (typeof AlbumLibrary !== "undefined") {
-          AlbumLibrary.init();
-        }
-        if (typeof AudioPlayer !== "undefined") {
-          AudioPlayer.init();
-        }
-        if (typeof PlaylistViewer !== "undefined") {
-          PlaylistViewer.init();
-        }
-        if (typeof NavigationManager !== "undefined") {
-          NavigationManager.attachButtonHandlers();
-        }
-        this.loadedScripts.audio = true;
-      }, 100);
-    } else {
-      this.log("Scripts already loaded, reinitializing");
-      setTimeout(() => {
-        if (typeof AlbumLibrary !== "undefined") {
-          AlbumLibrary.reloadAlbums();
-        }
-        if (typeof AudioPlayer !== "undefined" && AudioPlayer.initialized) {
-          AudioPlayer.updateUI();
-        }
-        if (
-          typeof PlaylistViewer !== "undefined" &&
-          PlaylistViewer.initialized
-        ) {
-          PlaylistViewer.refresh();
-        }
-        if (typeof NavigationManager !== "undefined") {
-          NavigationManager.attachButtonHandlers();
-        }
-      }, 100);
+  async loadAudioPage() {
+    this.log("loadAudioPage called");
+    const scriptFiles = [
+      "js/modules/album-core.js",
+      "js/modules/audio-player.js",
+      "js/modules/playlist-viewer.js",
+      "js/modules/tag-editor.js",
+      "js/modules/album-ui-renderer.js",
+      "js/modules/album-data-manager.js",
+      "js/modules/album-search-engine.js",
+      "js/modules/album-api-handler.js",
+    ];
+    for (const scriptFile of scriptFiles) {
+      if (!this.loadedScripts.has(scriptFile)) {
+        await this.loadScript(scriptFile);
+        this.loadedScripts.add(scriptFile);
+      }
+    }
+    if (typeof AlbumLibrary !== "undefined") {
+      if (AlbumLibrary.initialized) {
+        AlbumLibrary.reset();
+        AlbumLibrary.initialized = false;
+      }
+      await AlbumLibrary.init();
+    }
+    if (typeof AudioPlayer !== "undefined") {
+      if (AudioPlayer.initialized) {
+        AudioPlayer.initialized = false;
+      }
+      AudioPlayer.musiumAvailable = false;
+      AudioPlayer.init();
+    }
+    if (typeof PlaylistViewer !== "undefined") {
+      if (PlaylistViewer.initialized) {
+        PlaylistViewer.initialized = false;
+      }
+      PlaylistViewer.musiumAvailable = false;
+      await PlaylistViewer.init();
+    }
+    if (typeof NavigationManager !== "undefined") {
+      NavigationManager.attachButtonHandlers();
     }
   },
 

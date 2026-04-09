@@ -238,22 +238,7 @@
     <!-- ==================== СКРИПТЫ ==================== -->
     <script src="js/core/config.js"></script>
     <script src="js/core/utils.js"></script>
-    <script src="js/modules/player-manager.js"></script>
-    <script src="js/modules/tree-manager.js"></script>
     <script src="js/modules/navigation-manager.js"></script>
-    <script src="js/modules/audio-player.js"></script>
-    <script type="module">
-      import { AlbumLibrary } from "./js/modules/album-core.js";
-      window.AlbumLibrary = AlbumLibrary;
-      document.addEventListener("DOMContentLoaded", () => {
-        if (!window.AlbumLibrary.initialized) {
-          window.AlbumLibrary.init();
-        }
-      });
-    </script>
-    <script src="js/modules/playlist-viewer.js"></script>
-    <script src="js/modules/video-explorer.js"></script>
-    <script src="js/modules/tag-editor.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

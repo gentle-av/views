@@ -1,9 +1,4 @@
-import { AlbumDataManager } from "./album-data-manager.js";
-import { AlbumUIRenderer } from "./album-ui-renderer.js";
-import { AlbumSearchEngine } from "./album-search-engine.js";
-import { AlbumAPIHandler } from "./album-api-handler.js";
-
-export const AlbumLibrary = {
+const AlbumLibrary = {
   albums: [],
   filteredAlbums: [],
   artists: [],
@@ -49,15 +44,23 @@ export const AlbumLibrary = {
       return;
     }
     this.initialized = true;
-    this.dataManager = new AlbumDataManager(this);
-    this.uiRenderer = new AlbumUIRenderer(this);
-    this.searchEngine = new AlbumSearchEngine(this);
-    this.apiHandler = new AlbumAPIHandler(this);
+    if (typeof AlbumDataManager !== "undefined") {
+      this.dataManager = new AlbumDataManager(this);
+    }
+    if (typeof AlbumUIRenderer !== "undefined") {
+      this.uiRenderer = new AlbumUIRenderer(this);
+    }
+    if (typeof AlbumSearchEngine !== "undefined") {
+      this.searchEngine = new AlbumSearchEngine(this);
+    }
+    if (typeof AlbumAPIHandler !== "undefined") {
+      this.apiHandler = new AlbumAPIHandler(this);
+    }
     const grid = document.getElementById("albumsGrid");
     if (!grid) return;
     grid.innerHTML =
       '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка артистов...</div>';
-    this.loadArtistsInBackground();
+    await this.loadArtistsInBackground();
     this.setupEventListeners();
   },
 
@@ -71,6 +74,7 @@ export const AlbumLibrary = {
     }
     await this.loadArtistsInBackground();
   },
+
   async loadArtistsInBackground() {
     try {
       const response = await fetch(`${this.getServerUrl()}/api/music/artists`, {
@@ -104,47 +108,27 @@ export const AlbumLibrary = {
     );
     const grid = document.getElementById("albumsGrid");
     if (!grid) return;
-
     this.albums = [];
     const uniqueAlbums = new Map();
-    grid.innerHTML = this.uiRenderer.getLoadingTemplate(this.totalArtists);
-
-    const progressSpan = document.getElementById("albumProgress");
-    const foundSpan = document.getElementById("albumsFound");
-    const progressFill = document.getElementById("loadingProgressFill");
-
+    grid.innerHTML = "" /*'<div class="albums-grid-initial"></div>'*/;
     if (this.loadingTaskId) {
       cancelIdleCallback(this.loadingTaskId);
       this.loadingTaskId = null;
     }
-
     let currentIndex = 0;
     const loadNextBatch = async (deadline) => {
-      const grid = document.getElementById("albumsGrid");
-      if (!grid || !this.initialized) return;
-
+      if (!this.initialized) return;
       let batchSize = 0;
       while (
-        (deadline.timeRemaining() > 0 || batchSize < 2) &&
+        (deadline.timeRemaining() > 0 || batchSize < 3) &&
         currentIndex < this.artists.length
       ) {
         const artist = this.artists[currentIndex];
-        await this.dataManager.loadArtistAlbums(
-          artist,
-          uniqueAlbums,
-          foundSpan,
-        );
+        await this.loadArtistAlbums(artist, uniqueAlbums);
         currentIndex++;
         batchSize++;
-
-        if (progressSpan) progressSpan.textContent = currentIndex;
-        if (progressFill && this.totalArtists > 0) {
-          progressFill.style.width =
-            (currentIndex / this.totalArtists) * 100 + "%";
-        }
-        if (batchSize % 2 === 0) await this.delay(10);
+        if (batchSize % 3 === 0) await this.delay(10);
       }
-
       if (currentIndex < this.artists.length) {
         this.loadingTaskId = requestIdleCallback(loadNextBatch, {
           timeout: 100,
@@ -154,8 +138,74 @@ export const AlbumLibrary = {
         this.loadingTaskId = null;
       }
     };
-
     this.loadingTaskId = requestIdleCallback(loadNextBatch, { timeout: 100 });
+  },
+
+  async loadArtistAlbums(artist, uniqueAlbums) {
+    try {
+      const response = await fetch(
+        `${this.getServerUrl()}/api/music/albums?artist=${encodeURIComponent(artist)}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+      const data = await response.json();
+      if (data.status === "success" && data.albums) {
+        for (const albumData of data.albums) {
+          const albumKey = `${albumData.artist}|${albumData.album}`;
+          if (!uniqueAlbums.has(albumKey)) {
+            const tracksResponse = await fetch(
+              `${this.getServerUrl()}/api/music/tracks/album/${encodeURIComponent(albumData.album)}?artist=${encodeURIComponent(albumData.artist)}`,
+              {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+              },
+            );
+            const tracksData = await tracksResponse.json();
+            const coverUrl = await this.getAlbumCover(
+              albumData.album,
+              albumData.artist,
+            );
+            const album = {
+              title: albumData.album,
+              artist: albumData.artist,
+              year: albumData.year,
+              tracks: tracksData.tracks || [],
+              coverUrl: coverUrl,
+            };
+            uniqueAlbums.set(albumKey, album);
+            this.albums.push(album);
+            this.renderSingleAlbum(album);
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`Error loading albums for artist ${artist}:`, error);
+    }
+  },
+
+  async getAlbumCover(albumName, artist) {
+    try {
+      const url = `${this.getServerUrl()}/api/music/albumart/album/${encodeURIComponent(albumName)}?artist=${encodeURIComponent(artist)}`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
+      }
+      return null;
+    } catch (error) {
+      console.error("Error loading cover:", error);
+      return null;
+    }
+  },
+
+  renderSingleAlbum(album) {
+    const grid = document.getElementById("albumsGrid");
+    if (!grid) return;
+    const albumHtml = this.generateAlbumCardHtml(album);
+    grid.insertAdjacentHTML("beforeend", albumHtml);
+    this.attachAlbumCardEvents();
   },
 
   finalizeLoading() {
@@ -165,24 +215,67 @@ export const AlbumLibrary = {
       return a.title.localeCompare(b.title);
     });
     this.filteredAlbums = [...this.albums];
-    if (this.uiRenderer) {
-      this.uiRenderer.renderAlbums();
-    }
+  },
+
+  renderAlbums() {
     const grid = document.getElementById("albumsGrid");
-    if (grid && this.filteredAlbums.length > 0) {
-      let html = "";
-      for (const album of this.filteredAlbums) {
-        html += this.uiRenderer.generateAlbumCardHtml(album);
-      }
-      grid.innerHTML = html;
-      if (this.uiRenderer) {
-        this.uiRenderer.attachAlbumCardEvents();
-      }
-    } else if (grid && this.filteredAlbums.length === 0) {
+    if (!grid) return;
+    if (this.filteredAlbums.length === 0) {
       grid.innerHTML =
         '<div class="empty"><i class="fas fa-music"></i> Альбомы не найдены</div>';
+      return;
     }
-    this.isInitialLoad = true;
+    let html = "";
+    for (const album of this.filteredAlbums) {
+      html += this.generateAlbumCardHtml(album);
+    }
+    grid.innerHTML = html;
+    this.attachAlbumCardEvents();
+  },
+
+  generateAlbumCardHtml(album) {
+    const coverUrl = album.coverUrl || "";
+    const trackCount = album.tracks ? album.tracks.length : 0;
+    const coverHtml = coverUrl
+      ? `<img src="${coverUrl}" alt="${this.escapeHtml(album.title)}" loading="lazy" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23333\'/%3E%3Ctext x=\'50\' y=\'55\' text-anchor=\'middle\' fill=\'%23666\' font-size=\'12\'%3E🎵%3C/text%3E%3C/svg%3E';">`
+      : `<div class="album-card-placeholder"><i class="fas fa-music"></i></div>`;
+    return `
+        <div class="album-card" data-album-title="${this.escapeHtml(album.title)}" data-album-artist="${this.escapeHtml(album.artist)}">
+            <div class="album-card-art">
+                ${coverHtml}
+            </div>
+            <div class="album-card-info">
+                <div class="album-card-title" title="${this.escapeHtml(album.title)}">${this.escapeHtml(album.title)}</div>
+                <div class="album-card-artist">${this.escapeHtml(album.artist)}</div>
+                <div class="album-card-meta">
+                    ${album.year ? `<span>${album.year}</span>` : ""}
+                    <span>${trackCount} треков</span>
+                </div>
+            </div>
+        </div>
+    `;
+  },
+
+  attachAlbumCardEvents() {
+    document.querySelectorAll(".album-card").forEach((card) => {
+      const newCard = card.cloneNode(true);
+      card.parentNode.replaceChild(newCard, card);
+      newCard.addEventListener("click", (e) => {
+        const title = newCard.dataset.albumTitle;
+        const artist = newCard.dataset.albumArtist;
+        const album = this.albums.find(
+          (a) => a.title === title && a.artist === artist,
+        );
+        if (album) this.showAlbumModal(album);
+      });
+    });
+  },
+
+  escapeHtml(str) {
+    if (!str) return "";
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
   },
 
   setupEventListeners() {
@@ -192,29 +285,10 @@ export const AlbumLibrary = {
         this.performSearch(e.target.value),
       );
     }
-
     const refreshBtn = document.querySelector(".refresh-btn");
     if (refreshBtn) {
       refreshBtn.addEventListener("click", () => this.refreshDatabase());
     }
-
-    const playlistToggleBtn = document.getElementById("playlistToggleBtn");
-    if (playlistToggleBtn) {
-      playlistToggleBtn.addEventListener("click", () =>
-        this.openPlaylistSidebar(),
-      );
-    }
-
-    const playlistSidebarClose = document.getElementById(
-      "playlistSidebarClose",
-    );
-    if (playlistSidebarClose) {
-      playlistSidebarClose.addEventListener("click", () =>
-        this.closePlaylistSidebar(),
-      );
-    }
-
-    this.searchEngine.updateSearchModeIndicator();
   },
 
   openPlaylistSidebar() {
@@ -234,48 +308,117 @@ export const AlbumLibrary = {
     if (sidebar) sidebar.classList.remove("open");
   },
 
-  showPlaylistSection() {
-    console.log("showPlaylistSection called");
-    const modal = document.getElementById("albumModal");
-    if (modal && modal.classList.contains("active"))
-      modal.classList.remove("active");
+  async performSearch(searchTerm) {
+    if (!searchTerm.trim()) {
+      this.filteredAlbums = [...this.albums];
+      this.renderAlbums();
+      return;
+    }
+    const term = searchTerm.toLowerCase();
+    this.filteredAlbums = this.albums.filter(
+      (album) =>
+        album.title.toLowerCase().includes(term) ||
+        album.artist.toLowerCase().includes(term),
+    );
+    this.renderAlbums();
+  },
 
-    const playlistSection = document.getElementById("playlistSection");
-    if (playlistSection) {
-      playlistSection.style.display = "block";
-      const playlistToggleBtn = document.getElementById("playlistToggleBtn");
-      if (playlistToggleBtn) playlistToggleBtn.classList.add("active");
-
-      if (typeof PlaylistViewer !== "undefined") {
-        PlaylistViewer.init();
-        setTimeout(() => PlaylistViewer.refresh(), 100);
+  async refreshDatabase() {
+    try {
+      const response = await fetch(
+        `${this.getServerUrl()}/api/music/force-rescan`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+      const data = await response.json();
+      if (data.status === "success") {
+        if (typeof Utils !== "undefined") {
+          Utils.showNotification("База данных обновлена", "success");
+        }
+        await this.reloadAlbums();
       }
-
-      setTimeout(() => {
-        playlistSection.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-          inline: "nearest",
-        });
-      }, 200);
-      if (window.innerWidth <= 768) {
-        setTimeout(() => {
-          playlistSection.scrollIntoView({ behavior: "smooth", block: "end" });
-        }, 200);
+    } catch (error) {
+      console.error("Error refreshing database:", error);
+      if (typeof Utils !== "undefined") {
+        Utils.showNotification("Ошибка обновления базы данных", "error");
       }
     }
   },
 
-  async performSearch(searchTerm) {
-    await this.searchEngine.performSearch(searchTerm);
-  },
-
-  async refreshDatabase() {
-    await this.apiHandler.refreshDatabase();
-  },
-
   showAlbumModal(album) {
-    this.uiRenderer.showAlbumModal(album);
+    const modal = document.getElementById("albumModal");
+    const modalTitle = document.getElementById("modalAlbumTitle");
+    const modalTracksList = document.getElementById("modalTracksList");
+    if (!modal || !modalTitle || !modalTracksList) return;
+    modalTitle.textContent = `${album.artist} - ${album.title}`;
+    const modalAlbumArt = document.getElementById("modalAlbumArt");
+    if (modalAlbumArt && album.coverUrl) {
+      modalAlbumArt.src = album.coverUrl;
+      modalAlbumArt.onerror = () => {
+        modalAlbumArt.src =
+          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23333'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='%23666' font-size='12'%3E🎵%3C/text%3E%3C/svg%3E";
+      };
+    }
+    if (album.tracks && album.tracks.length > 0) {
+      let tracksHtml = '<div class="modal-tracks-list">';
+      album.tracks.forEach((track, idx) => {
+        tracksHtml += `
+          <div class="modal-track-item" data-track-index="${idx}">
+            <div class="modal-track-number">${idx + 1}</div>
+            <div class="modal-track-info">
+              <div class="modal-track-title">${this.escapeHtml(track.name || track.title || "Без названия")}</div>
+              <div class="modal-track-duration">${this.formatDuration(track.duration)}</div>
+            </div>
+            <button class="modal-track-play-btn" data-track-index="${idx}">
+              <i class="fas fa-play"></i>
+            </button>
+          </div>
+        `;
+      });
+      tracksHtml += "</div>";
+      modalTracksList.innerHTML = tracksHtml;
+      modalTracksList
+        .querySelectorAll(".modal-track-play-btn")
+        .forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.dataset.trackIndex);
+            if (typeof PlaylistViewer !== "undefined") {
+              PlaylistViewer.addToPlaylist(album, idx);
+              modal.classList.remove("active");
+            }
+          });
+        });
+      modalTracksList.querySelectorAll(".modal-track-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          const idx = parseInt(item.dataset.trackIndex);
+          if (typeof PlaylistViewer !== "undefined") {
+            PlaylistViewer.addToPlaylist(album, idx);
+            modal.classList.remove("active");
+          }
+        });
+      });
+    } else {
+      modalTracksList.innerHTML = '<div class="modal-empty">Нет треков</div>';
+    }
+    modal.classList.add("active");
+    const closeBtn = modal.querySelector(".modal-close");
+    if (closeBtn) {
+      const newCloseBtn = closeBtn.cloneNode(true);
+      closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+      newCloseBtn.addEventListener("click", () => {
+        modal.classList.remove("active");
+      });
+    }
+  },
+
+  formatDuration(seconds) {
+    if (!seconds) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   },
 
   delay(ms) {

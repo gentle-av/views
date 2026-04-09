@@ -1,4 +1,4 @@
-export class AlbumUIRenderer {
+class AlbumUIRenderer {
   constructor(library) {
     this.library = library;
   }
@@ -20,43 +20,36 @@ export class AlbumUIRenderer {
   }
 
   generateAlbumCardHtml(album) {
+    const coverHtml = album.coverUrl
+      ? `<img src="${album.coverUrl}" alt="${this.escapeHtml(album.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+      : `<i class="fas fa-album fallback-icon"></i>`;
+    const fallbackHtml = album.coverUrl
+      ? `<i class="fas fa-album fallback-icon" style="display: none;"></i>`
+      : "";
     return `
-      <div class="album-card" data-artist="${Utils.escapeHtml(album.artist)}" data-album="${Utils.escapeHtml(album.title)}">
+      <div class="album-card" data-artist="${this.escapeHtml(album.artist)}" data-album="${this.escapeHtml(album.title)}">
         <div class="album-cover">
-          ${album.coverUrl ? `<img src="${album.coverUrl}" alt="${Utils.escapeHtml(album.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : `<i class="fas fa-album fallback-icon"></i>`}
-          ${album.coverUrl ? `<i class="fas fa-album fallback-icon" style="display: none;"></i>` : ""}
+          ${coverHtml}
+          ${fallbackHtml}
           <button class="album-edit-tags-btn" title="Редактировать теги альбома">
             <i class="fas fa-edit"></i>
           </button>
         </div>
         <div class="album-info">
-          <div class="album-title" title="${Utils.escapeHtml(album.title)}">${Utils.escapeHtml(album.title)}</div>
-          <div class="album-artist">${Utils.escapeHtml(album.artist || "Unknown")}</div>
-          <div class="album-year">${album.year}</div>
-          <div class="track-count"><i class="fas fa-headphones"></i> ${album.trackCount} треков</div>
+          <div class="album-title" title="${this.escapeHtml(album.title)}">${this.escapeHtml(album.title)}</div>
+          <div class="album-artist">${this.escapeHtml(album.artist || "Unknown")}</div>
+          <div class="album-year">${album.year || ""}</div>
+          <div class="track-count"><i class="fas fa-headphones"></i> ${album.trackCount || 0} треков</div>
         </div>
       </div>
     `;
   }
 
-  generateAlbumCardHtml(album) {
-    return `
-      <div class="album-card" data-artist="${Utils.escapeHtml(album.artist)}" data-album="${Utils.escapeHtml(album.title)}">
-        <div class="album-cover">
-          ${album.coverUrl ? `<img src="${album.coverUrl}" alt="${Utils.escapeHtml(album.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">` : `<i class="fas fa-album fallback-icon"></i>`}
-          ${album.coverUrl ? `<i class="fas fa-album fallback-icon" style="display: none;"></i>` : ""}
-          <button class="album-edit-tags-btn" title="Редактировать теги альбома">
-            <i class="fas fa-edit"></i>
-          </button>
-        </div>
-        <div class="album-info">
-          <div class="album-title" title="${Utils.escapeHtml(album.title)}">${Utils.escapeHtml(album.title)}</div>
-          <div class="album-artist">${Utils.escapeHtml(album.artist || "Unknown")}</div>
-          <div class="album-year">${album.year}</div>
-          <div class="track-count"><i class="fas fa-headphones"></i> ${album.trackCount} треков</div>
-        </div>
-      </div>
-    `;
+  escapeHtml(str) {
+    if (!str) return "";
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   renderAlbums() {
@@ -76,43 +69,25 @@ export class AlbumUIRenderer {
     this.attachAlbumCardEvents();
   }
 
-  renderAlbumsIncremental() {
-    const grid = document.getElementById("albumsGrid");
-    if (!grid) return;
-    if (this.library.isInitialLoad) {
-      this.renderAlbums();
-      this.library.isInitialLoad = false;
-      return;
-    }
-    const existingCards = grid.querySelectorAll(".album-card");
-    const existingKeys = new Set();
-    existingCards.forEach((card) => {
-      existingKeys.add(`${card.dataset.artist}|${card.dataset.album}`);
-    });
-    const newAlbumsHtml = [];
-    for (const album of this.library.filteredAlbums) {
-      const key = `${album.artist}|${album.title}`;
-      if (!existingKeys.has(key)) {
-        newAlbumsHtml.push(this.generateAlbumCardHtml(album));
-      }
-    }
-    if (newAlbumsHtml.length > 0) {
-      grid.insertAdjacentHTML("beforeend", newAlbumsHtml.join(""));
-      this.attachAlbumCardEvents();
-    }
-  }
-
   attachAlbumCardEvents() {
     document.querySelectorAll(".album-card").forEach((card) => {
-      card.removeEventListener("click", this.handleAlbumClick);
-      card.addEventListener("click", this.handleAlbumClick.bind(this));
-      const editBtn = card.querySelector(".album-edit-tags-btn");
+      const newCard = card.cloneNode(true);
+      card.parentNode.replaceChild(newCard, card);
+      newCard.addEventListener("click", (e) => {
+        if (e.target.closest(".album-edit-tags-btn")) return;
+        const artist = newCard.dataset.artist;
+        const albumTitle = newCard.dataset.album;
+        const album = this.library.albums.find(
+          (a) => a.artist === artist && a.title === albumTitle,
+        );
+        if (album) this.library.showAlbumModal(album);
+      });
+      const editBtn = newCard.querySelector(".album-edit-tags-btn");
       if (editBtn) {
-        editBtn.removeEventListener("click", this.handleAlbumEdit);
         editBtn.addEventListener("click", (e) => {
           e.stopPropagation();
-          const artist = card.dataset.artist;
-          const albumTitle = card.dataset.album;
+          const artist = newCard.dataset.artist;
+          const albumTitle = newCard.dataset.album;
           const album = this.library.albums.find(
             (a) => a.artist === artist && a.title === albumTitle,
           );
@@ -122,16 +97,6 @@ export class AlbumUIRenderer {
         });
       }
     });
-  }
-
-  handleAlbumClick(event) {
-    const card = event.currentTarget;
-    const artist = card.dataset.artist;
-    const albumTitle = card.dataset.album;
-    const album = this.library.albums.find(
-      (a) => a.artist === artist && a.title === albumTitle,
-    );
-    if (album) this.library.showAlbumModal(album);
   }
 
   showAlbumModal(album) {
@@ -156,12 +121,12 @@ export class AlbumUIRenderer {
     return `
       <div class="album-modal-header">
         <div class="album-cover-container">
-          ${album.coverUrl ? `<img src="${album.coverUrl}" alt="${Utils.escapeHtml(album.title)}" class="album-cover-modal">` : `<div class="album-cover-placeholder"><i class="fas fa-album"></i></div>`}
+          ${album.coverUrl ? `<img src="${album.coverUrl}" alt="${this.escapeHtml(album.title)}" class="album-cover-modal">` : `<div class="album-cover-placeholder"><i class="fas fa-album"></i></div>`}
         </div>
         <div class="album-info-container">
-          <h2 class="modal-album-title">${Utils.escapeHtml(album.artist)} — ${Utils.escapeHtml(album.title)}</h2>
+          <h2 class="modal-album-title">${this.escapeHtml(album.artist)} — ${this.escapeHtml(album.title)}</h2>
           <div class="modal-album-year">${album.year || "Год неизвестен"}</div>
-          <div class="modal-track-count"><i class="fas fa-headphones"></i> ${album.trackCount} треков</div>
+          <div class="modal-track-count"><i class="fas fa-headphones"></i> ${album.tracks ? album.tracks.length : 0} треков</div>
         </div>
         <div class="modal-controls">
           <button class="modal-control-btn prev-track-btn" title="Предыдущий трек"><i class="fas fa-step-backward"></i></button>
@@ -180,23 +145,26 @@ export class AlbumUIRenderer {
   }
 
   getTracksListTemplate(album) {
+    if (!album.tracks || album.tracks.length === 0) {
+      return '<div class="empty-tracks">Нет треков</div>';
+    }
     return album.tracks
       .map(
         (track, idx) => `
-            <div class="track-item" data-track-index="${idx}" data-track-name="${Utils.escapeHtml(track.name)}" data-track-path="${track.path}">
-                <div class="track-left">
-                    <div class="track-number">${String(idx + 1).padStart(2, "0")}</div>
-                    <div class="track-name">${Utils.escapeHtml(track.name)}</div>
-                    <div class="track-duration">${track.duration ? this.formatDuration(track.duration) : ""}</div>
-                </div>
-                <div class="track-right">
-                    <button class="track-control-btn edit-track-tags" data-track-index="${idx}" title="Редактировать теги трека"><i class="fas fa-edit"></i></button>
-                    <button class="track-control-btn replace-playlist-with-track" title="Заменить плейлист этим треком"><i class="fas fa-exchange-alt"></i></button>
-                    <button class="track-control-btn add-after-current" title="Добавить после текущего"><i class="fas fa-plus-circle"></i></button>
-                    <button class="track-control-btn show-playlist-from-track" title="Показать плейлист"><i class="fas fa-list"></i></button>
-                </div>
-            </div>
-        `,
+        <div class="track-item" data-track-index="${idx}" data-track-name="${this.escapeHtml(track.name || track.title || "")}" data-track-path="${track.path || ""}">
+          <div class="track-left">
+            <div class="track-number">${String(idx + 1).padStart(2, "0")}</div>
+            <div class="track-name">${this.escapeHtml(track.name || track.title || "Без названия")}</div>
+            <div class="track-duration">${track.duration ? this.formatDuration(track.duration) : ""}</div>
+          </div>
+          <div class="track-right">
+            <button class="track-control-btn edit-track-tags" data-track-index="${idx}" title="Редактировать теги трека"><i class="fas fa-edit"></i></button>
+            <button class="track-control-btn replace-playlist-with-track" title="Заменить плейлист этим треком"><i class="fas fa-exchange-alt"></i></button>
+            <button class="track-control-btn add-after-current" title="Добавить после текущего"><i class="fas fa-plus-circle"></i></button>
+            <button class="track-control-btn show-playlist-from-track" title="Показать плейлист"><i class="fas fa-list"></i></button>
+          </div>
+        </div>
+      `,
       )
       .join("");
   }
@@ -210,55 +178,77 @@ export class AlbumUIRenderer {
 
   attachTrackEventListeners(modal, album, tracksList) {
     tracksList.querySelectorAll(".edit-track-tags").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      newBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
-        const trackIndex = parseInt(btn.dataset.trackIndex);
+        const trackIndex = parseInt(newBtn.dataset.trackIndex);
         const track = album.tracks[trackIndex];
         if (typeof TagEditor !== "undefined") {
           TagEditor.showTrackTagEditor(track, album);
-        } else {
+        } else if (typeof Utils !== "undefined") {
           Utils.showNotification("Редактор тегов недоступен", "error");
         }
       });
     });
     tracksList.querySelectorAll(".track-item").forEach((item) => {
-      const idx = parseInt(item.dataset.trackIndex);
-      const trackName = item.dataset.trackName;
-      const replacePlaylistBtn = item.querySelector(
+      const newItem = item.cloneNode(true);
+      item.parentNode.replaceChild(newItem, item);
+      const idx = parseInt(newItem.dataset.trackIndex);
+      const trackName = newItem.dataset.trackName;
+      const replacePlaylistBtn = newItem.querySelector(
         ".replace-playlist-with-track",
       );
-      const addAfterCurrentBtn = item.querySelector(".add-after-current");
-      const showPlaylistBtn = item.querySelector(".show-playlist-from-track");
+      const addAfterCurrentBtn = newItem.querySelector(".add-after-current");
+      const showPlaylistBtn = newItem.querySelector(
+        ".show-playlist-from-track",
+      );
       if (replacePlaylistBtn) {
-        replacePlaylistBtn.addEventListener("click", (e) => {
+        const newReplaceBtn = replacePlaylistBtn.cloneNode(true);
+        replacePlaylistBtn.parentNode.replaceChild(
+          newReplaceBtn,
+          replacePlaylistBtn,
+        );
+        newReplaceBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           e.preventDefault();
           if (typeof AudioPlayer !== "undefined") {
             AudioPlayer.replacePlaylistWithTrack(album, idx);
-            Utils.showNotification(
-              `Плейлист заменен треком: ${trackName}`,
-              "success",
-            );
+            if (typeof Utils !== "undefined") {
+              Utils.showNotification(
+                `Плейлист заменен треком: ${trackName}`,
+                "success",
+              );
+            }
             setTimeout(() => modal.classList.remove("active"), 500);
           }
         });
       }
       if (addAfterCurrentBtn) {
-        addAfterCurrentBtn.addEventListener("click", (e) => {
+        const newAddBtn = addAfterCurrentBtn.cloneNode(true);
+        addAfterCurrentBtn.parentNode.replaceChild(
+          newAddBtn,
+          addAfterCurrentBtn,
+        );
+        newAddBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           e.preventDefault();
           if (typeof AudioPlayer !== "undefined") {
             AudioPlayer.addTrackAfterCurrent(album, idx);
-            Utils.showNotification(
-              `Трек добавлен после текущего: ${trackName}`,
-              "success",
-            );
+            if (typeof Utils !== "undefined") {
+              Utils.showNotification(
+                `Трек добавлен после текущего: ${trackName}`,
+                "success",
+              );
+            }
           }
         });
       }
       if (showPlaylistBtn) {
-        showPlaylistBtn.addEventListener("click", (e) => {
+        const newShowBtn = showPlaylistBtn.cloneNode(true);
+        showPlaylistBtn.parentNode.replaceChild(newShowBtn, showPlaylistBtn);
+        newShowBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           e.preventDefault();
           if (
@@ -271,7 +261,7 @@ export class AlbumUIRenderer {
           modal.classList.remove("active");
         });
       }
-      item.addEventListener("click", (e) => {
+      newItem.addEventListener("click", (e) => {
         if (!e.target.closest(".track-control-btn")) {
           e.stopPropagation();
           if (typeof AudioPlayer !== "undefined") {
@@ -293,29 +283,37 @@ export class AlbumUIRenderer {
     const showPlaylistBtn = modalContent.querySelector(".show-playlist-btn");
     const closeBtn = modalContent.querySelector(".modal-close-btn");
     if (prevBtn) {
-      prevBtn.addEventListener("click", (e) => {
+      const newPrevBtn = prevBtn.cloneNode(true);
+      prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
+      newPrevBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
         if (typeof AudioPlayer !== "undefined") AudioPlayer.previousTrack();
       });
     }
     if (nextBtn) {
-      nextBtn.addEventListener("click", (e) => {
+      const newNextBtn = nextBtn.cloneNode(true);
+      nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+      newNextBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
         if (typeof AudioPlayer !== "undefined") AudioPlayer.nextTrack();
       });
     }
     if (addToPlaylistBtn) {
-      addToPlaylistBtn.addEventListener("click", (e) => {
+      const newAddBtn = addToPlaylistBtn.cloneNode(true);
+      addToPlaylistBtn.parentNode.replaceChild(newAddBtn, addToPlaylistBtn);
+      newAddBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
         if (typeof AudioPlayer !== "undefined") {
           AudioPlayer.addAlbumToPlaylist(album);
-          Utils.showNotification(
-            `Альбом "${album.title}" добавлен в плейлист`,
-            "success",
-          );
+          if (typeof Utils !== "undefined") {
+            Utils.showNotification(
+              `Альбом "${album.title}" добавлен в плейлист`,
+              "success",
+            );
+          }
           if (
             typeof AlbumLibrary !== "undefined" &&
             AlbumLibrary.showPlaylistSection
@@ -326,15 +324,22 @@ export class AlbumUIRenderer {
       });
     }
     if (replacePlaylistBtn) {
-      replacePlaylistBtn.addEventListener("click", (e) => {
+      const newReplaceBtn = replacePlaylistBtn.cloneNode(true);
+      replacePlaylistBtn.parentNode.replaceChild(
+        newReplaceBtn,
+        replacePlaylistBtn,
+      );
+      newReplaceBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
         if (typeof AudioPlayer !== "undefined") {
           AudioPlayer.replacePlaylistWithAlbum(album);
-          Utils.showNotification(
-            `Плейлист заменен альбомом: ${album.title}`,
-            "success",
-          );
+          if (typeof Utils !== "undefined") {
+            Utils.showNotification(
+              `Плейлист заменен альбомом: ${album.title}`,
+              "success",
+            );
+          }
           setTimeout(() => {
             modal.classList.remove("active");
             if (
@@ -348,7 +353,9 @@ export class AlbumUIRenderer {
       });
     }
     if (showPlaylistBtn) {
-      showPlaylistBtn.addEventListener("click", (e) => {
+      const newShowBtn = showPlaylistBtn.cloneNode(true);
+      showPlaylistBtn.parentNode.replaceChild(newShowBtn, showPlaylistBtn);
+      newShowBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
         if (
@@ -362,7 +369,9 @@ export class AlbumUIRenderer {
       });
     }
     if (closeBtn) {
-      closeBtn.addEventListener("click", (e) => {
+      const newCloseBtn = closeBtn.cloneNode(true);
+      closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+      newCloseBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         modal.classList.remove("active");
       });
