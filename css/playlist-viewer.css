@@ -363,3 +363,51 @@
     font-size: 0.65rem;
   }
 }
+
+.playlist-track-item.current {
+  background: var(--yellow);
+  border-left: 3px solid var(--orange);
+}
+
+.playlist-track-item.current .playlist-track-number {
+  color: var(--bg0);
+}
+
+.playlist-track-item.current .playlist-track-name {
+  color: var(--bg0);
+  font-weight: 600;
+}
+
+.playlist-track-item.current .playlist-track-remove-btn {
+  background: var(--bg0);
+  color: var(--fg3);
+}
+
+.playlist-track-item.current .playlist-track-remove-btn:hover {
+  background: var(--red);
+  color: var(--bg0);
+}
+
+.playlist-track-item.current {
+  background: var(--yellow);
+  border-left: 3px solid var(--orange);
+}
+
+.playlist-track-item.current .playlist-track-number {
+  color: var(--bg0);
+}
+
+.playlist-track-item.current .playlist-track-name {
+  color: var(--bg0);
+  font-weight: 600;
+}
+
+.playlist-track-item.current .playlist-track-remove-btn {
+  background: var(--bg0);
+  color: var(--fg3);
+}
+
+.playlist-track-item.current .playlist-track-remove-btn:hover {
+  background: var(--red);
+  color: var(--bg0);
+}

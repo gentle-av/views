@@ -29,9 +29,23 @@ const PlaylistViewer = {
     try {
       const response = await fetch(`${this.getServerUrl()}/api/getPlaylist`);
       const data = await response.json();
+      console.log("[PlaylistViewer] Playlist response:", data);
       return data;
     } catch (error) {
       console.error("Error getting playlist:", error);
+      return null;
+    }
+  },
+
+  async getCurrentTrack() {
+    if (!this.playerAvailable) return null;
+    try {
+      const response = await fetch(`${this.getServerUrl()}/api/currentTrack`);
+      const data = await response.json();
+      console.log("[PlaylistViewer] Current track response:", data);
+      return data;
+    } catch (error) {
+      console.error("Error getting current track:", error);
       return null;
     }
   },
@@ -43,37 +57,52 @@ const PlaylistViewer = {
       return;
     }
     const playlistData = await this.getPlaylist();
-    if (playlistData && playlistData.success && playlistData.data) {
-      this.renderPlaylist(playlistData.data);
+    const currentTrackData = await this.getCurrentTrack();
+    let currentTrackPath = null;
+    console.log("[PlaylistViewer] Full currentTrackData:", currentTrackData);
+    if (currentTrackData && currentTrackData.data) {
+      if (currentTrackData.data.track) {
+        currentTrackPath = currentTrackData.data.track;
+      } else if (typeof currentTrackData.data === "string") {
+        currentTrackPath = currentTrackData.data;
+      }
+      console.log("[PlaylistViewer] Current track path:", currentTrackPath);
+    }
+    if (playlistData && playlistData.data) {
+      let tracks = playlistData.data;
+      if (
+        typeof tracks === "object" &&
+        !Array.isArray(tracks) &&
+        tracks.tracks
+      ) {
+        tracks = tracks.tracks;
+      }
+      this.renderPlaylist(tracks, currentTrackPath);
     } else {
       this.showEmptyPlaylist("Плейлист пуст");
     }
   },
 
-  renderPlaylist(playlist) {
+  renderPlaylist(playlist, currentTrackPath) {
     const container = document.getElementById("playlistContainer");
     if (!container) return;
-    if (
-      !playlist ||
-      (playlist.isArray && playlist.length === 0) ||
-      (playlist.tracks && playlist.tracks.length === 0)
-    ) {
+    if (!playlist || playlist.length === 0) {
       this.showEmptyPlaylist("Плейлист пуст");
       return;
     }
-    const tracks = playlist.tracks || playlist;
     let html = `<div class="playlist-tracks-list">`;
-    for (let i = 0; i < tracks.length; i++) {
-      const track = tracks[i];
-      const trackName =
-        typeof track === "string"
-          ? track.split("/").pop()
-          : track.name || track.title || "Неизвестный трек";
+    for (let i = 0; i < playlist.length; i++) {
+      const trackPath = playlist[i];
+      const trackName = trackPath.split("/").pop();
+      const isCurrent = trackPath === currentTrackPath;
+      console.log(
+        `[PlaylistViewer] Track ${i}: ${trackPath}, isCurrent: ${isCurrent}`,
+      );
       html += `
-        <div class="playlist-track-item" data-index="${i}">
-          <div class="playlist-track-number">${i + 1}</div>
+        <div class="playlist-track-item ${isCurrent ? "current" : ""}" data-index="${i}" data-path="${this.escapeHtml(trackPath)}">
+          <div class="playlist-track-number">${String(i + 1).padStart(2, "0")}</div>
           <div class="playlist-track-info">
-            <div class="playlist-track-name">${this.escapeHtml(trackName)}</div>
+            <div class="playlist-track-name" title="${this.escapeHtml(trackName)}">${this.escapeHtml(trackName)}</div>
           </div>
           <div class="playlist-track-remove-btn" data-index="${i}">
             <i class="fas fa-trash"></i>
@@ -117,8 +146,12 @@ const PlaylistViewer = {
         body: JSON.stringify({ index: index }),
       });
       const data = await response.json();
-      if (data.success && typeof AudioPlayer !== "undefined") {
-        AudioPlayer.updateUI();
+      if (data.success) {
+        await this.delay(200);
+        await this.refresh();
+        if (typeof AudioPlayer !== "undefined") {
+          AudioPlayer.updateUI();
+        }
       }
     } catch (error) {
       console.error("Error playing track:", error);
@@ -171,11 +204,21 @@ const PlaylistViewer = {
     }
   },
 
+  startPolling() {
+    if (this.updateInterval) clearInterval(this.updateInterval);
+    this.updateInterval = setInterval(() => {
+      if (this.playerAvailable) {
+        this.refresh();
+      }
+    }, 3000);
+  },
+
   async init() {
     if (this.initialized) return;
     this.initialized = true;
     this.showEmptyPlaylist("Плейлист пуст");
     await this.refresh();
+    this.startPolling();
   },
 
   escapeHtml(str) {

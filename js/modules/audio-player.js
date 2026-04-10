@@ -1,23 +1,12 @@
-const AudioPlayer = {
-  currentAlbum: null,
-  currentTrackIndex: -1,
-  tracks: [],
-  isPlaying: false,
-  audioElement: null,
+const PlaylistViewer = {
   playlist: [],
-  serverUrl: null,
-  playerAvailable: false,
-  pendingAction: null,
-  panelUpdateInterval: null,
-  lastPlaylistLength: 0,
-  lastCurrentFilePath: null,
+  currentIndex: -1,
+  updateInterval: null,
   initialized: false,
+  playerAvailable: false,
 
   getServerUrl() {
-    if (!this.serverUrl) {
-      this.serverUrl = `http://${window.location.hostname}:${window.location.port}`;
-    }
-    return this.serverUrl;
+    return `http://${window.location.hostname}:${window.location.port}`;
   },
 
   async checkPlayerAvailable() {
@@ -29,339 +18,209 @@ const AudioPlayer = {
         return this.playerAvailable;
       }
     } catch (error) {
-      console.log("[AudioPlayer] Player not available:", error.message);
+      console.log("[PlaylistViewer] Player not available");
     }
     this.playerAvailable = false;
     return false;
   },
 
-  async sendToPlayer(endpoint, data = null, method = "POST") {
-    if (!this.playerAvailable) {
-      await this.checkPlayerAvailable();
-      if (!this.playerAvailable) return null;
-    }
+  async getPlaylist() {
+    if (!this.playerAvailable) return null;
     try {
-      const url = `${this.getServerUrl()}${endpoint}`;
-      const options = {
-        method: method,
-        headers: { "Content-Type": "application/json" },
-      };
-      if (data && method === "POST") {
-        options.body = JSON.stringify(data);
-      }
-      const response = await fetch(url, options);
-      const result = await response.json();
-      return result;
+      const response = await fetch(`${this.getServerUrl()}/api/getPlaylist`);
+      const data = await response.json();
+      console.log("[PlaylistViewer] Playlist response:", data);
+      return data;
     } catch (error) {
-      console.error(`Player API error: ${endpoint}`, error);
-      this.playerAvailable = false;
+      console.error("Error getting playlist:", error);
       return null;
     }
   },
 
   async getPlaybackState() {
-    return await this.sendToPlayer("/api/playbackState", null, "GET");
+    if (!this.playerAvailable) return null;
+    try {
+      const response = await fetch(`${this.getServerUrl()}/api/playbackState`);
+      const data = await response.json();
+      console.log("[PlaylistViewer] PlaybackState response:", data);
+      return data;
+    } catch (error) {
+      console.error("Error getting playback state:", error);
+      return null;
+    }
   },
 
-  async getPlaylist() {
-    return await this.sendToPlayer("/api/getPlaylist", null, "GET");
-  },
-
-  async getCurrentTrack() {
-    return await this.sendToPlayer("/api/currentTrack", null, "GET");
-  },
-
-  async getCurrentTime() {
-    return await this.sendToPlayer("/api/currentTime", null, "GET");
-  },
-
-  async play() {
-    return await this.sendToPlayer("/api/play");
-  },
-
-  async pause() {
-    return await this.sendToPlayer("/api/pause");
-  },
-
-  async stop() {
-    return await this.sendToPlayer("/api/stop");
-  },
-
-  async next() {
-    return await this.sendToPlayer("/api/next");
-  },
-
-  async previous() {
-    return await this.sendToPlayer("/api/previous");
-  },
-
-  async setPlaylist(tracks) {
-    return await this.sendToPlayer("/api/setPlaylist", { tracks: tracks });
-  },
-
-  async addToPlaylist(track) {
-    return await this.sendToPlayer("/api/addToPlaylist", { track: track });
-  },
-
-  async addAfterCurrent(track) {
-    return await this.sendToPlayer("/api/addAfterCurrent", { track: track });
-  },
-
-  async clearPlaylist() {
-    return await this.sendToPlayer("/api/clear");
-  },
-
-  async playIndex(index) {
-    return await this.sendToPlayer("/api/playIndex", { index: index });
-  },
-
-  async replacePlaylistWithTrack(track) {
-    return await this.sendToPlayer("/api/track", { track: track });
-  },
-
-  async ensurePlayerRunning() {
+  async refresh() {
     const available = await this.checkPlayerAvailable();
-    if (available) return true;
-    Utils.showNotification("Плеер недоступен, проверьте подключение", "error");
-    return false;
-  },
-
-  async playSingleTrack(album, trackIndex) {
-    const track = album.tracks[trackIndex];
-    const started = await this.ensurePlayerRunning();
-    if (!started) return;
-    const result = await this.replacePlaylistWithTrack(track.path);
-    if (result && result.success) {
-      Utils.showNotification(`Воспроизведение: ${track.name}`, "success");
-      this.currentAlbum = album;
-      this.tracks = [...album.tracks];
-      this.currentTrackIndex = trackIndex;
-      await this.updateUI();
-      if (typeof PlaylistViewer !== "undefined") {
-        PlaylistViewer.refresh();
+    if (!available) {
+      this.showEmptyPlaylist("Плеер недоступен");
+      return;
+    }
+    const playlistData = await this.getPlaylist();
+    const playbackState = await this.getPlaybackState();
+    let currentTrackPath = null;
+    if (playbackState && playbackState.success && playbackState.data) {
+      currentTrackPath = playbackState.data.currentTrack;
+      console.log("[PlaylistViewer] Current track path:", currentTrackPath);
+    }
+    if (playlistData && playlistData.success && playlistData.data) {
+      let tracks = playlistData.data;
+      if (
+        typeof tracks === "object" &&
+        !Array.isArray(tracks) &&
+        tracks.tracks
+      ) {
+        tracks = tracks.tracks;
       }
+      this.renderPlaylist(tracks, currentTrackPath);
+    } else {
+      this.showEmptyPlaylist("Плейлист пуст");
     }
   },
 
-  async addAlbumToPlaylist(album) {
-    const started = await this.ensurePlayerRunning();
-    if (!started) return;
-    let addedCount = 0;
-    for (const track of album.tracks) {
-      const result = await this.addToPlaylist(track.path);
-      if (result && result.success) addedCount++;
-      await this.delay(100);
+  renderPlaylist(playlist, currentTrackPath) {
+    const container = document.getElementById("playlistContainer");
+    if (!container) return;
+    if (!playlist || playlist.length === 0) {
+      this.showEmptyPlaylist("Плейлист пуст");
+      return;
     }
-    Utils.showNotification(`Добавлено ${addedCount} треков`, "success");
-    if (typeof PlaylistViewer !== "undefined") {
-      await this.delay(500);
-      PlaylistViewer.refresh();
+    let html = `<div class="playlist-tracks-list">`;
+    for (let i = 0; i < playlist.length; i++) {
+      const trackPath = playlist[i];
+      const trackName = trackPath.split("/").pop();
+      const isCurrent = trackPath === currentTrackPath;
+      console.log(
+        `[PlaylistViewer] Track ${i}: ${trackPath}, isCurrent: ${isCurrent}`,
+      );
+      html += `
+        <div class="playlist-track-item ${isCurrent ? "current" : ""}" data-index="${i}" data-path="${this.escapeHtml(trackPath)}">
+          <div class="playlist-track-number">${String(i + 1).padStart(2, "0")}</div>
+          <div class="playlist-track-info">
+            <div class="playlist-track-name" title="${this.escapeHtml(trackName)}">${this.escapeHtml(trackName)}</div>
+          </div>
+          <div class="playlist-track-remove-btn" data-index="${i}">
+            <i class="fas fa-trash"></i>
+          </div>
+        </div>
+      `;
     }
+    html += `</div>`;
+    container.innerHTML = html;
+    this.attachPlaylistEvents();
   },
 
-  async replacePlaylistWithAlbum(album) {
-    const started = await this.ensurePlayerRunning();
-    if (!started) return;
-    const trackPaths = album.tracks.map((t) => t.path);
-    const result = await this.setPlaylist(trackPaths);
-    if (result && result.success) {
-      Utils.showNotification(`Плейлист заменен: ${album.title}`, "success");
-      this.currentAlbum = album;
-      this.tracks = [...album.tracks];
-      this.currentTrackIndex = 0;
-      if (typeof PlaylistViewer !== "undefined") {
-        PlaylistViewer.refresh();
+  attachPlaylistEvents() {
+    const container = document.getElementById("playlistContainer");
+    if (!container) return;
+    container.querySelectorAll(".playlist-track-item").forEach((item) => {
+      const newItem = item.cloneNode(true);
+      item.parentNode.replaceChild(newItem, item);
+      newItem.addEventListener("click", async (e) => {
+        if (e.target.closest(".playlist-track-remove-btn")) return;
+        const index = parseInt(newItem.dataset.index);
+        await this.playTrack(index);
+      });
+    });
+    container.querySelectorAll(".playlist-track-remove-btn").forEach((btn) => {
+      const newBtn = btn.cloneNode(true);
+      btn.parentNode.replaceChild(newBtn, btn);
+      newBtn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const index = parseInt(newBtn.dataset.index);
+        await this.removeTrack(index);
+      });
+    });
+  },
+
+  async playTrack(index) {
+    try {
+      const response = await fetch(`${this.getServerUrl()}/api/playIndex`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ index: index }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        await this.delay(200);
+        await this.refresh();
+        if (typeof AudioPlayer !== "undefined") {
+          AudioPlayer.updateUI();
+        }
       }
-      await this.updateUI();
+    } catch (error) {
+      console.error("Error playing track:", error);
     }
   },
 
-  async replacePlaylistWithTrack(album, trackIndex) {
-    const track = album.tracks[trackIndex];
-    const started = await this.ensurePlayerRunning();
-    if (!started) return;
-    const result = await this.replacePlaylistWithTrack(track.path);
-    if (result && result.success) {
-      Utils.showNotification(`Плейлист заменен: ${track.name}`, "success");
-      if (typeof PlaylistViewer !== "undefined") {
-        PlaylistViewer.refresh();
+  async removeTrack(index) {
+    Utils.showNotification("Удаление трека пока не реализовано", "info");
+  },
+
+  showEmptyPlaylist(message) {
+    const container = document.getElementById("playlistContainer");
+    if (!container) return;
+    container.innerHTML = `
+      <div class="playlist-empty">
+        <i class="fas fa-music" style="font-size: 48px; opacity: 0.5;"></i>
+        <p>${message}</p>
+        <small>Нажмите на альбом, чтобы начать воспроизведение</small>
+      </div>
+    `;
+  },
+
+  showPlaylistSection() {
+    const modal = document.getElementById("albumModal");
+    if (modal && modal.classList.contains("active")) {
+      modal.classList.remove("active");
+    }
+    const playlistSection = document.getElementById("playlistSection");
+    if (playlistSection) {
+      playlistSection.style.display = "block";
+      const playlistToggleBtn = document.getElementById("playlistToggleBtn");
+      if (playlistToggleBtn) playlistToggleBtn.classList.add("active");
+      this.init();
+      setTimeout(() => this.refresh(), 100);
+      setTimeout(() => {
+        if (
+          playlistSection &&
+          typeof playlistSection.scrollIntoView === "function"
+        ) {
+          try {
+            playlistSection.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          } catch (e) {
+            console.error("scrollIntoView error:", e);
+          }
+        }
+      }, 200);
+    }
+  },
+
+  startPolling() {
+    if (this.updateInterval) clearInterval(this.updateInterval);
+    this.updateInterval = setInterval(() => {
+      if (this.playerAvailable) {
+        this.refresh();
       }
-    }
-  },
-
-  async addTrackAfterCurrent(album, trackIndex) {
-    const track = album.tracks[trackIndex];
-    const started = await this.ensurePlayerRunning();
-    if (!started) return;
-    const result = await this.addAfterCurrent(track.path);
-    if (result && result.success) {
-      Utils.showNotification(`Трек добавлен: ${track.name}`, "success");
-      if (typeof PlaylistViewer !== "undefined") {
-        PlaylistViewer.refresh();
-      }
-    }
-  },
-
-  async togglePlayPause() {
-    const state = await this.getPlaybackState();
-    if (state && state.data) {
-      if (state.data.isPlaying) {
-        await this.pause();
-      } else {
-        await this.play();
-      }
-    }
-    await this.updateUI();
-  },
-
-  async nextTrack() {
-    await this.next();
-    await this.delay(200);
-    await this.updateUI();
-    if (typeof PlaylistViewer !== "undefined") {
-      PlaylistViewer.refresh();
-    }
-  },
-
-  async previousTrack() {
-    await this.previous();
-    await this.delay(200);
-    await this.updateUI();
-    if (typeof PlaylistViewer !== "undefined") {
-      PlaylistViewer.refresh();
-    }
-  },
-
-  async stopPlayback() {
-    await this.stop();
-    await this.updateUI();
+    }, 3000);
   },
 
   async init() {
     if (this.initialized) return;
     this.initialized = true;
-    await this.checkPlayerAvailable();
-    this.setupEventListeners();
-    this.initUI();
-    await this.updateUI();
-    if (this.playerAvailable) {
-      this.startStatusPolling();
-    }
+    this.showEmptyPlaylist("Плейлист пуст");
+    await this.refresh();
+    this.startPolling();
   },
 
-  setupEventListeners() {
-    const playBtn = document.getElementById("playerPlayBtn");
-    const prevBtn = document.getElementById("playerPrevBtn");
-    const nextBtn = document.getElementById("playerNextBtn");
-    const stopBtn = document.getElementById("playerStopBtn");
-    if (playBtn)
-      playBtn.addEventListener("click", () => this.togglePlayPause());
-    if (prevBtn) prevBtn.addEventListener("click", () => this.previousTrack());
-    if (nextBtn) nextBtn.addEventListener("click", () => this.nextTrack());
-    if (stopBtn) stopBtn.addEventListener("click", () => this.stopPlayback());
-  },
-
-  startStatusPolling() {
-    if (this.panelUpdateInterval) clearInterval(this.panelUpdateInterval);
-    this.panelUpdateInterval = setInterval(() => this.updateUI(), 1000);
-  },
-
-  async updateUI() {
-    if (!this.playerAvailable) {
-      await this.checkPlayerAvailable();
-      if (!this.playerAvailable) {
-        const panel = document.getElementById("audioPlayerControlPanel");
-        if (panel) panel.classList.remove("active");
-        return;
-      }
-    }
-    const state = await this.getPlaybackState();
-    if (!state || !state.success) return;
-    const hasTracks = state.data && state.data.currentTrack;
-    const panel = document.getElementById("audioPlayerControlPanel");
-    if (!hasTracks) {
-      if (panel) panel.classList.remove("active");
-      return;
-    }
-    if (panel && !panel.classList.contains("active")) {
-      panel.classList.add("active");
-    }
-    const trackInfo = await this.getCurrentTrack();
-    const timeInfo = await this.getCurrentTime();
-    if (trackInfo && trackInfo.success && trackInfo.data) {
-      const trackName = trackInfo.data.track
-        ? trackInfo.data.track.split("/").pop()
-        : "—";
-      if (this.panelTrackName) this.panelTrackName.textContent = trackName;
-    }
-    if (timeInfo && timeInfo.success && timeInfo.data) {
-      if (this.panelTimeCurrent) {
-        this.panelTimeCurrent.textContent = this.formatTime(
-          timeInfo.data.currentTime || 0,
-        );
-      }
-      if (this.panelProgressFill && timeInfo.data.duration) {
-        const percent =
-          (timeInfo.data.currentTime / timeInfo.data.duration) * 100;
-        this.panelProgressFill.style.width = percent + "%";
-      }
-    }
-    if (state && state.data) {
-      if (this.panelPlayPauseBtn) {
-        if (state.data.isPlaying) {
-          this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        } else {
-          this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-        }
-      }
-    }
-  },
-
-  initUI() {
-    this.panelPlayPauseBtn = document.getElementById("panelPlayPauseBtn");
-    this.panelPrevBtn = document.getElementById("panelPrevBtn");
-    this.panelNextBtn = document.getElementById("panelNextBtn");
-    this.panelStopBtn = document.getElementById("panelStopBtn");
-    this.panelClearBtn = document.getElementById("panelClearBtn");
-    this.panelProgressBar = document.getElementById("panelProgressBar");
-    this.panelTrackName = document.getElementById("panelTrackName");
-    this.panelTrackArtist = document.getElementById("panelTrackArtist");
-    this.panelTimeCurrent = document.getElementById("panelTimeCurrent");
-    this.panelTimeTotal = document.getElementById("panelTimeTotal");
-    this.panelProgressFill = document.getElementById("panelProgressFill");
-    if (this.panelPlayPauseBtn) {
-      this.panelPlayPauseBtn.addEventListener("click", () =>
-        this.togglePlayPause(),
-      );
-    }
-    if (this.panelPrevBtn) {
-      this.panelPrevBtn.addEventListener("click", () => this.previousTrack());
-    }
-    if (this.panelNextBtn) {
-      this.panelNextBtn.addEventListener("click", () => this.nextTrack());
-    }
-    if (this.panelStopBtn) {
-      this.panelStopBtn.addEventListener("click", () => this.stopPlayback());
-    }
-    if (this.panelClearBtn) {
-      this.panelClearBtn.addEventListener("click", () => this.clearPlaylist());
-    }
-  },
-
-  async clearPlaylist() {
-    await this.clearPlaylist();
-    if (typeof PlaylistViewer !== "undefined") {
-      PlaylistViewer.refresh();
-    }
-    Utils.showNotification("Плейлист очищен", "success");
-    await this.updateUI();
-  },
-
-  formatTime(seconds) {
-    if (!seconds || seconds < 0) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  escapeHtml(str) {
+    if (!str) return "";
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
   },
 
   delay(ms) {
