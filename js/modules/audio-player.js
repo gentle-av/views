@@ -12,6 +12,7 @@ const AudioPlayer = {
   lastPlaylistLength: 0,
   lastCurrentFilePath: null,
   initialized: false,
+  currentTrackDuration: 0,
 
   getServerUrl() {
     if (!this.serverUrl) {
@@ -121,7 +122,7 @@ const AudioPlayer = {
   },
 
   async addToPlaylist(track) {
-    const result = await this.sendToPlayer("/api/addToPlaylist", {
+    const result = await this.sendToPlayer("/api/add", {
       track: track,
     });
     if (result && result.success) {
@@ -170,6 +171,7 @@ const AudioPlayer = {
         PlaylistViewer.refresh();
       }
     }
+    this.currentTrackDuration = 0;
     return result;
   },
 
@@ -195,6 +197,7 @@ const AudioPlayer = {
         PlaylistViewer.refresh();
       }
     }
+    this.currentTrackDuration = 0;
   },
 
   async addAlbumToPlaylist(album) {
@@ -343,7 +346,9 @@ const AudioPlayer = {
       if (this.panelTrackName) this.panelTrackName.textContent = "Нет треков";
       if (this.panelTrackArtist) this.panelTrackArtist.textContent = "";
       if (this.panelTimeCurrent) this.panelTimeCurrent.textContent = "0:00";
-      if (this.panelProgressFill) this.panelProgressFill.style.width = "0%";
+      if (this.panelTimeTotal) this.panelTimeTotal.textContent = "0:00";
+      const progressFill = document.getElementById("panelProgressFill");
+      if (progressFill) progressFill.style.width = "0%";
       return;
     }
     if (panel && !panel.classList.contains("active")) {
@@ -355,12 +360,33 @@ const AudioPlayer = {
       : "—";
     if (this.panelTrackName) this.panelTrackName.textContent = trackName;
     if (this.panelTrackArtist) this.panelTrackArtist.textContent = "";
+    let currentTime = 0;
+    let duration = this.currentTrackDuration || 0;
     if (timeInfo && timeInfo.success && timeInfo.data) {
-      if (this.panelTimeCurrent) {
-        this.panelTimeCurrent.textContent = this.formatTime(
-          timeInfo.data.currentTime || 0,
-        );
+      currentTime = timeInfo.data.currentTime || timeInfo.data.position || 0;
+      if (timeInfo.data.duration && timeInfo.data.duration > 0) {
+        duration = timeInfo.data.duration;
+        this.currentTrackDuration = duration;
       }
+    }
+    if (duration === 0 && state.data.currentTrack) {
+      const metadata = await this.fetchTrackMetadata(state.data.currentTrack);
+      if (metadata && metadata.duration) {
+        duration = metadata.duration;
+        this.currentTrackDuration = duration;
+      }
+    }
+    if (this.panelTimeCurrent) {
+      this.panelTimeCurrent.textContent = this.formatTime(currentTime);
+    }
+    if (this.panelTimeTotal) {
+      this.panelTimeTotal.textContent = this.formatTime(duration);
+    }
+    const progressFill = document.getElementById("panelProgressFill");
+    if (progressFill && duration > 0) {
+      const percent = (currentTime / duration) * 100;
+      progressFill.style.width = percent + "%";
+      progressFill.style.backgroundColor = "var(--yellow)";
     }
     if (state && state.data) {
       if (this.panelPlayPauseBtn) {
@@ -373,6 +399,26 @@ const AudioPlayer = {
       if (this.panelTrackCount) {
         this.panelTrackCount.textContent = `${(state.data.currentIndex || 0) + 1}/${state.data.totalTracks || 0}`;
       }
+    }
+  },
+
+  async fetchTrackMetadata(filePath) {
+    try {
+      const response = await fetch(
+        `${this.getServerUrl()}/api/music/file-metadata?path=${encodeURIComponent(filePath)}`,
+      );
+      const data = await response.json();
+      if (data.status === "success" && data.data && data.data.file) {
+        return {
+          duration: data.data.file.duration || 0,
+          title: data.data.file.title,
+          artist: data.data.file.artist,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching metadata:", error);
+      return null;
     }
   },
 
@@ -423,6 +469,40 @@ const AudioPlayer = {
       this.panelClearBtn.parentNode.replaceChild(newBtn, this.panelClearBtn);
       this.panelClearBtn = newBtn;
       this.panelClearBtn.addEventListener("click", () => this.clearPlaylist());
+    }
+    if (this.panelProgressBar) {
+      const newBar = this.panelProgressBar.cloneNode(true);
+      this.panelProgressBar.parentNode.replaceChild(
+        newBar,
+        this.panelProgressBar,
+      );
+      this.panelProgressBar = newBar;
+      this.panelProgressBar.addEventListener("click", (e) => this.seekTo(e));
+    }
+    if (this.playerAvailable) {
+      this.startStatusPolling();
+    }
+  },
+
+  async seekTo(e) {
+    if (!this.panelProgressBar) return;
+    const rect = this.panelProgressBar.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    const state = await this.getPlaybackState();
+    if (state && state.data && state.data.totalTracks) {
+      const timeInfo = await this.getCurrentTime();
+      if (
+        timeInfo &&
+        timeInfo.success &&
+        timeInfo.data &&
+        timeInfo.data.duration
+      ) {
+        const newTime = timeInfo.data.duration * percent;
+        Utils.showNotification(
+          `Перемотка на ${this.formatTime(newTime)} пока не реализована`,
+          "info",
+        );
+      }
     }
   },
 
