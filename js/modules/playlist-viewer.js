@@ -9,6 +9,17 @@ const PlaylistViewer = {
     return `http://${window.location.hostname}:${window.location.port}`;
   },
 
+  showEmptyPlaylist(message) {
+    const container = document.getElementById("playlistContainer");
+    if (!container) return;
+    container.innerHTML = `
+      <div class="playlist-empty">
+        <i class="fas fa-music"></i>
+        <p>${message}</p>
+      </div>
+    `;
+  },
+
   async checkPlayerAvailable() {
     try {
       const response = await fetch(`${this.getServerUrl()}/api/playbackState`);
@@ -163,18 +174,32 @@ const PlaylistViewer = {
   },
 
   async removeTrack(index) {
-    Utils.showNotification("Удаление трека пока не реализовано", "info");
-  },
-
-  showEmptyPlaylist(message) {
-    const container = document.getElementById("playlistContainer");
-    if (!container) return;
-    container.innerHTML = `
-      <div class="playlist-empty">
-        <i class="fas fa-music"></i>
-        <p>${message}</p>
-      </div>
-    `;
+    try {
+      const response = await fetch(
+        `${this.getServerUrl()}/api/removeFromPlaylist`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ index: index }),
+        },
+      );
+      const data = await response.json();
+      if (data.success) {
+        await this.refresh();
+        if (typeof AudioPlayer !== "undefined") {
+          AudioPlayer.updateUI();
+        }
+        Utils.showNotification("Трек удален из плейлиста", "success");
+      } else {
+        Utils.showNotification(
+          data.message || "Ошибка удаления трека",
+          "error",
+        );
+      }
+    } catch (error) {
+      console.error("Error removing track:", error);
+      Utils.showNotification("Ошибка удаления трека", "error");
+    }
   },
 
   openPlaylist() {
