@@ -15,6 +15,14 @@ const AudioPlayer = {
   currentTrackDuration: 0,
   lastTrackPath: null,
 
+  async stopPlayback() {
+    await this.stop();
+    await this.updateUI();
+    if (this.panelPlayPauseBtn) {
+      this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    }
+  },
+
   getServerUrl() {
     if (!this.serverUrl) {
       this.serverUrl = `http://${window.location.hostname}:${window.location.port}`;
@@ -339,6 +347,7 @@ const AudioPlayer = {
       }
     }
     const state = await this.getPlaybackState();
+    console.log("[AudioPlayer] updateUI state:", state);
     if (!state || !state.success) return;
     const hasTracks = state.data && state.data.currentTrack;
     const panel = document.getElementById("audioPlayerControlPanel");
@@ -350,6 +359,9 @@ const AudioPlayer = {
       if (this.panelTimeTotal) this.panelTimeTotal.textContent = "0:00";
       const progressFill = document.getElementById("panelProgressFill");
       if (progressFill) progressFill.style.width = "0%";
+      if (this.panelPlayPauseBtn) {
+        this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+      }
       return;
     }
     if (panel && !panel.classList.contains("active")) {
@@ -391,17 +403,16 @@ const AudioPlayer = {
       progressFill.style.width = Math.min(percent, 100) + "%";
       progressFill.style.backgroundColor = "var(--yellow)";
     }
-    if (state && state.data) {
-      if (this.panelPlayPauseBtn) {
-        if (state.data.isPlaying) {
-          this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-        } else {
-          this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-        }
+    if (this.panelPlayPauseBtn) {
+      console.log("[AudioPlayer] isPlaying:", state.data.isPlaying);
+      if (state.data.isPlaying) {
+        this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      } else {
+        this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
       }
-      if (this.panelTrackCount) {
-        this.panelTrackCount.textContent = `${(state.data.currentIndex || 0) + 1}/${state.data.totalTracks || 0}`;
-      }
+    }
+    if (this.panelTrackCount) {
+      this.panelTrackCount.textContent = `${(state.data.currentIndex || 0) + 1}/${state.data.totalTracks || 0}`;
     }
   },
 
