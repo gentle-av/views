@@ -38,6 +38,9 @@ const PlaylistViewer = {
   },
 
   async enrichPlaylistWithMetadata(tracks) {
+    if (!tracks || !Array.isArray(tracks)) {
+      return [];
+    }
     const enrichedTracks = [];
     for (const trackPath of tracks) {
       const metadata = await this.fetchTrackMetadata(trackPath);
@@ -113,8 +116,11 @@ const PlaylistViewer = {
     if (playbackState && playbackState.success && playbackState.data) {
       currentTrackPath = playbackState.data.currentTrack;
     }
-    if (playlistData && playlistData.success && playlistData.data) {
+    if (playlistData && playlistData.success) {
       let tracks = playlistData.data;
+      if (!tracks) {
+        tracks = [];
+      }
       if (
         typeof tracks === "object" &&
         !Array.isArray(tracks) &&

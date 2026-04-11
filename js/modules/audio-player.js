@@ -74,7 +74,9 @@ const AudioPlayer = {
   },
 
   async getPlaylist() {
-    return await this.sendToPlayer("/api/getPlaylist", null, "GET");
+    const result = await this.sendToPlayer("/api/getPlaylist", null, "GET");
+    console.log("[AudioPlayer] getPlaylist result:", result);
+    return result;
   },
 
   async getCurrentTime() {
@@ -82,7 +84,9 @@ const AudioPlayer = {
   },
 
   async play() {
-    return await this.sendToPlayer("/api/play");
+    const result = await this.sendToPlayer("/api/play");
+    console.log("[AudioPlayer] play result:", result);
+    return result;
   },
 
   async pause() {
@@ -130,30 +134,20 @@ const AudioPlayer = {
     return result;
   },
 
-  async addToPlaylist(track) {
-    const result = await this.sendToPlayer("/api/add", {
-      track: track,
-    });
+  async addTrackAfterCurrent(album, trackIndex) {
+    const track = album.tracks[trackIndex];
+    const started = await this.ensurePlayerRunning();
+    if (!started) return;
+    const result = await this.addAfterCurrent(track.path);
     if (result && result.success) {
+      Utils.showNotification(
+        `Трек "${track.title}" добавлен после текущего`,
+        "success",
+      );
       if (typeof PlaylistViewer !== "undefined") {
-        await this.delay(300);
         PlaylistViewer.refresh();
       }
     }
-    return result;
-  },
-
-  async addAfterCurrent(track) {
-    const result = await this.sendToPlayer("/api/addAfterCurrent", {
-      track: track,
-    });
-    if (result && result.success) {
-      if (typeof PlaylistViewer !== "undefined") {
-        await this.delay(300);
-        PlaylistViewer.refresh();
-      }
-    }
-    return result;
   },
 
   async clearPlaylist() {
@@ -172,16 +166,20 @@ const AudioPlayer = {
     return await this.sendToPlayer("/api/playIndex", { index: index });
   },
 
-  async replacePlaylistWithTrack(track) {
-    const result = await this.sendToPlayer("/api/track", { track: track });
+  async replacePlaylistWithTrack(album, trackIndex) {
+    const track = album.tracks[trackIndex];
+    const started = await this.ensurePlayerRunning();
+    if (!started) return;
+    const result = await this.replacePlaylistWithTrack(track.path);
     if (result && result.success) {
-      await this.updateUI();
+      Utils.showNotification(
+        `Плейлист заменен треком: ${track.title}`,
+        "success",
+      );
       if (typeof PlaylistViewer !== "undefined") {
         PlaylistViewer.refresh();
       }
     }
-    this.currentTrackDuration = 0;
-    return result;
   },
 
   async ensurePlayerRunning() {
@@ -195,9 +193,11 @@ const AudioPlayer = {
     const track = album.tracks[trackIndex];
     const started = await this.ensurePlayerRunning();
     if (!started) return;
+    await this.stop();
+    await this.delay(100);
     const result = await this.replacePlaylistWithTrack(track.path);
     if (result && result.success) {
-      Utils.showNotification(`Воспроизведение: ${track.name}`, "success");
+      Utils.showNotification(`Воспроизведение: ${track.title}`, "success");
       this.currentAlbum = album;
       this.tracks = [...album.tracks];
       this.currentTrackIndex = trackIndex;
@@ -210,24 +210,51 @@ const AudioPlayer = {
   },
 
   async addAlbumToPlaylist(album) {
+    console.log(
+      "[AudioPlayer] addAlbumToPlaylist called for album:",
+      album.title,
+    );
     const started = await this.ensurePlayerRunning();
     if (!started) return;
+    const playlistData = await this.getPlaylist();
+    let playlist = [];
+    if (playlistData && playlistData.success && playlistData.data) {
+      playlist = playlistData.data;
+    }
+    const wasEmpty = playlist.length === 0;
     let addedCount = 0;
     for (const track of album.tracks) {
       const result = await this.addToPlaylist(track.path);
       if (result && result.success) addedCount++;
-      await this.delay(100);
     }
-    Utils.showNotification(`Добавлено ${addedCount} треков`, "success");
+    Utils.showNotification(
+      `Добавлено ${addedCount} треков из альбома "${album.title}"`,
+      "success",
+    );
+    if (wasEmpty && addedCount > 0) {
+      await this.play();
+      await this.updateUI();
+    }
     if (typeof PlaylistViewer !== "undefined") {
-      await this.delay(500);
-      PlaylistViewer.refresh();
+      await PlaylistViewer.refresh();
     }
+  },
+
+  async addToPlaylist(track) {
+    const result = await this.sendToPlayer("/api/add", { track: track });
+    if (result && result.success) {
+      if (typeof PlaylistViewer !== "undefined") {
+        PlaylistViewer.refresh();
+      }
+    }
+    return result;
   },
 
   async replacePlaylistWithAlbum(album) {
     const started = await this.ensurePlayerRunning();
     if (!started) return;
+    await this.stop();
+    await this.delay(100);
     const trackPaths = album.tracks.map((t) => t.path);
     const result = await this.setPlaylist(trackPaths);
     if (result && result.success) {
@@ -246,9 +273,14 @@ const AudioPlayer = {
     const track = album.tracks[trackIndex];
     const started = await this.ensurePlayerRunning();
     if (!started) return;
+    await this.stop();
+    await this.delay(100);
     const result = await this.replacePlaylistWithTrack(track.path);
     if (result && result.success) {
-      Utils.showNotification(`Плейлист заменен: ${track.name}`, "success");
+      Utils.showNotification(
+        `Плейлист заменен треком: ${track.title}`,
+        "success",
+      );
       if (typeof PlaylistViewer !== "undefined") {
         PlaylistViewer.refresh();
       }

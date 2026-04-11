@@ -87,7 +87,7 @@ class AlbumUIRenderer {
         const artist = card.dataset.albumArtist;
         const albumTitle = card.dataset.albumTitle;
         const album = this.albums.find(
-          (a) => a.artist === artist && a.title === albumTitle
+          (a) => a.artist === artist && a.title === albumTitle,
         );
         if (album && typeof TagEditor !== "undefined") {
           TagEditor.showAlbumTagEditor(album);
@@ -97,7 +97,7 @@ class AlbumUIRenderer {
       const title = card.dataset.albumTitle;
       const artist = card.dataset.albumArtist;
       const album = this.albums.find(
-        (a) => a.title === title && a.artist === artist
+        (a) => a.title === title && a.artist === artist,
       );
       if (album) {
         console.log("[AlbumLibrary] Showing modal for", album.title);
@@ -108,7 +108,7 @@ class AlbumUIRenderer {
     };
     grid.addEventListener("click", this.handleAlbumClick);
     console.log("[AlbumLibrary] Event listener attached to grid");
-  },
+  }
 
   showAlbumModal(album) {
     const modal = document.getElementById("albumModal");
