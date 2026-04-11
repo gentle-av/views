@@ -138,3 +138,23 @@
   border-radius: 12px;
   margin-left: 8px;
 }
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 0 8px;
+}
+
+.page-header i {
+  font-size: 28px;
+  color: var(--accent-color, #fabd2f);
+}
+
+.page-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary, #ffffff);
+}

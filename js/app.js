@@ -109,7 +109,7 @@ const App = {
       }
     } else if (page === "audio") {
       if (pageTitle)
-        pageTitle.innerHTML = '<i class="fas fa-album"></i> Альбомы';
+        pageTitle.innerHTML = '<i class="fas fa-music"></i> Аудиотека';
       if (searchBox) searchBox.style.display = "flex";
       if (playlistBtn) playlistBtn.style.display = "flex";
       if (refreshBtn) refreshBtn.style.display = "flex";

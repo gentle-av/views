@@ -11,7 +11,7 @@
       <div class="player-panel-info">
         <div class="player-panel-track-info">
           <div class="player-panel-track-name" id="panelTrackName">
-            Не воспроизводится
+            Нет треков
           </div>
           <div class="player-panel-track-artist" id="panelTrackArtist"></div>
         </div>
@@ -23,6 +23,7 @@
             <div
               class="player-panel-progress-fill"
               id="panelProgressFill"
+              style="width: 0%"
             ></div>
           </div>
           <span class="player-panel-time-total" id="panelTimeTotal">0:00</span>
@@ -55,7 +56,12 @@
         <i class="fas fa-times"></i>
       </button>
     </div>
-    <div class="playlist-container" id="playlistContainer"></div>
+    <div class="playlist-container" id="playlistContainer">
+      <div class="playlist-empty">
+        <i class="fas fa-music"></i>
+        <p>Плейлист пуст</p>
+      </div>
+    </div>
     <div class="playlist-popup-controls">
       <span class="playlist-popup-count" id="playlistTrackCount">0 треков</span>
       <button
