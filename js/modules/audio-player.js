@@ -403,19 +403,6 @@ const AudioPlayer = {
     if (panel && !panel.classList.contains("active")) {
       panel.classList.add("active");
     }
-    if (
-      state.data.currentTrack &&
-      state.data.currentTrack !== this.lastTrackPath
-    ) {
-      this.lastTrackPath = state.data.currentTrack;
-      this.currentTrackDuration = 0;
-      const metadata = await this.fetchTrackMetadata(state.data.currentTrack);
-      if (metadata && metadata.duration) {
-        this.currentTrackDuration = metadata.duration;
-      }
-    }
-    const timeInfo = await this.getCurrentTime();
-    console.log("[AudioPlayer] timeInfo:", timeInfo);
     let trackName = "—";
     let trackArtist = "";
     if (state.data.currentTrack) {
@@ -428,9 +415,9 @@ const AudioPlayer = {
       }
     }
     if (this.panelTrackName) this.panelTrackName.textContent = trackName;
-    if (this.panelTrackArtist && trackArtist) {
-      this.panelTrackArtist.textContent = trackArtist;
-    }
+    if (this.panelTrackArtist) this.panelTrackArtist.textContent = trackArtist;
+    const timeInfo = await this.getCurrentTime();
+    console.log("[AudioPlayer] timeInfo:", timeInfo);
     let currentTime = 0;
     let duration = this.currentTrackDuration;
     if (timeInfo && timeInfo.success && timeInfo.data) {
@@ -464,6 +451,11 @@ const AudioPlayer = {
     }
     if (this.panelTrackCount) {
       this.panelTrackCount.textContent = `${(state.data.currentIndex || 0) + 1}/${state.data.totalTracks || 0}`;
+    }
+    if (duration > 0 && currentTime >= duration - 0.5 && state.data.isPlaying) {
+      console.log("[AudioPlayer] Track finished, playing next");
+      await this.delay(100);
+      await this.next();
     }
   },
 
