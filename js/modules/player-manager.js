@@ -203,12 +203,12 @@ const PlayerManager = {
     const placeholder = document.querySelector(".player-placeholder");
     if (placeholder) {
       placeholder.innerHTML = `
-        <i class="fas fa-play-circle"></i>
-        <div>Видео воспроизводится</div>
-        <div style="font-size: 1rem; margin-top: 20px; color: var(--fg3)">
-          Используйте кнопки управления
-        </div>
-      `;
+      <i class="fas fa-play-circle"></i>
+      <div>Видео воспроизводится</div>
+      <div style="font-size: 1rem; margin-top: 20px; color: var(--fg3)">
+        Используйте кнопки управления
+      </div>
+    `;
     }
   },
 

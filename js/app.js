@@ -95,6 +95,7 @@ const App = {
     const refreshBtn = document.getElementById("headerRefreshBtn");
     const navVideoBtn = document.getElementById("navVideoBtn");
     const navAudioBtn = document.getElementById("navAudioBtn");
+    const playerControlPage = document.getElementById("playerControlPage");
     if (page === "video") {
       if (pageTitle) pageTitle.innerHTML = '<i class="fas fa-video"></i> Видео';
       if (searchBox) searchBox.style.display = "none";
@@ -117,6 +118,9 @@ const App = {
       }
       if (navAudioBtn) {
         navAudioBtn.classList.add("active");
+      }
+      if (playerControlPage && playerControlPage.style.display === "flex") {
+        playerControlPage.style.display = "none";
       }
       const searchInput = document.getElementById("globalSearchInput");
       if (searchInput) searchInput.value = "";
