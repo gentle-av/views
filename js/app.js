@@ -72,12 +72,13 @@ const App = {
         }
       });
     }
-    const headerPlaylistBtn = document.getElementById("headerPlaylistBtn");
-    if (headerPlaylistBtn) {
-      const newPlaylistBtn = headerPlaylistBtn.cloneNode(true);
-      headerPlaylistBtn.parentNode.replaceChild(
+    const headerPlaylistBtnElement =
+      document.getElementById("headerPlaylistBtn");
+    if (headerPlaylistBtnElement) {
+      const newPlaylistBtn = headerPlaylistBtnElement.cloneNode(true);
+      headerPlaylistBtnElement.parentNode.replaceChild(
         newPlaylistBtn,
-        headerPlaylistBtn,
+        headerPlaylistBtnElement,
       );
       newPlaylistBtn.addEventListener("click", () => {
         if (typeof PlaylistViewer !== "undefined") {

@@ -265,8 +265,12 @@ const PlaylistViewer = {
   openPlaylist() {
     const popup = document.getElementById("playlistPopup");
     if (popup) {
-      popup.classList.add("open");
-      this.refresh();
+      if (popup.classList.contains("open")) {
+        popup.classList.remove("open");
+      } else {
+        popup.classList.add("open");
+        this.refresh();
+      }
     }
   },
 
