@@ -13,66 +13,48 @@ const PlayerManager = {
     if (this.initialized) return;
     this.initialized = true;
     this.setupEventListeners();
+    this.playerAvailable = true;
     console.log("PlayerManager initialized");
-  },
-
-  async launchMediateka() {
-    try {
-      const response = await fetch(
-        `${this.getServerUrl()}/api/launchMediateka`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-      const data = await response.json();
-      return data.success === true;
-    } catch (error) {
-      console.error("Error launching Mediateka:", error);
-      return false;
-    }
-  },
-
-  async checkPlayerAvailability() {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
-      const response = await fetch(`${this.getPlayerUrl()}/api/playbackState`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      this.playerAvailable = response.ok;
-      if (this.playerAvailable) {
-        this.startStatusPolling();
-      }
-      return this.playerAvailable;
-    } catch (error) {
-      console.log("Video player not available:", error.message);
-      this.playerAvailable = false;
-      return false;
-    }
-  },
-
-  async ensurePlayerRunning() {
-    const isAvailable = await this.checkPlayerAvailability();
-    if (isAvailable) return true;
-    console.log("Mediateka not running, launching...");
-    const launched = await this.launchMediateka();
-    if (launched) {
-      await this.delay(2000);
-      return await this.checkPlayerAvailability();
-    }
-    return false;
-  },
-
-  getPlayerUrl() {
-    return `http://${this.serverHost}:8082`;
   },
 
   getServerUrl() {
     return `http://${this.serverHost}:${this.serverPort}`;
+  },
+
+  async callApi(endpoint, data = {}) {
+    try {
+      const url = `${this.getServerUrl()}${endpoint}`;
+      console.log("[PlayerManager] callApi:", url, data);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      console.log("[PlayerManager] API response:", result);
+      return result;
+    } catch (error) {
+      console.error(`API error ${endpoint}:`, error);
+      return null;
+    }
+  },
+
+  async playMedia(path) {
+    console.log("playMedia called with path:", path);
+    this.currentFile = path;
+    this.playerActive = true;
+    this.showControl();
+    this.updateUI();
+    const result = await this.callApi("/api/track", { track: path });
+    console.log("API result:", result);
+    if (!result || !result.success) {
+      Utils.showNotification("Не удалось воспроизвести видео", "error");
+      return;
+    }
+    Utils.showNotification(
+      `Воспроизведение: ${path.split("/").pop()}`,
+      "success",
+    );
   },
 
   setupEventListeners() {
@@ -100,34 +82,13 @@ const PlayerManager = {
     document.addEventListener("keydown", (e) => this.handleKeyPress(e));
   },
 
-  async callApi(endpoint, data = {}) {
-    if (!this.playerAvailable) return null;
-    try {
-      const response = await fetch(`${this.getPlayerUrl()}${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        return null;
-      }
-      return await response.json();
-    } catch (error) {
-      console.error(`API error ${endpoint}:`, error);
-      this.playerAvailable = false;
-      this.stopStatusPolling();
-      return null;
-    }
-  },
-
   async getPlaybackState() {
-    if (!this.playerAvailable) return null;
     const result = await this.callApi("/api/playbackState");
     if (result && result.success) {
       this.isPlaying = result.data.isPlaying;
-      this.isFullscreen = result.data.isFullScreen;
-      if (result.data.hasTrack && result.data.currentPath) {
-        this.currentFile = result.data.currentPath;
+      this.isFullscreen = result.data.isFullscreen || false;
+      if (result.data.currentTrack) {
+        this.currentFile = result.data.currentTrack;
         this.playerActive = true;
         this.showControl();
       } else {
@@ -140,46 +101,18 @@ const PlayerManager = {
     return null;
   },
 
-  async playMedia(path) {
-    console.log("playMedia called with path:", path);
-    this.currentFile = path;
-    this.playerActive = true;
-    this.showControl();
-    this.updateUI();
-    const launchResult = await this.launchPlayerWithFile(path);
-    if (!launchResult) {
-      Utils.showNotification("Не удалось запустить плеер", "error");
-      return;
-    }
-    Utils.showNotification(
-      `Воспроизведение: ${path.split("/").pop()}`,
-      "success",
-    );
-  },
-
-  async launchPlayerWithFile(path) {
-    try {
-      const response = await fetch(`${this.getServerUrl()}/api/open`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: path }),
-      });
-      const data = await response.json();
-      return data.success === true;
-    } catch (error) {
-      console.error("Error launching player:", error);
-      return false;
-    }
-  },
-
   async togglePlayPause() {
-    if (!this.playerActive || !this.playerAvailable) return;
-    await this.callApi("/api/playpause");
+    if (!this.playerActive) return;
+    if (this.isPlaying) {
+      await this.callApi("/api/pause");
+    } else {
+      await this.callApi("/api/play");
+    }
     await this.getPlaybackState();
   },
 
   async toggleFullscreen() {
-    if (!this.playerActive || !this.playerAvailable) return;
+    if (!this.playerActive) return;
     await this.callApi("/api/fullscreen", {
       fullscreen: !this.isFullscreen,
     });
@@ -187,13 +120,13 @@ const PlayerManager = {
   },
 
   async seekForward() {
-    if (!this.playerActive || !this.playerAvailable) return;
+    if (!this.playerActive) return;
     await this.callApi("/api/seekforward", { seconds: 10 });
     await this.getPlaybackState();
   },
 
   async seekBackward() {
-    if (!this.playerActive || !this.playerAvailable) return;
+    if (!this.playerActive) return;
     await this.callApi("/api/seekbackward", { seconds: 10 });
     await this.getPlaybackState();
   },
@@ -203,7 +136,7 @@ const PlayerManager = {
       this.hideControl();
       return;
     }
-    await this.callApi("/api/close");
+    await this.callApi("/api/stop");
     this.playerActive = false;
     this.currentFile = null;
     this.hideControl();
@@ -218,8 +151,7 @@ const PlayerManager = {
     const confirmed = confirm(`Удалить файл "${fileName}"?`);
     if (!confirmed) return;
     try {
-      const closeFileUrl = `${this.getPlayerUrl()}/api/closefile`;
-      const response = await fetch(closeFileUrl, {
+      const response = await fetch(`${this.getServerUrl()}/api/trash`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: this.currentFile }),
@@ -230,10 +162,7 @@ const PlayerManager = {
           `Файл "${fileName}" перемещен в корзину`,
           "success",
         );
-        await this.callApi("/api/close");
-        this.playerActive = false;
-        this.currentFile = null;
-        this.hideControl();
+        await this.closeFile();
         if (typeof VideoExplorer !== "undefined") {
           setTimeout(() => {
             VideoExplorer.loadDirectory(VideoExplorer.currentPath, false);
@@ -275,9 +204,9 @@ const PlayerManager = {
     if (placeholder) {
       placeholder.innerHTML = `
         <i class="fas fa-play-circle"></i>
-        <div>Видео воспроизводится в Mediateka</div>
+        <div>Видео воспроизводится</div>
         <div style="font-size: 1rem; margin-top: 20px; color: var(--fg3)">
-          Используйте кнопки управления выше
+          Используйте кнопки управления
         </div>
       `;
     }
@@ -307,24 +236,8 @@ const PlayerManager = {
     }
   },
 
-  startStatusPolling() {
-    this.stopStatusPolling();
-    this.statusCheckInterval = setInterval(() => {
-      if (this.playerAvailable) {
-        this.getPlaybackState();
-      }
-    }, 5000);
-  },
-
-  stopStatusPolling() {
-    if (this.statusCheckInterval) {
-      clearInterval(this.statusCheckInterval);
-      this.statusCheckInterval = null;
-    }
-  },
-
   handleKeyPress(e) {
-    if (!this.playerActive || !this.playerAvailable) return;
+    if (!this.playerActive) return;
     switch (e.code) {
       case "Space":
         e.preventDefault();
