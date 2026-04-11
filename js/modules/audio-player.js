@@ -166,22 +166,6 @@ const AudioPlayer = {
     return await this.sendToPlayer("/api/playIndex", { index: index });
   },
 
-  async replacePlaylistWithTrack(album, trackIndex) {
-    const track = album.tracks[trackIndex];
-    const started = await this.ensurePlayerRunning();
-    if (!started) return;
-    const result = await this.replacePlaylistWithTrack(track.path);
-    if (result && result.success) {
-      Utils.showNotification(
-        `Плейлист заменен треком: ${track.title}`,
-        "success",
-      );
-      if (typeof PlaylistViewer !== "undefined") {
-        PlaylistViewer.refresh();
-      }
-    }
-  },
-
   async ensurePlayerRunning() {
     const available = await this.checkPlayerAvailable();
     if (available) return true;
@@ -240,21 +224,42 @@ const AudioPlayer = {
     }
   },
 
-  async addToPlaylist(track) {
-    const result = await this.sendToPlayer("/api/add", { track: track });
+  async addAlbumToPlaylist(album) {
+    console.log(
+      "[AudioPlayer] addAlbumToPlaylist called for album:",
+      album.title,
+    );
+    const started = await this.ensurePlayerRunning();
+    if (!started) return;
+    const playlistData = await this.getPlaylist();
+    let playlist = [];
+    if (playlistData && playlistData.success && playlistData.data) {
+      playlist = playlistData.data;
+    }
+    const wasEmpty = playlist.length === 0;
+    const trackPaths = album.tracks.map((t) => t.path);
+    const result = await this.sendToPlayer("/api/setPlaylist", {
+      tracks: trackPaths,
+    });
     if (result && result.success) {
+      Utils.showNotification(
+        `Добавлено ${trackPaths.length} треков из альбома "${album.title}"`,
+        "success",
+      );
+      if (wasEmpty) {
+        await this.play();
+        await this.updateUI();
+      }
       if (typeof PlaylistViewer !== "undefined") {
-        PlaylistViewer.refresh();
+        await PlaylistViewer.refresh();
       }
     }
-    return result;
   },
 
   async replacePlaylistWithAlbum(album) {
     const started = await this.ensurePlayerRunning();
     if (!started) return;
     await this.stop();
-    await this.delay(100);
     const trackPaths = album.tracks.map((t) => t.path);
     const result = await this.setPlaylist(trackPaths);
     if (result && result.success) {
@@ -274,7 +279,6 @@ const AudioPlayer = {
     const started = await this.ensurePlayerRunning();
     if (!started) return;
     await this.stop();
-    await this.delay(100);
     const result = await this.replacePlaylistWithTrack(track.path);
     if (result && result.success) {
       Utils.showNotification(
@@ -411,6 +415,7 @@ const AudioPlayer = {
       }
     }
     const timeInfo = await this.getCurrentTime();
+    console.log("[AudioPlayer] timeInfo:", timeInfo);
     const trackName = state.data.currentTrack
       ? state.data.currentTrack.split("/").pop()
       : "—";
@@ -419,8 +424,10 @@ const AudioPlayer = {
     let duration = this.currentTrackDuration;
     if (timeInfo && timeInfo.success && timeInfo.data) {
       currentTime = timeInfo.data.currentTime || 0;
-      if (currentTime > duration && duration > 0) {
-        currentTime = duration;
+      console.log("[AudioPlayer] currentTime from server:", currentTime);
+      if (timeInfo.data.duration && timeInfo.data.duration > 0) {
+        duration = timeInfo.data.duration;
+        this.currentTrackDuration = duration;
       }
     }
     if (this.panelTimeCurrent) {
@@ -434,6 +441,7 @@ const AudioPlayer = {
       const percent = (currentTime / duration) * 100;
       progressFill.style.width = Math.min(percent, 100) + "%";
       progressFill.style.backgroundColor = "var(--yellow)";
+      console.log("[AudioPlayer] progress percent:", percent);
     }
     if (this.panelPlayPauseBtn) {
       console.log("[AudioPlayer] isPlaying:", state.data.isPlaying);
