@@ -149,43 +149,52 @@ const TagEditor = {
   },
 
   showTrackTagEditor(track, album = null) {
+    const trackName =
+      track.name ||
+      track.title ||
+      (track.path
+        ? decodeURIComponent(track.path.split("/").pop()).replace(
+            /\.(flac|mp3|m4a|wav)$/i,
+            "",
+          )
+        : "Без названия");
     const modal = document.createElement("div");
     modal.className = "tag-editor-modal";
     modal.innerHTML = `
-      <div class="tag-editor-overlay"></div>
-      <div class="tag-editor-container">
-        <div class="tag-editor-header">
-          <h3>Редактирование тегов трека</h3>
-          <button class="tag-editor-close"><i class="fas fa-times"></i></button>
+    <div class="tag-editor-overlay"></div>
+    <div class="tag-editor-container">
+      <div class="tag-editor-header">
+        <h3>Редактирование тегов трека</h3>
+        <button class="tag-editor-close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="tag-editor-content">
+        <div class="tag-editor-field">
+          <label>Название трека:</label>
+          <input type="text" id="editTrackTitle" value="${Utils.escapeHtml(trackName)}" placeholder="Название трека">
         </div>
-        <div class="tag-editor-content">
-          <div class="tag-editor-field">
-            <label>Название трека:</label>
-            <input type="text" id="editTrackTitle" value="${Utils.escapeHtml(track.name)}" placeholder="Название трека">
-          </div>
-          <div class="tag-editor-field">
-            <label>Исполнитель:</label>
-            <input type="text" id="editTrackArtist" value="${album ? Utils.escapeHtml(album.artist) : ""}" placeholder="Исполнитель">
-          </div>
-          <div class="tag-editor-field">
-            <label>Альбом:</label>
-            <input type="text" id="editTrackAlbum" value="${album ? Utils.escapeHtml(album.title) : ""}" placeholder="Альбом">
-          </div>
-          <div class="tag-editor-field">
-            <label>Номер трека:</label>
-            <input type="number" id="editTrackNumber" value="${track.trackNumber || ""}" placeholder="Номер трека">
-          </div>
-          <div class="tag-editor-field">
-            <label>Год:</label>
-            <input type="text" id="editTrackYear" value="${album ? album.year || "" : ""}" placeholder="Год выпуска">
-          </div>
-          <div class="tag-editor-actions">
-            <button class="tag-editor-save" data-action="save">Сохранить</button>
-            <button class="tag-editor-cancel">Отмена</button>
-          </div>
+        <div class="tag-editor-field">
+          <label>Исполнитель:</label>
+          <input type="text" id="editTrackArtist" value="${album ? Utils.escapeHtml(album.artist) : ""}" placeholder="Исполнитель">
+        </div>
+        <div class="tag-editor-field">
+          <label>Альбом:</label>
+          <input type="text" id="editTrackAlbum" value="${album ? Utils.escapeHtml(album.title) : ""}" placeholder="Альбом">
+        </div>
+        <div class="tag-editor-field">
+          <label>Номер трека:</label>
+          <input type="number" id="editTrackNumber" value="${track.trackNumber || track.number || ""}" placeholder="Номер трека">
+        </div>
+        <div class="tag-editor-field">
+          <label>Год:</label>
+          <input type="text" id="editTrackYear" value="${album ? album.year || "" : ""}" placeholder="Год выпуска">
+        </div>
+        <div class="tag-editor-actions">
+          <button class="tag-editor-save" data-action="save">Сохранить</button>
+          <button class="tag-editor-cancel">Отмена</button>
         </div>
       </div>
-    `;
+    </div>
+  `;
     document.body.appendChild(modal);
     const overlay = modal.querySelector(".tag-editor-overlay");
     const closeBtn = modal.querySelector(".tag-editor-close");
@@ -204,7 +213,7 @@ const TagEditor = {
         .getElementById("editTrackNumber")
         .value.trim();
       const newYear = document.getElementById("editTrackYear").value.trim();
-      if (newTitle && newTitle !== track.name) tags.title = newTitle;
+      if (newTitle && newTitle !== trackName) tags.title = newTitle;
       if (newArtist) tags.artist = newArtist;
       if (newAlbum) tags.album = newAlbum;
       if (newTrackNumber) tags.track = parseInt(newTrackNumber);

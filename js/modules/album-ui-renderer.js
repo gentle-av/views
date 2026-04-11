@@ -196,8 +196,29 @@ class AlbumUIRenderer {
         e.preventDefault();
         const trackIndex = parseInt(newBtn.dataset.trackIndex);
         const track = album.tracks[trackIndex];
+        const trackWithName = {
+          ...track,
+          name:
+            track.name ||
+            track.title ||
+            (track.path
+              ? decodeURIComponent(track.path.split("/").pop()).replace(
+                  /\.(flac|mp3|m4a|wav)$/i,
+                  "",
+                )
+              : "Без названия"),
+          title:
+            track.title ||
+            track.name ||
+            (track.path
+              ? decodeURIComponent(track.path.split("/").pop()).replace(
+                  /\.(flac|mp3|m4a|wav)$/i,
+                  "",
+                )
+              : "Без названия"),
+        };
         if (typeof TagEditor !== "undefined") {
-          TagEditor.showTrackTagEditor(track, album);
+          TagEditor.showTrackTagEditor(trackWithName, album);
         } else if (typeof Utils !== "undefined") {
           Utils.showNotification("Редактор тегов недоступен", "error");
         }

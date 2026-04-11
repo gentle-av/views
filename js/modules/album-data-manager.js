@@ -65,13 +65,15 @@ class AlbumDataManager {
       if (data.status === "success" && data.tracks) {
         const tracksWithDuration = data.tracks.map((track, idx) => {
           let duration = track.duration || 0;
+          const trackName =
+            track.title ||
+            track.name ||
+            (track.filename
+              ? track.filename.replace(/\.(flac|mp3|m4a|wav)$/i, "")
+              : `Track ${idx + 1}`);
           return {
-            name:
-              track.title ||
-              track.name ||
-              (track.filename
-                ? track.filename.replace(/\.(flac|mp3|m4a|wav)$/i, "")
-                : `Track ${idx + 1}`),
+            name: trackName,
+            title: trackName,
             path: track.path,
             number: track.track || idx + 1,
             duration: duration,
