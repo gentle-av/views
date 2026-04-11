@@ -396,7 +396,20 @@ const AudioPlayer = {
       const progressFill = document.getElementById("panelProgressFill");
       if (progressFill) progressFill.style.width = "0%";
       if (this.panelPlayPauseBtn) {
-        this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+        console.log("[AudioPlayer] isPlaying:", state.data.isPlaying);
+        console.log(
+          "[AudioPlayer] current button HTML:",
+          this.panelPlayPauseBtn.innerHTML,
+        );
+        if (state.data.isPlaying) {
+          if (!this.panelPlayPauseBtn.innerHTML.includes("fa-pause")) {
+            this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+          }
+        } else {
+          if (!this.panelPlayPauseBtn.innerHTML.includes("fa-play")) {
+            this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+          }
+        }
       }
       return;
     }
@@ -548,21 +561,18 @@ const AudioPlayer = {
     const rect = this.panelProgressBar.getBoundingClientRect();
     const percent = (e.clientX - rect.left) / rect.width;
     const state = await this.getPlaybackState();
-    if (state && state.data && state.data.totalTracks) {
-      const timeInfo = await this.getCurrentTime();
-      if (
-        timeInfo &&
-        timeInfo.success &&
-        timeInfo.data &&
-        timeInfo.data.duration
-      ) {
-        const newTime = timeInfo.data.duration * percent;
-        Utils.showNotification(
-          `Перемотка на ${this.formatTime(newTime)} пока не реализована`,
-          "info",
-        );
-      }
-    }
+    if (!state || !state.success || !state.data) return;
+    const timeInfo = await this.getCurrentTime();
+    if (!timeInfo || !timeInfo.success || !timeInfo.data) return;
+    const duration = timeInfo.data.duration || this.currentTrackDuration;
+    if (duration <= 0) return;
+    const seekTime = duration * percent;
+    await this.sendToPlayer("/api/seek", { position: seekTime }, "POST");
+    Utils.showNotification(
+      `Перемотка на ${this.formatTime(seekTime)}`,
+      "success",
+    );
+    setTimeout(() => this.updateUI(), 100);
   },
 
   formatTime(seconds) {
