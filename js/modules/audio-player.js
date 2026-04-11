@@ -416,10 +416,21 @@ const AudioPlayer = {
     }
     const timeInfo = await this.getCurrentTime();
     console.log("[AudioPlayer] timeInfo:", timeInfo);
-    const trackName = state.data.currentTrack
-      ? state.data.currentTrack.split("/").pop()
-      : "—";
+    let trackName = "—";
+    let trackArtist = "";
+    if (state.data.currentTrack) {
+      const metadata = await this.fetchTrackMetadata(state.data.currentTrack);
+      if (metadata && metadata.title) {
+        trackName = metadata.title;
+        trackArtist = metadata.artist || "";
+      } else {
+        trackName = state.data.currentTrack.split("/").pop();
+      }
+    }
     if (this.panelTrackName) this.panelTrackName.textContent = trackName;
+    if (this.panelTrackArtist && trackArtist) {
+      this.panelTrackArtist.textContent = trackArtist;
+    }
     let currentTime = 0;
     let duration = this.currentTrackDuration;
     if (timeInfo && timeInfo.success && timeInfo.data) {
@@ -462,11 +473,13 @@ const AudioPlayer = {
         `${this.getServerUrl()}/api/music/file-metadata?path=${encodeURIComponent(filePath)}`,
       );
       const data = await response.json();
-      if (data.status === "success" && data.data && data.data.file) {
+      if (data.status === "success" && data.data) {
+        const dbData = data.data.database;
+        const fileData = data.data.file;
         return {
-          duration: data.data.file.duration || 0,
-          title: data.data.file.title,
-          artist: data.data.file.artist,
+          duration: dbData?.duration || fileData?.duration || 0,
+          title: dbData?.title || fileData?.title || "",
+          artist: dbData?.artist || fileData?.artist || "",
         };
       }
       return null;
