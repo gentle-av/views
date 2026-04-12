@@ -1,4 +1,3 @@
-/* ===== Tag Editor Modal ===== */
 .tag-editor-modal {
   position: fixed;
   top: 0;
@@ -191,7 +190,6 @@
   }
 }
 
-/* ===== Modal Controls (Album Modal Header) ===== */
 .modal-controls {
   display: flex;
   gap: 8px;
@@ -201,7 +199,7 @@
 .modal-control-btn {
   background: var(--bg2);
   border: 1px solid var(--bg3);
-  border-radius: 8px;
+  border-radius: 12px;
   color: var(--fg1);
   cursor: pointer;
   font-size: 1rem;
@@ -227,7 +225,7 @@
 .modal-close-btn {
   background: var(--bg2);
   border: 1px solid var(--bg3);
-  border-radius: 8px;
+  border-radius: 12px;
   color: var(--fg1);
   cursor: pointer;
   font-size: 1rem;
@@ -246,7 +244,6 @@
   transform: translateY(0px);
 }
 
-/* ===== Album Card Edit Button ===== */
 .album-cover {
   position: relative;
 }
@@ -281,7 +278,6 @@
   transform: scale(1.05);
 }
 
-/* ===== Track List - 2×N Matrix ===== */
 .tracks-list {
   display: flex;
   flex-direction: column;
@@ -289,7 +285,6 @@
   padding: 0;
 }
 
-/* Строка трека — контейнер для двух прямоугольников */
 .track-item {
   display: flex;
   align-items: stretch;
@@ -299,7 +294,6 @@
   min-height: 36px;
 }
 
-/* Левый прямоугольник: номер + название + время */
 .track-left {
   flex: 1;
   display: flex;
@@ -313,7 +307,6 @@
   min-width: 0;
 }
 
-/* Правый прямоугольник: кнопки */
 .track-right {
   display: flex;
   align-items: center;
@@ -326,7 +319,6 @@
   flex-shrink: 0;
 }
 
-/* Номер трека */
 .track-number {
   font-family: "Monaco", "Courier New", monospace;
   font-size: 0.85rem;
@@ -336,7 +328,6 @@
   letter-spacing: 0.3px;
 }
 
-/* Название трека */
 .track-name {
   flex: 1;
   font-size: 0.9rem;
@@ -347,7 +338,6 @@
   font-weight: 400;
 }
 
-/* Длительность трека — прижата к правому краю левого прямоугольника */
 .track-duration {
   font-family: "Monaco", "Courier New", monospace;
   font-size: 0.8rem;
@@ -358,7 +348,6 @@
   font-feature-settings: "tnum";
 }
 
-/* Кнопки управления в правом прямоугольнике */
 .track-right .track-control-btn {
   background: transparent;
   border: none;
@@ -382,7 +371,6 @@
   color: var(--orange);
 }
 
-/* ===== Album Modal Overrides ===== */
 #albumModal .modal-content {
   padding: 0;
   max-width: 800px;
@@ -412,7 +400,6 @@
   color: var(--fg0);
 }
 
-/* ===== Mobile Responsive ===== */
 @media (max-width: 768px) {
   .track-left {
     padding: 4px 8px;

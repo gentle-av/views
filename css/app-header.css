@@ -10,6 +10,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+  min-height: 60px;
+  height: auto;
 }
 
 .header-title-section .page-title {
@@ -29,6 +31,7 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  min-height: 40px;
 }
 
 .mobile-nav-buttons {
@@ -39,7 +42,7 @@
   background: var(--bg2);
   border: none;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: 12px;
   color: var(--fg0);
   cursor: pointer;
   display: flex;
@@ -47,6 +50,8 @@
   gap: 8px;
   font-size: 0.9rem;
   transition: all 0.2s;
+  height: 36px;
+  min-height: 36px;
 }
 
 .header-btn:hover {
@@ -67,6 +72,7 @@
 @media (max-width: 768px) {
   .app-header {
     padding: 10px 15px;
+    min-height: 50px;
   }
 
   .header-title-section .page-title {
@@ -84,6 +90,9 @@
 
   .header-btn {
     padding: 8px 12px;
+    height: 36px;
+    min-height: 36px;
+    padding: 6px 12px;
   }
 
   .scrollable-content {
@@ -94,6 +103,7 @@
     width: 100%;
     justify-content: flex-start;
     gap: 8px;
+    min-height: 36px;
   }
 
   .header-btn {
@@ -132,11 +142,12 @@
   display: flex;
   align-items: center;
   background: var(--bg2);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 6px 12px;
   gap: 8px;
   flex: 1;
   max-width: 300px;
+  min-height: 36px;
 }
 
 #globalSearchBox i {
@@ -179,36 +190,6 @@
     padding: 8px 10px;
     min-width: 40px;
   }
-}
-
-#headerPlaylistBtn,
-#headerRefreshBtn,
-.playlist-toggle-header,
-.refresh-header {
-  border-radius: 12px;
-}
-
-#headerPlaylistBtn,
-#headerRefreshBtn,
-.playlist-toggle-header,
-.refresh-header {
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-#headerPlaylistBtn:hover,
-#headerRefreshBtn:hover,
-.playlist-toggle-header:hover,
-.refresh-header:hover {
-  background: var(--bg3);
-  transform: translateY(-2px);
-}
-
-#headerPlaylistBtn:active,
-#headerRefreshBtn:active,
-.playlist-toggle-header:active,
-.refresh-header:active {
-  transform: translateY(0px);
 }
 
 #headerPlaylistBtn,
@@ -280,71 +261,5 @@
   .playlist-toggle-header,
   .refresh-header {
     padding: 8px;
-  }
-}
-
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--bg0);
-  border-bottom: 1px solid var(--bg2);
-  padding: 12px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  min-height: 60px;
-  height: auto;
-}
-
-/* Фиксируем минимальную высоту секции управления */
-.header-controls-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  min-height: 40px;
-}
-
-/* Убеждаемся, что все кнопки имеют одинаковую высоту */
-.header-btn {
-  background: var(--bg2);
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  color: var(--fg0);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  height: 36px;
-  min-height: 36px;
-}
-
-/* Скрытые элементы не занимают место, но резервируем высоту */
-#globalSearchBox,
-#headerRefreshBtn {
-  min-height: 36px;
-}
-
-/* На мобильных устройствах */
-@media (max-width: 768px) {
-  .app-header {
-    min-height: 50px;
-    padding: 8px 15px;
-  }
-
-  .header-controls-section {
-    min-height: 36px;
-  }
-
-  .header-btn {
-    height: 36px;
-    min-height: 36px;
-    padding: 6px 12px;
   }
 }
