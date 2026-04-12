@@ -1,6 +1,6 @@
 .album-card {
   background: var(--bg1);
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
   transition: all var(--transition-normal);
@@ -8,6 +8,9 @@
   height: auto;
   display: flex;
   flex-direction: column;
+  max-width: 200px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .album-card:hover {
@@ -45,13 +48,21 @@
   opacity: 1;
 }
 
+.album-card-art {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+
 .album-card-info {
-  padding: 12px;
+  padding: 10px;
   flex: 1;
 }
 
 .album-card-title {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--fg0);
   margin-bottom: 4px;
@@ -61,7 +72,7 @@
 }
 
 .album-card-artist {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--yellow);
   margin-bottom: 2px;
   white-space: nowrap;
@@ -71,15 +82,15 @@
 
 .album-card-meta {
   display: flex;
-  gap: 8px;
-  font-size: 0.7rem;
+  gap: 6px;
+  font-size: 0.65rem;
   color: var(--fg3);
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .album-card-meta span {
   background: var(--bg2);
-  padding: 2px 6px;
+  padding: 2px 5px;
   border-radius: 4px;
 }
 
@@ -87,8 +98,8 @@
   flex: 1;
   overflow-y: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
   padding: 20px;
   align-content: start;
   max-height: calc(100vh - 200px);
@@ -97,6 +108,9 @@
 @media (max-width: 768px) {
   .albums-grid {
     max-height: calc(100vh - 150px);
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 12px;
   }
 
   .album-card {
@@ -104,6 +118,7 @@
     align-items: center;
     gap: 18px;
     padding: 14px;
+    max-width: none;
   }
 
   .album-card-art {
@@ -132,5 +147,31 @@
 
   .album-card-meta {
     margin-top: 4px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .albums-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .albums-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+
+  .album-card-info {
+    padding: 8px;
+  }
+
+  .album-card-title {
+    font-size: 0.8rem;
+  }
+
+  .album-card-artist {
+    font-size: 0.7rem;
   }
 }
