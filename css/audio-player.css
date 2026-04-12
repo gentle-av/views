@@ -1,7 +1,7 @@
 .audio-player-control-panel {
   position: fixed;
   bottom: 0;
-  left: var(--sidebar-width);
+  left: 0;
   right: 0;
   background: var(--bg1);
   border-top: 2px solid var(--yellow);
@@ -10,9 +10,11 @@
   transform: translateY(100%);
   transition: transform var(--transition-normal);
 }
+
 .audio-player-control-panel.active {
   transform: translateY(0);
 }
+
 .player-panel-content {
   display: flex;
   align-items: center;
@@ -21,13 +23,16 @@
   max-width: 1200px;
   margin: 0 auto;
 }
+
 .player-panel-info {
   flex: 2;
   min-width: 200px;
 }
+
 .player-panel-track-info {
   margin-bottom: 8px;
 }
+
 .player-panel-track-name {
   font-size: 0.95rem;
   font-weight: 600;
@@ -36,21 +41,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .player-panel-track-artist {
   font-size: 0.8rem;
   color: var(--yellow);
 }
+
 .player-panel-progress {
   display: flex;
   align-items: center;
   gap: 10px;
 }
+
 .player-panel-time-current,
 .player-panel-time-total {
   font-size: 0.75rem;
   color: var(--fg3);
   min-width: 40px;
 }
+
 .player-panel-progress-bar {
   flex: 1;
   height: 4px;
@@ -59,17 +68,20 @@
   cursor: pointer;
   position: relative;
 }
+
 .player-panel-progress-fill {
   height: 100%;
   background: var(--yellow);
   border-radius: 2px;
   width: 0%;
 }
+
 .player-panel-controls {
   display: flex;
   gap: 12px;
   align-items: center;
 }
+
 .player-panel-btn {
   width: 40px;
   height: 40px;
@@ -83,47 +95,61 @@
   align-items: center;
   justify-content: center;
 }
+
 .player-panel-btn:hover {
   background: var(--bg3);
   border-color: var(--yellow);
   color: var(--yellow);
   transform: scale(1.05);
 }
+
 .player-panel-play {
   background: var(--yellow);
   border-color: var(--orange);
   color: var(--bg0);
 }
+
 .player-panel-play:hover {
   transform: scale(1.1);
 }
+
 @media (max-width: 768px) {
   .audio-player-control-panel {
+    left: 0;
+    right: 0;
+    bottom: 0;
     padding: 10px 15px;
   }
+
   .player-panel-content {
     gap: 12px;
   }
+
   .player-panel-info {
     flex: 1;
     min-width: 0;
   }
+
   .player-panel-track-name {
     font-size: 0.85rem;
   }
+
   .player-panel-track-artist {
     font-size: 0.7rem;
   }
+
   .player-panel-btn {
     width: 36px;
     height: 36px;
   }
 }
+
 @media (max-width: 480px) {
   .player-panel-content {
     flex-direction: column;
     align-items: stretch;
   }
+
   .player-panel-controls {
     justify-content: center;
     order: -1;
