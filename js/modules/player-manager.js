@@ -36,31 +36,6 @@ const PlayerManager = {
     }
   },
 
-  async playMedia(path) {
-    console.log("playMedia called with path:", path);
-    this.currentFile = path;
-    this.playerActive = true;
-    this.isPlaying = true;
-    this.showControl();
-    this.updateUI();
-    const response = await fetch(`${this.getServerUrl()}/api/open`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: path }),
-    });
-    const data = await response.json();
-    if (data.success) {
-      Utils.showNotification(
-        `Воспроизведение: ${path.split("/").pop()}`,
-        "success",
-      );
-    } else {
-      Utils.showNotification("Не удалось воспроизвести видео", "error");
-      this.isPlaying = false;
-      this.updateUI();
-    }
-  },
-
   async sendMpvCommand(command) {
     await fetch(`${this.getServerUrl()}/api/mpv/control`, {
       method: "POST",
@@ -146,25 +121,51 @@ const PlayerManager = {
     this.updateUI();
   },
 
+  async playMedia(path) {
+    console.log("playMedia called with path:", path);
+    this.currentFile = path;
+    this.playerActive = true;
+    this.isPlaying = true;
+    this.showControl();
+    this.updateUI();
+    const response = await fetch(`${this.getServerUrl()}/api/open`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: path }),
+    });
+    const data = await response.json();
+    if (data.success) {
+      this.mpvSocket = data.socket;
+      Utils.showNotification(
+        `Воспроизведение: ${path.split("/").pop()}`,
+        "success",
+      );
+    } else {
+      Utils.showNotification("Не удалось воспроизвести видео", "error");
+      this.isPlaying = false;
+      this.updateUI();
+    }
+  },
+
   async closeFile() {
     if (!this.playerActive) {
       this.hideControl();
       return;
     }
-    try {
-      await fetch(`${this.getServerUrl()}/api/mpv/kill`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ socket: this.mpvSocket || "" }),
-      });
-    } catch (e) {
-      console.log("Kill error:", e);
-    }
+    await this.sendMpvCommand("stop");
     this.playerActive = false;
     this.currentFile = null;
     this.isPlaying = false;
     this.mpvSocket = null;
     this.hideControl();
+    if (
+      typeof AudioPlayer !== "undefined" &&
+      AudioPlayer.playlist &&
+      AudioPlayer.playlist.length > 0
+    ) {
+      await AudioPlayer.play();
+      AudioPlayer.updateUI();
+    }
   },
 
   async toggleFullscreen() {
