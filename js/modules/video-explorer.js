@@ -99,34 +99,25 @@ const VideoExplorer = {
   async playVideo(path, fileName = null) {
     console.log("playVideo called with path:", path);
     const displayName = fileName || path.split("/").pop();
-
     try {
-      if (typeof PlayerManager === "undefined") {
-        console.error("PlayerManager is not defined");
-        Utils.showNotification("Плеер недоступен", "error");
-        return;
-      }
-
-      console.log("PlayerManager exists, calling playMedia");
-      await PlayerManager.playMedia(path);
-      console.log("playMedia completed successfully");
-    } catch (error) {
-      console.error("Error playing video:", error);
-      Utils.showNotification(
-        `Ошибка воспроизведения: ${error.message || "неизвестная ошибка"}`,
-        "error",
-      );
-
-      try {
-        console.log("Trying fallback via /api/open...");
+      if (typeof PlayerManager !== "undefined" && PlayerManager.playMedia) {
+        await PlayerManager.playMedia(path);
+      } else {
         const response = await fetch(`${this.getServerUrl()}/api/open`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ path: path }),
         });
         const data = await response.json();
-        console.log("Fallback response:", data);
         if (data.success) {
+          if (typeof PlayerManager !== "undefined") {
+            PlayerManager.mpvSocket = data.socket;
+            PlayerManager.showControl();
+            PlayerManager.currentFile = path;
+            PlayerManager.playerActive = true;
+            PlayerManager.isPlaying = true;
+            PlayerManager.updateUI();
+          }
           Utils.showNotification(`Воспроизведение: ${displayName}`, "success");
         } else {
           Utils.showNotification(
@@ -134,10 +125,10 @@ const VideoExplorer = {
             "error",
           );
         }
-      } catch (fallbackError) {
-        console.error("Fallback also failed:", fallbackError);
-        Utils.showNotification("Ошибка подключения к серверу", "error");
       }
+    } catch (error) {
+      console.error("Error playing video:", error);
+      Utils.showNotification("Ошибка подключения к серверу", "error");
     }
   },
 

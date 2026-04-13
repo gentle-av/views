@@ -15,6 +15,7 @@ const PlayerManager = {
     this.setupEventListeners();
     this.playerAvailable = true;
     console.log("PlayerManager initialized");
+    await this.checkActiveVideo();
   },
 
   getServerUrl() {
@@ -46,21 +47,100 @@ const PlayerManager = {
     this.isPlaying = true;
     this.showControl();
     this.updateUI();
-    const result = await this.callApi("/api/track", { track: path });
-    console.log("API result:", result);
-    if (!result || !result.success) {
+    const response = await fetch(`${this.getServerUrl()}/api/open`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: path }),
+    });
+    const data = await response.json();
+    if (data.success) {
+      this.mpvSocket = data.socket;
+      Utils.showNotification(
+        `Воспроизведение: ${path.split("/").pop()}`,
+        "success",
+      );
+      // Убеждаемся, что состояние правильное
+      this.isPlaying = true;
+      this.updateUI();
+    } else {
       Utils.showNotification("Не удалось воспроизвести видео", "error");
       this.isPlaying = false;
       this.updateUI();
-      return;
     }
-    Utils.showNotification(
-      `Воспроизведение: ${path.split("/").pop()}`,
-      "success",
-    );
-    setTimeout(async () => {
-      await this.updatePlaybackState();
-    }, 300);
+  },
+
+  async sendMpvCommand(command) {
+    if (!this.mpvSocket) return;
+    await fetch(`${this.getServerUrl()}/api/mpv/control`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ socket: this.mpvSocket, command: command }),
+    });
+  },
+
+  async findMpvSockets() {
+    try {
+      const response = await fetch(`${this.getServerUrl()}/api/mpv/sockets`);
+      const data = await response.json();
+      if (data.success && data.sockets) {
+        return data.sockets;
+      }
+    } catch (error) {
+      console.error("Error finding mpv sockets:", error);
+    }
+    return [];
+  },
+
+  async checkActiveVideo() {
+    try {
+      const response = await fetch(`${this.getServerUrl()}/api/mpv/active`);
+      const data = await response.json();
+      if (data.success && data.active) {
+        this.mpvSocket = data.socket;
+        this.currentFile = data.path;
+        this.playerActive = true;
+        this.isPlaying = true;
+        this.showControl();
+        this.updateUI();
+        console.log("Active video restored:", data.path);
+      }
+    } catch (error) {
+      console.error("Error checking active video:", error);
+    }
+  },
+
+  async getMpvCurrentFile(socketPath) {
+    try {
+      const response = await fetch(`${this.getServerUrl()}/api/mpv/check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          socket: socketPath,
+          command: "get_property path",
+        }),
+      });
+      const data = await response.json();
+      return data.success ? data.path : null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  async checkMpvPlaying(socketPath) {
+    try {
+      const response = await fetch(`${this.getServerUrl()}/api/mpv/check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          socket: socketPath,
+          command: "get_property pause",
+        }),
+      });
+      const data = await response.json();
+      return data.success && data.playing !== undefined;
+    } catch (error) {
+      return false;
+    }
   },
 
   setupEventListeners() {
@@ -71,20 +151,45 @@ const PlayerManager = {
     const fullscreenBtn = document.getElementById("fullscreenBtn");
     const closeControlPageBtn = document.getElementById("closeControlPage");
     const deleteFileBtn = document.getElementById("deleteFileBtn");
-    if (playPauseBtn)
-      playPauseBtn.addEventListener("click", () => this.togglePlayPause());
-    if (seekForwardBtn)
-      seekForwardBtn.addEventListener("click", () => this.seekForward());
-    if (seekBackwardBtn)
-      seekBackwardBtn.addEventListener("click", () => this.seekBackward());
-    if (closeFileBtn)
-      closeFileBtn.addEventListener("click", () => this.closeFile());
-    if (fullscreenBtn)
-      fullscreenBtn.addEventListener("click", () => this.toggleFullscreen());
-    if (closeControlPageBtn)
-      closeControlPageBtn.addEventListener("click", () => this.hideControl());
-    if (deleteFileBtn)
-      deleteFileBtn.addEventListener("click", () => this.deleteCurrentFile());
+
+    if (playPauseBtn) {
+      playPauseBtn.removeEventListener("click", this._playPauseHandler);
+      this._playPauseHandler = () => this.togglePlayPause();
+      playPauseBtn.addEventListener("click", this._playPauseHandler);
+    }
+    if (seekForwardBtn) {
+      seekForwardBtn.removeEventListener("click", this._seekForwardHandler);
+      this._seekForwardHandler = () => this.seekForward();
+      seekForwardBtn.addEventListener("click", this._seekForwardHandler);
+    }
+    if (seekBackwardBtn) {
+      seekBackwardBtn.removeEventListener("click", this._seekBackwardHandler);
+      this._seekBackwardHandler = () => this.seekBackward();
+      seekBackwardBtn.addEventListener("click", this._seekBackwardHandler);
+    }
+    if (closeFileBtn) {
+      closeFileBtn.removeEventListener("click", this._closeFileHandler);
+      this._closeFileHandler = () => this.closeFile();
+      closeFileBtn.addEventListener("click", this._closeFileHandler);
+    }
+    if (fullscreenBtn) {
+      fullscreenBtn.removeEventListener("click", this._fullscreenHandler);
+      this._fullscreenHandler = () => this.toggleFullscreen();
+      fullscreenBtn.addEventListener("click", this._fullscreenHandler);
+    }
+    if (closeControlPageBtn) {
+      closeControlPageBtn.removeEventListener(
+        "click",
+        this._closeControlHandler,
+      );
+      this._closeControlHandler = () => this.hideControl();
+      closeControlPageBtn.addEventListener("click", this._closeControlHandler);
+    }
+    if (deleteFileBtn) {
+      deleteFileBtn.removeEventListener("click", this._deleteFileHandler);
+      this._deleteFileHandler = () => this.deleteCurrentFile();
+      deleteFileBtn.addEventListener("click", this._deleteFileHandler);
+    }
     document.addEventListener("keydown", (e) => this.handleKeyPress(e));
   },
 
@@ -110,31 +215,13 @@ const PlayerManager = {
   async togglePlayPause() {
     if (!this.playerActive) return;
     if (this.isPlaying) {
-      await this.callApi("/api/pause");
+      await this.sendMpvCommand("set pause yes");
+      this.isPlaying = false;
     } else {
-      await this.callApi("/api/play");
+      await this.sendMpvCommand("set pause no");
+      this.isPlaying = true;
     }
-    await this.getPlaybackState();
-  },
-
-  async toggleFullscreen() {
-    if (!this.playerActive) return;
-    await this.callApi("/api/fullscreen", {
-      fullscreen: !this.isFullscreen,
-    });
-    await this.getPlaybackState();
-  },
-
-  async seekForward() {
-    if (!this.playerActive) return;
-    await this.callApi("/api/seekforward", { seconds: 10 });
-    await this.getPlaybackState();
-  },
-
-  async seekBackward() {
-    if (!this.playerActive) return;
-    await this.callApi("/api/seekbackward", { seconds: 10 });
-    await this.getPlaybackState();
+    this.updateUI();
   },
 
   async closeFile() {
@@ -142,18 +229,32 @@ const PlayerManager = {
       this.hideControl();
       return;
     }
-    await this.callApi("/api/stop");
-    await this.callApi("/api/clear");
+    if (this.mpvSocket) {
+      await this.sendMpvCommand("stop");
+      await this.delay(200);
+    }
     this.playerActive = false;
     this.currentFile = null;
     this.isPlaying = false;
+    this.mpvSocket = null;
     this.hideControl();
-    if (typeof AudioPlayer !== "undefined") {
-      AudioPlayer.updateUI();
-    }
-    if (typeof PlaylistViewer !== "undefined") {
-      PlaylistViewer.refresh();
-    }
+  },
+
+  async toggleFullscreen() {
+    if (!this.playerActive) return;
+    await this.sendMpvCommand("cycle fullscreen");
+    this.isFullscreen = !this.isFullscreen;
+    this.updateUI();
+  },
+
+  async seekForward() {
+    if (!this.playerActive) return;
+    await this.sendMpvCommand("seek 10");
+  },
+
+  async seekBackward() {
+    if (!this.playerActive) return;
+    await this.sendMpvCommand("seek -10");
   },
 
   async deleteCurrentFile() {

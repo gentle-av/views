@@ -1,12 +1,45 @@
 <div class="page video-page">
-    <div class="video-library">
-        <div class="video-explorer">
-            <div class="explorer-header">
-                <div class="breadcrumbs" id="videoBreadcrumbs"></div>
-            </div>
-            <div class="content-grid" id="videoContent">
-                <div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>
-            </div>
+  <div class="video-library">
+    <div class="video-explorer">
+      <div class="explorer-header">
+        <div class="breadcrumbs" id="videoBreadcrumbs"></div>
+      </div>
+      <div class="content-grid" id="videoContent">
+        <div class="loading">
+          <i class="fas fa-spinner fa-spin"></i> Загрузка...
         </div>
+      </div>
     </div>
+  </div>
+</div>
+
+<div id="playerControlPage" class="player-control-page" style="display: none">
+  <div class="player-control-header"></div>
+  <div class="player-controls-center">
+    <button id="seekBackwardBtn" class="control-btn" title="Назад 10с">
+      <i class="fas fa-backward"></i>
+    </button>
+    <button id="playPauseBtn" class="control-btn" title="Пауза">
+      <i class="fas fa-pause"></i>
+    </button>
+    <button id="seekForwardBtn" class="control-btn" title="Вперед 10с">
+      <i class="fas fa-forward"></i>
+    </button>
+    <button id="fullscreenBtn" class="control-btn" title="Полный экран">
+      <i class="fas fa-expand"></i>
+    </button>
+    <button id="closeFileBtn" class="control-btn close-file" title="Закрыть">
+      <i class="fas fa-times"></i>
+    </button>
+    <button id="deleteFileBtn" class="control-btn delete-file" title="Удалить">
+      <i class="fas fa-trash"></i>
+    </button>
+  </div>
+  <div class="player-placeholder">
+    <i class="fas fa-play-circle"></i>
+    <div>Выберите видео для воспроизведения</div>
+  </div>
+  <button id="closeControlPage" class="close-control-page">
+    <i class="fas fa-chevron-down"></i>
+  </button>
 </div>
