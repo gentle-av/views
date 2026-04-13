@@ -8,7 +8,6 @@ const PlayerManager = {
   statusCheckInterval: null,
   initialized: false,
   playerAvailable: false,
-
   async init() {
     if (this.initialized) return;
     this.initialized = true;
@@ -17,29 +16,24 @@ const PlayerManager = {
     console.log("PlayerManager initialized");
     await this.checkActiveVideo();
   },
-
   getServerUrl() {
     return `http://${this.serverHost}:${this.serverPort}`;
   },
-
   async callApi(endpoint, data = {}) {
     try {
       const url = `${this.getServerUrl()}${endpoint}`;
-      console.log("[PlayerManager] callApi:", url, data);
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       const result = await response.json();
-      console.log("[PlayerManager] API response:", result);
       return result;
     } catch (error) {
       console.error(`API error ${endpoint}:`, error);
       return null;
     }
   },
-
   async playMedia(path) {
     console.log("playMedia called with path:", path);
     this.currentFile = path;
@@ -59,16 +53,12 @@ const PlayerManager = {
         `Воспроизведение: ${path.split("/").pop()}`,
         "success",
       );
-      // Убеждаемся, что состояние правильное
-      this.isPlaying = true;
-      this.updateUI();
     } else {
       Utils.showNotification("Не удалось воспроизвести видео", "error");
       this.isPlaying = false;
       this.updateUI();
     }
   },
-
   async sendMpvCommand(command) {
     if (!this.mpvSocket) return;
     await fetch(`${this.getServerUrl()}/api/mpv/control`, {
@@ -77,20 +67,6 @@ const PlayerManager = {
       body: JSON.stringify({ socket: this.mpvSocket, command: command }),
     });
   },
-
-  async findMpvSockets() {
-    try {
-      const response = await fetch(`${this.getServerUrl()}/api/mpv/sockets`);
-      const data = await response.json();
-      if (data.success && data.sockets) {
-        return data.sockets;
-      }
-    } catch (error) {
-      console.error("Error finding mpv sockets:", error);
-    }
-    return [];
-  },
-
   async checkActiveVideo() {
     try {
       const response = await fetch(`${this.getServerUrl()}/api/mpv/active`);
@@ -108,41 +84,6 @@ const PlayerManager = {
       console.error("Error checking active video:", error);
     }
   },
-
-  async getMpvCurrentFile(socketPath) {
-    try {
-      const response = await fetch(`${this.getServerUrl()}/api/mpv/check`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          socket: socketPath,
-          command: "get_property path",
-        }),
-      });
-      const data = await response.json();
-      return data.success ? data.path : null;
-    } catch (error) {
-      return null;
-    }
-  },
-
-  async checkMpvPlaying(socketPath) {
-    try {
-      const response = await fetch(`${this.getServerUrl()}/api/mpv/check`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          socket: socketPath,
-          command: "get_property pause",
-        }),
-      });
-      const data = await response.json();
-      return data.success && data.playing !== undefined;
-    } catch (error) {
-      return false;
-    }
-  },
-
   setupEventListeners() {
     const playPauseBtn = document.getElementById("playPauseBtn");
     const seekForwardBtn = document.getElementById("seekForwardBtn");
@@ -151,7 +92,6 @@ const PlayerManager = {
     const fullscreenBtn = document.getElementById("fullscreenBtn");
     const closeControlPageBtn = document.getElementById("closeControlPage");
     const deleteFileBtn = document.getElementById("deleteFileBtn");
-
     if (playPauseBtn) {
       playPauseBtn.removeEventListener("click", this._playPauseHandler);
       this._playPauseHandler = () => this.togglePlayPause();
@@ -192,26 +132,6 @@ const PlayerManager = {
     }
     document.addEventListener("keydown", (e) => this.handleKeyPress(e));
   },
-
-  async getPlaybackState() {
-    const result = await this.callApi("/api/playbackState");
-    if (result && result.success) {
-      this.isPlaying = result.data.isPlaying;
-      this.isFullscreen = result.data.isFullscreen || false;
-      if (result.data.currentTrack) {
-        this.currentFile = result.data.currentTrack;
-        this.playerActive = true;
-        this.showControl();
-      } else {
-        this.playerActive = false;
-        this.hideControl();
-      }
-      this.updateUI();
-      return result.data;
-    }
-    return null;
-  },
-
   async togglePlayPause() {
     if (!this.playerActive) return;
     if (this.isPlaying) {
@@ -223,20 +143,19 @@ const PlayerManager = {
     }
     this.updateUI();
   },
-
   async closeFile() {
     if (!this.playerActive) {
       this.hideControl();
       return;
     }
-    if (this.mpvSocket) {
-      await this.sendMpvCommand("stop");
-      await this.delay(500);
+    try {
       await fetch(`${this.getServerUrl()}/api/mpv/kill`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ socket: this.mpvSocket }),
+        body: JSON.stringify({ socket: this.mpvSocket || "" }),
       });
+    } catch (e) {
+      console.log("Kill error:", e);
     }
     this.playerActive = false;
     this.currentFile = null;
@@ -244,24 +163,20 @@ const PlayerManager = {
     this.mpvSocket = null;
     this.hideControl();
   },
-
   async toggleFullscreen() {
     if (!this.playerActive) return;
     await this.sendMpvCommand("cycle fullscreen");
     this.isFullscreen = !this.isFullscreen;
     this.updateUI();
   },
-
   async seekForward() {
     if (!this.playerActive) return;
     await this.sendMpvCommand("seek 10");
   },
-
   async seekBackward() {
     if (!this.playerActive) return;
     await this.sendMpvCommand("seek -10");
   },
-
   async deleteCurrentFile() {
     if (!this.currentFile) {
       this.hideControl();
@@ -282,18 +197,7 @@ const PlayerManager = {
           `Файл "${fileName}" перемещен в корзину`,
           "success",
         );
-        await this.callApi("/api/stop");
-        await this.callApi("/api/clear");
-        this.playerActive = false;
-        this.currentFile = null;
-        this.isPlaying = false;
-        this.hideControl();
-        if (typeof AudioPlayer !== "undefined") {
-          AudioPlayer.updateUI();
-        }
-        if (typeof PlaylistViewer !== "undefined") {
-          PlaylistViewer.refresh();
-        }
+        await this.closeFile();
         if (typeof VideoExplorer !== "undefined") {
           setTimeout(() => {
             VideoExplorer.loadDirectory(VideoExplorer.currentPath, false);
@@ -313,7 +217,6 @@ const PlayerManager = {
       );
     }
   },
-
   showControl() {
     const panel = document.getElementById("playerControlPage");
     if (panel) {
@@ -322,7 +225,6 @@ const PlayerManager = {
       panel.style.visibility = "visible";
     }
   },
-
   hideControl() {
     const panel = document.getElementById("playerControlPage");
     if (panel) {
@@ -335,14 +237,13 @@ const PlayerManager = {
     if (placeholder) {
       placeholder.innerHTML = `
       <i class="fas fa-play-circle"></i>
-      <div>Видео воспроизводится</div>
+      <div>Выберите видео для воспроизведения</div>
       <div style="font-size: 1rem; margin-top: 20px; color: var(--fg3)">
-        Используйте кнопки управления
+        Нажмите на файл для просмотра
       </div>
     `;
     }
   },
-
   updateUI() {
     const playPauseBtn = document.getElementById("playPauseBtn");
     if (playPauseBtn) {
@@ -366,19 +267,6 @@ const PlayerManager = {
       placeholder.innerHTML = `<div style="display: flex; flex-direction: column; align-items: center;"><div style="margin-bottom: 20px;">${statusIcon}</div><div style="font-size: 1.3rem; font-weight: 500; color: var(--fg0); margin-bottom: 10px; text-align: center; max-width: 80vw; word-break: break-word;">${this.escapeHtml(fileName)}</div><div style="font-size: 1rem; color: ${this.isPlaying ? "var(--green)" : "var(--orange)"}; margin-bottom: 5px;">${statusText}</div><div style="font-size: 0.9rem; color: var(--fg3);">Видео</div></div>`;
     }
   },
-
-  async updatePlaybackState() {
-    const result = await this.callApi("/api/playbackState");
-    if (result && result.success && result.data) {
-      this.isPlaying = result.data.isPlaying;
-      this.currentFile = result.data.currentTrack || this.currentFile;
-      this.playerActive = !!this.currentFile;
-      this.updateUI();
-      return result.data;
-    }
-    return null;
-  },
-
   handleKeyPress(e) {
     if (!this.playerActive) return;
     switch (e.code) {
@@ -403,14 +291,12 @@ const PlayerManager = {
         break;
     }
   },
-
   escapeHtml(str) {
     if (!str) return "";
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
   },
-
   delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   },
