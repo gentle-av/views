@@ -19,6 +19,7 @@ const PlayerManager = {
   getServerUrl() {
     return `http://${this.serverHost}:${this.serverPort}`;
   },
+
   async callApi(endpoint, data = {}) {
     try {
       const url = `${this.getServerUrl()}${endpoint}`;
@@ -34,6 +35,7 @@ const PlayerManager = {
       return null;
     }
   },
+
   async playMedia(path) {
     console.log("playMedia called with path:", path);
     this.currentFile = path;
@@ -48,7 +50,6 @@ const PlayerManager = {
     });
     const data = await response.json();
     if (data.success) {
-      this.mpvSocket = data.socket;
       Utils.showNotification(
         `Воспроизведение: ${path.split("/").pop()}`,
         "success",
@@ -59,31 +60,31 @@ const PlayerManager = {
       this.updateUI();
     }
   },
+
   async sendMpvCommand(command) {
-    if (!this.mpvSocket) return;
     await fetch(`${this.getServerUrl()}/api/mpv/control`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ socket: this.mpvSocket, command: command }),
+      body: JSON.stringify({ command: command }),
     });
   },
+
   async checkActiveVideo() {
     try {
       const response = await fetch(`${this.getServerUrl()}/api/mpv/active`);
       const data = await response.json();
       if (data.success && data.active) {
-        this.mpvSocket = data.socket;
-        this.currentFile = data.path;
         this.playerActive = true;
         this.isPlaying = true;
         this.showControl();
         this.updateUI();
-        console.log("Active video restored:", data.path);
+        console.log("Active video restored");
       }
     } catch (error) {
       console.error("Error checking active video:", error);
     }
   },
+
   setupEventListeners() {
     const playPauseBtn = document.getElementById("playPauseBtn");
     const seekForwardBtn = document.getElementById("seekForwardBtn");
@@ -132,6 +133,7 @@ const PlayerManager = {
     }
     document.addEventListener("keydown", (e) => this.handleKeyPress(e));
   },
+
   async togglePlayPause() {
     if (!this.playerActive) return;
     if (this.isPlaying) {
@@ -143,6 +145,7 @@ const PlayerManager = {
     }
     this.updateUI();
   },
+
   async closeFile() {
     if (!this.playerActive) {
       this.hideControl();
@@ -163,20 +166,24 @@ const PlayerManager = {
     this.mpvSocket = null;
     this.hideControl();
   },
+
   async toggleFullscreen() {
     if (!this.playerActive) return;
     await this.sendMpvCommand("cycle fullscreen");
     this.isFullscreen = !this.isFullscreen;
     this.updateUI();
   },
+
   async seekForward() {
     if (!this.playerActive) return;
     await this.sendMpvCommand("seek 10");
   },
+
   async seekBackward() {
     if (!this.playerActive) return;
     await this.sendMpvCommand("seek -10");
   },
+
   async deleteCurrentFile() {
     if (!this.currentFile) {
       this.hideControl();
@@ -217,6 +224,7 @@ const PlayerManager = {
       );
     }
   },
+
   showControl() {
     const panel = document.getElementById("playerControlPage");
     if (panel) {
@@ -225,6 +233,7 @@ const PlayerManager = {
       panel.style.visibility = "visible";
     }
   },
+
   hideControl() {
     const panel = document.getElementById("playerControlPage");
     if (panel) {
@@ -244,6 +253,7 @@ const PlayerManager = {
     `;
     }
   },
+
   updateUI() {
     const playPauseBtn = document.getElementById("playPauseBtn");
     if (playPauseBtn) {
@@ -267,6 +277,7 @@ const PlayerManager = {
       placeholder.innerHTML = `<div style="display: flex; flex-direction: column; align-items: center;"><div style="margin-bottom: 20px;">${statusIcon}</div><div style="font-size: 1.3rem; font-weight: 500; color: var(--fg0); margin-bottom: 10px; text-align: center; max-width: 80vw; word-break: break-word;">${this.escapeHtml(fileName)}</div><div style="font-size: 1rem; color: ${this.isPlaying ? "var(--green)" : "var(--orange)"}; margin-bottom: 5px;">${statusText}</div><div style="font-size: 0.9rem; color: var(--fg3);">Видео</div></div>`;
     }
   },
+
   handleKeyPress(e) {
     if (!this.playerActive) return;
     switch (e.code) {
@@ -291,12 +302,14 @@ const PlayerManager = {
         break;
     }
   },
+
   escapeHtml(str) {
     if (!str) return "";
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
   },
+
   delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   },
