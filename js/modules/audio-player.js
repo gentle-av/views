@@ -19,9 +19,6 @@ const AudioPlayer = {
   async stop() {
     this.manuallyStopped = true;
     const result = await this.sendToPlayer("/api/stop");
-    if (result && result.success) {
-      await this.sendToPlayer("/api/clear");
-    }
     return result;
   },
 
@@ -32,14 +29,14 @@ const AudioPlayer = {
       this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
     }
     if (this.panelTrackName)
-      this.panelTrackName.textContent = "Нет треков в плейлисте";
+      this.panelTrackName.textContent = "Воспроизведение остановлено";
     if (this.panelTrackArtist) this.panelTrackArtist.textContent = "";
     if (this.panelTimeCurrent) this.panelTimeCurrent.textContent = "0:00";
     if (this.panelTimeTotal) this.panelTimeTotal.textContent = "0:00";
     const progressFill = document.getElementById("panelProgressFill");
     if (progressFill) progressFill.style.width = "0%";
     this.currentTrackDuration = 0;
-    this.disablePanel(true);
+    this.disablePanel(false);
     if (typeof PlaylistViewer !== "undefined") {
       PlaylistViewer.refresh();
     }
@@ -501,6 +498,7 @@ const AudioPlayer = {
       }
     }
     const state = await this.getPlaybackState();
+    console.log("[AudioPlayer] updateUI - playbackState:", state);
     if (!state || !state.success) {
       this.disablePanel(true);
       return;
@@ -511,6 +509,7 @@ const AudioPlayer = {
       panel.classList.add("active");
     }
     if (!hasTracks) {
+      console.log("[AudioPlayer] No tracks, disabling panel");
       this.disablePanel(true);
       if (this.panelTrackName)
         this.panelTrackName.textContent = "Нет треков в плейлисте";
@@ -525,6 +524,7 @@ const AudioPlayer = {
       return;
     }
     if (this.manuallyStopped) {
+      console.log("[AudioPlayer] Manually stopped, skipping UI update");
       return;
     }
     this.disablePanel(false);
@@ -542,6 +542,7 @@ const AudioPlayer = {
     if (this.panelTrackName) this.panelTrackName.textContent = trackName;
     if (this.panelTrackArtist) this.panelTrackArtist.textContent = trackArtist;
     const timeInfo = await this.getCurrentTime();
+    console.log("[AudioPlayer] updateUI - timeInfo:", timeInfo);
     let currentTime = 0;
     let duration = this.currentTrackDuration;
     if (timeInfo && timeInfo.success && timeInfo.data) {
@@ -564,8 +565,10 @@ const AudioPlayer = {
     }
     if (this.panelPlayPauseBtn) {
       if (state.data.isPlaying && state.data.currentTrack) {
+        console.log("[AudioPlayer] Setting play button to PAUSE");
         this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
       } else {
+        console.log("[AudioPlayer] Setting play button to PLAY");
         this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
       }
     }
@@ -573,6 +576,7 @@ const AudioPlayer = {
       this.panelTrackCount.textContent = `${(state.data.currentIndex || 0) + 1}/${state.data.totalTracks || 0}`;
     }
     if (duration > 0 && currentTime >= duration - 0.1 && state.data.isPlaying) {
+      console.log("[AudioPlayer] Track ended, switching to next");
       await this.delay(50);
       await this.next();
     }
