@@ -195,7 +195,7 @@ const PlayerManager = {
       return;
     }
     const fileName = this.currentFile.split("/").pop();
-    const confirmed = confirm(`Удалить файл "${fileName}"?`);
+    const confirmed = await CustomDeleteDialogInstance.showConfirm(fileName);
     if (!confirmed) return;
     try {
       const response = await fetch(`${this.getServerUrl()}/api/trash`, {
@@ -205,10 +205,12 @@ const PlayerManager = {
       });
       const data = await response.json();
       if (data.success) {
-        Utils.showNotification(
-          `Файл "${fileName}" перемещен в корзину`,
-          "success",
-        );
+        if (typeof Utils !== "undefined") {
+          Utils.showNotification(
+            `Файл "${fileName}" перемещен в корзину`,
+            "success",
+          );
+        }
         await this.closeFile();
         if (typeof VideoExplorer !== "undefined") {
           setTimeout(() => {
@@ -216,17 +218,21 @@ const PlayerManager = {
           }, 500);
         }
       } else {
-        Utils.showNotification(
-          data.error || data.message || "Ошибка при удалении файла",
-          "error",
-        );
+        if (typeof Utils !== "undefined") {
+          Utils.showNotification(
+            data.error || data.message || "Ошибка при удалении файла",
+            "error",
+          );
+        }
       }
     } catch (error) {
       console.error("Error deleting file:", error);
-      Utils.showNotification(
-        "Ошибка при удалении файла: " + error.message,
-        "error",
-      );
+      if (typeof Utils !== "undefined") {
+        Utils.showNotification(
+          "Ошибка при удалении файла: " + error.message,
+          "error",
+        );
+      }
     }
   },
 

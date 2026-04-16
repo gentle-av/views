@@ -226,6 +226,7 @@ const App = {
     const scriptFiles = [
       "js/modules/video-explorer.js",
       "js/modules/player-manager.js",
+      "js/modules/delete-dialog.js",
     ];
     for (const scriptFile of scriptFiles) {
       if (!this.loadedScripts.has(scriptFile)) {
