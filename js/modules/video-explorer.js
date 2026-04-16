@@ -3,6 +3,7 @@ const VideoExplorer = {
   history: [],
   isPlayingVideo: false,
   initialized: false,
+  contextMenu: null,
 
   getServerUrl() {
     return `http://${window.location.hostname}:${window.location.port}`;
@@ -71,29 +72,164 @@ const VideoExplorer = {
     content.innerHTML = visibleItems
       .map(
         (item) => `
-            <div class="item-card" data-path="${item.path}" data-is-dir="${item.isDirectory}" data-name="${Utils.escapeHtml(item.name)}">
-                <i class="fas ${item.isDirectory ? "fa-folder folder-icon" : "fa-file-video video-icon"}"></i>
-                <div class="item-name" title="${Utils.escapeHtml(item.name)}">${Utils.escapeHtml(item.name)}</div>
-                ${!item.isDirectory ? `<div class="item-size">${item.size || ""}</div>` : ""}
+          <div class="item-card" data-path="${item.path}" data-is-dir="${item.isDirectory}" data-name="${Utils.escapeHtml(item.name)}">
+            <div class="item-card-content">
+              <i class="fas ${item.isDirectory ? "fa-folder folder-icon" : "fa-file-video video-icon"}"></i>
+              <div class="item-name" title="${Utils.escapeHtml(item.name)}">${Utils.escapeHtml(item.name)}</div>
+              ${!item.isDirectory ? `<div class="item-size">${item.size || ""}</div>` : ""}
             </div>
-        `,
+            <div class="swipe-actions">
+              <button class="swipe-delete-btn" data-path="${item.path}" data-name="${Utils.escapeHtml(item.name)}" data-is-dir="${item.isDirectory}">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </div>
+      `,
       )
       .join("");
+    this.attachItemEvents();
+  },
+
+  attachItemEvents() {
+    const content = document.getElementById("videoContent");
+    if (!content) return;
+    let touchStartX = 0;
+    let touchEndX = 0;
+    let currentCard = null;
     document.querySelectorAll(".item-card").forEach((card) => {
-      card.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        const path = card.dataset.path;
-        const isDir = card.dataset.isDir === "true";
-        const fileName = card.dataset.name || path.split("/").pop();
-        console.log("Card clicked:", { path, isDir, fileName });
+      const newCard = card.cloneNode(true);
+      card.parentNode.replaceChild(newCard, card);
+      const path = newCard.dataset.path;
+      const isDir = newCard.dataset.isDir === "true";
+      const fileName = newCard.dataset.name || path.split("/").pop();
+      const deleteBtn = newCard.querySelector(".swipe-delete-btn");
+      if (deleteBtn) {
+        const newDeleteBtn = deleteBtn.cloneNode(true);
+        deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+        newDeleteBtn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          newCard.classList.remove("swipe-left");
+          await this.deleteItem(path, fileName, isDir);
+        });
+      }
+      newCard.addEventListener("touchstart", (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        currentCard = newCard;
+        document.querySelectorAll(".item-card.swipe-left").forEach((card) => {
+          if (card !== newCard) card.classList.remove("swipe-left");
+        });
+      });
+      newCard.addEventListener("touchmove", (e) => {
+        if (!currentCard) return;
+        const currentX = e.changedTouches[0].screenX;
+        const diff = touchStartX - currentX;
+        if (diff > 30 && !currentCard.classList.contains("swipe-left")) {
+          currentCard.classList.add("swipe-left");
+        } else if (diff < -30 && currentCard.classList.contains("swipe-left")) {
+          currentCard.classList.remove("swipe-left");
+        }
+      });
+      newCard.addEventListener("touchend", (e) => {
+        currentCard = null;
+      });
+      newCard.addEventListener("click", async (e) => {
+        if (e.target.closest(".swipe-delete-btn")) return;
+        if (newCard.classList.contains("swipe-left")) {
+          newCard.classList.remove("swipe-left");
+          return;
+        }
         if (isDir) {
           await this.loadDirectory(path, true);
         } else {
-          console.log("Calling playVideo with path:", path);
           await this.playVideo(path, fileName);
         }
       });
+      newCard.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.showContextMenu(e.clientX, e.clientY, path, fileName, isDir);
+      });
     });
+  },
+
+  showContextMenu(x, y, path, name, isDirectory) {
+    this.hideContextMenu();
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+    if (isDirectory) {
+      menu.innerHTML = `
+        <div class="context-menu-item delete-item" data-action="delete">
+          <i class="fas fa-trash-alt"></i>
+          <span>Удалить папку</span>
+        </div>
+      `;
+    } else {
+      menu.innerHTML = `
+        <div class="context-menu-item delete-item" data-action="delete">
+          <i class="fas fa-trash-alt"></i>
+          <span>Удалить файл</span>
+        </div>
+      `;
+    }
+    document.body.appendChild(menu);
+    this.contextMenu = menu;
+    const deleteBtn = menu.querySelector(".delete-item");
+    deleteBtn.addEventListener("click", async () => {
+      await this.deleteItem(path, name, isDirectory);
+      this.hideContextMenu();
+    });
+    const closeMenu = (e) => {
+      if (!menu.contains(e.target)) {
+        this.hideContextMenu();
+        document.removeEventListener("click", closeMenu);
+        document.removeEventListener("contextmenu", closeMenu);
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener("click", closeMenu);
+      document.addEventListener("contextmenu", closeMenu);
+    }, 0);
+  },
+
+  hideContextMenu() {
+    if (this.contextMenu && this.contextMenu.parentNode) {
+      this.contextMenu.parentNode.removeChild(this.contextMenu);
+      this.contextMenu = null;
+    }
+  },
+
+  async deleteItem(path, name, isDirectory) {
+    const confirmed = await CustomDeleteDialogInstance.showConfirm(
+      name,
+      isDirectory,
+    );
+    if (!confirmed) return;
+    try {
+      const response = await fetch(`${this.getServerUrl()}/api/trash`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: path }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        const typeText = isDirectory ? "Папка" : "Файл";
+        Utils.showNotification(
+          `${typeText} "${name}" перемещен(а) в корзину`,
+          "success",
+        );
+        await this.loadDirectory(this.currentPath, false);
+      } else {
+        Utils.showNotification(
+          data.error || data.message || "Ошибка при удалении",
+          "error",
+        );
+      }
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      Utils.showNotification("Ошибка при удалении: " + error.message, "error");
+    }
   },
 
   async playVideo(path, fileName = null) {

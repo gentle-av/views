@@ -81,23 +81,6 @@
   }
 }
 
-@media (max-width: 768px) {
-  .confirm-dialog {
-    min-width: 280px;
-    max-width: 90%;
-    padding: 20px;
-  }
-
-  .confirm-message {
-    font-size: 14px;
-  }
-
-  .confirm-btn {
-    padding: 8px 16px;
-    font-size: 13px;
-  }
-}
-
 .custom-delete-modal {
   position: fixed;
   top: 0;
@@ -170,6 +153,10 @@
   border: 1px solid var(--bg3);
 }
 
+.custom-delete-filename i {
+  margin-right: 8px;
+}
+
 .custom-delete-warning {
   display: flex;
   align-items: center;
@@ -238,6 +225,159 @@
   transform: translateY(0);
 }
 
+.context-menu {
+  position: fixed;
+  background: var(--bg1);
+  border: 1px solid var(--bg3);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 10005;
+  min-width: 180px;
+  overflow: hidden;
+  animation: menuFadeIn 0.15s ease;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--fg1);
+  font-size: 0.85rem;
+}
+
+.context-menu-item:hover {
+  background: var(--bg2);
+}
+
+.context-menu-item.danger {
+  color: var(--red);
+}
+
+.context-menu-item.danger:hover {
+  background: rgba(251, 73, 52, 0.15);
+}
+
+.context-menu-item i {
+  width: 20px;
+  font-size: 0.9rem;
+}
+
+.item-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+  min-height: 60px;
+  background: var(--bg2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  transform: translateX(0);
+}
+
+.item-card.swipe-left {
+  transform: translateX(-60px);
+}
+
+.item-card-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  transition: transform 0.2s ease;
+}
+
+.swipe-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 60px;
+  background: var(--red);
+  border-radius: 0 8px 8px 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+}
+
+.item-card.swipe-left .swipe-actions {
+  opacity: 1;
+  visibility: visible;
+}
+
+.swipe-delete-btn {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: var(--bg0);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+  .swipe-actions {
+    width: 70px;
+  }
+  .swipe-delete-btn {
+    font-size: 1.3rem;
+  }
+}
+
+.item-card i:first-child {
+  flex-shrink: 0;
+  font-size: 28px;
+}
+
+.item-name {
+  flex: 1;
+  text-align: left;
+  word-break: break-word;
+}
+
+.item-size {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  color: var(--fg3);
+}
+
+.item-delete-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(251, 73, 52, 0.15);
+  border: 1px solid rgba(251, 73, 52, 0.3);
+  color: var(--red);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.item-delete-btn i {
+  font-size: 1rem;
+}
+
+.item-delete-btn:hover {
+  background: var(--red);
+  color: var(--bg0);
+  transform: scale(1.05);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -260,39 +400,76 @@
   }
 }
 
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 768px) {
+  .confirm-dialog {
+    min-width: 280px;
+    max-width: 90%;
+    padding: 20px;
+  }
+  .confirm-message {
+    font-size: 14px;
+  }
+  .confirm-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
   .custom-delete-header {
     padding: 20px 20px 12px;
   }
-
   .custom-delete-header i {
     font-size: 48px;
   }
-
   .custom-delete-header h3 {
     font-size: 1.2rem;
   }
-
   .custom-delete-body {
     padding: 20px;
   }
-
   .custom-delete-message {
     font-size: 0.9rem;
   }
-
   .custom-delete-filename {
     font-size: 0.8rem;
     padding: 10px 12px;
   }
-
   .custom-delete-actions {
     padding: 16px 20px 20px;
     gap: 10px;
   }
-
   .custom-delete-btn {
     padding: 10px 16px;
     font-size: 0.9rem;
+  }
+  .item-card {
+    padding: 12px;
+  }
+  .item-card i:first-child {
+    font-size: 32px;
+  }
+  .item-delete-btn {
+    width: 36px;
+    height: 36px;
   }
 }

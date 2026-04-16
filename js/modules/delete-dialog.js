@@ -4,36 +4,52 @@ class CustomDeleteDialog {
     this.resolveCallback = null;
   }
 
-  showConfirm(fileName) {
+  showConfirm(fileName, isDirectory = false) {
     return new Promise((resolve) => {
       this.resolveCallback = resolve;
-      this.createModal(fileName);
+      this.createModal(fileName, isDirectory);
       this.attachEvents();
     });
   }
 
-  createModal(fileName) {
+  createModal(fileName, isDirectory) {
     this.close();
+    const icon = isDirectory ? "fa-folder-open" : "fa-trash-alt";
+    const title = isDirectory ? "Удаление папки" : "Удаление файла";
+    const warningText = isDirectory
+      ? "Папка и всё её содержимое будут перемещены в корзину"
+      : "Файл будет перемещен в корзину";
+    const fileIcon = isDirectory ? "fa-folder" : "fa-file-video";
     this.modal = document.createElement("div");
     this.modal.className = "custom-delete-modal";
     this.modal.innerHTML = `
       <div class="custom-delete-dialog">
         <div class="custom-delete-header">
-          <i class="fas fa-trash-alt"></i>
-          <h3>Удаление файла</h3>
+          <i class="fas ${icon}"></i>
+          <h3>${title}</h3>
         </div>
         <div class="custom-delete-body">
           <div class="custom-delete-message">
-            Вы уверены, что хотите удалить этот файл?
+            Вы уверены, что хотите удалить ${isDirectory ? "эту папку" : "этот файл"}?
           </div>
           <div class="custom-delete-filename" title="${this.escapeHtml(fileName)}">
-            <i class="fas fa-file-video" style="margin-right: 8px;"></i>
+            <i class="fas ${fileIcon}"></i>
             ${this.escapeHtml(fileName)}
           </div>
-          <div class="custom-delete-warning">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span>Файл будет перемещен в корзину</span>
+          <div class="custom-delete-warning ${isDirectory ? "folder-warning" : ""}">
+            <i class="fas ${isDirectory ? "fa-exclamation-triangle" : "fa-trash-alt"}"></i>
+            <span>${warningText}</span>
           </div>
+          ${
+            isDirectory
+              ? `
+            <div style="font-size: 0.75rem; color: var(--fg3); margin-top: 12px; display: flex; gap: 8px; justify-content: center;">
+              <i class="fas fa-folder"></i>
+              <span>Все вложенные папки и файлы будут удалены</span>
+            </div>
+          `
+              : ""
+          }
         </div>
         <div class="custom-delete-actions">
           <button class="custom-delete-btn custom-delete-btn-cancel">
@@ -41,7 +57,7 @@ class CustomDeleteDialog {
             <span>Отмена</span>
           </button>
           <button class="custom-delete-btn custom-delete-btn-delete">
-            <i class="fas fa-trash-alt"></i>
+            <i class="fas ${isDirectory ? "fa-folder-open" : "fa-trash-alt"}"></i>
             <span>Удалить</span>
           </button>
         </div>
