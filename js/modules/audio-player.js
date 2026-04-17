@@ -131,10 +131,12 @@ const AudioPlayer = {
       }
     }
     const result = await this.sendToPlayer("/api/next");
-    await this.delay(300);
-    await this.updateUI();
-    if (typeof PlaylistViewer !== "undefined") {
-      PlaylistViewer.refresh();
+    if (result && result.success) {
+      await this.delay(500);
+      await this.updateUI();
+      if (typeof PlaylistViewer !== "undefined") {
+        PlaylistViewer.refresh();
+      }
     }
     this.isSwitching = false;
     return result;
@@ -580,7 +582,11 @@ const AudioPlayer = {
 
   startStatusPolling() {
     if (this.panelUpdateInterval) clearInterval(this.panelUpdateInterval);
-    this.panelUpdateInterval = setInterval(() => this.updateUI(), 1000);
+    this.panelUpdateInterval = setInterval(() => {
+      if (!this.isSwitching) {
+        this.updateUI();
+      }
+    }, 2000);
   },
 
   async init() {
