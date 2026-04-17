@@ -60,20 +60,25 @@
   min-width: 40px;
 }
 
-.player-panel-progress-bar {
+#panelProgressBar {
   flex: 1;
-  height: 4px;
-  background: var(--bg3);
-  border-radius: 2px;
+  height: 6px;
+  background-color: #665c54;
+  border-radius: 3px;
   cursor: pointer;
   position: relative;
+  overflow: hidden;
 }
 
-.player-panel-progress-fill {
-  height: 100%;
-  background: var(--yellow);
-  border-radius: 2px;
+#panelProgressFill {
+  position: absolute;
+  left: 0;
+  top: 0;
   width: 0%;
+  height: 100%;
+  background-color: #fabd2f;
+  border-radius: 3px;
+  transition: width 0.1s linear;
 }
 
 .player-panel-controls {
@@ -113,49 +118,6 @@
   transform: scale(1.1);
 }
 
-@media (max-width: 768px) {
-  .audio-player-control-panel {
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 10px 15px;
-  }
-
-  .player-panel-content {
-    gap: 12px;
-  }
-
-  .player-panel-info {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .player-panel-track-name {
-    font-size: 0.85rem;
-  }
-
-  .player-panel-track-artist {
-    font-size: 0.7rem;
-  }
-
-  .player-panel-btn {
-    width: 36px;
-    height: 36px;
-  }
-}
-
-@media (max-width: 480px) {
-  .player-panel-content {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .player-panel-controls {
-    justify-content: center;
-    order: -1;
-  }
-}
-
 .player-panel-track-count {
   font-size: 0.7rem;
   color: var(--fg3);
@@ -165,22 +127,39 @@
   margin-left: 8px;
 }
 
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  padding: 0 8px;
+@media (max-width: 768px) {
+  .audio-player-control-panel {
+    padding: 10px 15px;
+  }
+  .player-panel-content {
+    gap: 12px;
+  }
+  .player-panel-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .player-panel-track-name {
+    font-size: 0.85rem;
+  }
+  .player-panel-track-artist {
+    font-size: 0.7rem;
+  }
+  .player-panel-btn {
+    width: 36px;
+    height: 36px;
+  }
+  #panelProgressBar {
+    height: 4px;
+  }
 }
 
-.page-header i {
-  font-size: 28px;
-  color: var(--accent-color, #fabd2f);
-}
-
-.page-header h1 {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 0;
-  color: var(--text-primary, #ffffff);
+@media (max-width: 480px) {
+  .player-panel-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .player-panel-controls {
+    justify-content: center;
+    order: -1;
+  }
 }

@@ -1,4 +1,3 @@
-// audio-player.js - исправленный
 const AudioPlayer = {
   currentAlbum: null,
   currentTrackIndex: -1,
@@ -313,6 +312,14 @@ const AudioPlayer = {
   },
 
   async updateUI() {
+    this.panelProgressFill = document.getElementById("panelProgressFill");
+    this.panelProgressBar = document.getElementById("panelProgressBar");
+    this.panelTimeCurrent = document.getElementById("panelTimeCurrent");
+    this.panelTimeTotal = document.getElementById("panelTimeTotal");
+    this.panelTrackName = document.getElementById("panelTrackName");
+    this.panelTrackArtist = document.getElementById("panelTrackArtist");
+    this.panelPlayPauseBtn = document.getElementById("panelPlayPauseBtn");
+    this.panelTrackCount = document.getElementById("panelTrackCount");
     if (!this.playerAvailable) {
       await this.checkPlayerAvailable();
       if (!this.playerAvailable) {
@@ -341,7 +348,9 @@ const AudioPlayer = {
       if (this.panelTrackArtist) this.panelTrackArtist.textContent = "";
       if (this.panelTimeCurrent) this.panelTimeCurrent.textContent = "0:00";
       if (this.panelTimeTotal) this.panelTimeTotal.textContent = "0:00";
-      if (this.panelProgressFill) this.panelProgressFill.style.width = "0%";
+      if (this.panelProgressFill) {
+        this.panelProgressFill.style.width = "0%";
+      }
       if (this.panelPlayPauseBtn)
         this.panelPlayPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
       return;
@@ -361,12 +370,18 @@ const AudioPlayer = {
     }
     if (this.panelTrackName) this.panelTrackName.textContent = trackName;
     if (this.panelTrackArtist) this.panelTrackArtist.textContent = trackArtist;
-    const timeInfo = await this.getCurrentTime();
     let currentTime = 0;
     let duration = 0;
+    const timeInfo = await this.getCurrentTime();
     if (timeInfo && timeInfo.success && timeInfo.data) {
       currentTime = timeInfo.data.currentTime || 0;
       duration = timeInfo.data.duration || 0;
+    }
+    if (duration === 0 && state.data.currentTrack) {
+      const metadata = await this.fetchTrackMetadata(state.data.currentTrack);
+      if (metadata && metadata.duration) {
+        duration = metadata.duration;
+      }
     }
     if (this.panelTimeCurrent)
       this.panelTimeCurrent.textContent = this.formatTime(currentTime);
@@ -374,7 +389,10 @@ const AudioPlayer = {
       this.panelTimeTotal.textContent = this.formatTime(duration);
     if (this.panelProgressFill && duration > 0) {
       const percent = (currentTime / duration) * 100;
-      this.panelProgressFill.style.width = Math.min(percent, 100) + "%";
+      const widthPercent = Math.min(percent, 100) + "%";
+      this.panelProgressFill.style.width = widthPercent;
+    } else if (this.panelProgressFill) {
+      this.panelProgressFill.style.width = "0%";
     }
     if (this.panelPlayPauseBtn) {
       if (state.data.isPlaying && state.data.currentTrack) {
@@ -466,6 +484,40 @@ const AudioPlayer = {
     this.panelTimeTotal = document.getElementById("panelTimeTotal");
     this.panelProgressFill = document.getElementById("panelProgressFill");
     this.panelTrackCount = document.getElementById("panelTrackCount");
+    if (this.panelProgressBar) {
+      this.panelProgressBar.style.position = "relative";
+      this.panelProgressBar.style.overflow = "hidden";
+      this.panelProgressBar.style.backgroundColor = "var(--bg3)";
+      this.panelProgressBar.style.height = "6px";
+      this.panelProgressBar.style.borderRadius = "3px";
+      this.panelProgressBar.style.cursor = "pointer";
+    }
+    if (this.panelProgressFill) {
+      this.panelProgressFill.style.setProperty(
+        "position",
+        "absolute",
+        "important",
+      );
+      this.panelProgressFill.style.setProperty("left", "0", "important");
+      this.panelProgressFill.style.setProperty("top", "0", "important");
+      this.panelProgressFill.style.setProperty("width", "0%", "important");
+      this.panelProgressFill.style.setProperty("height", "100%", "important");
+      this.panelProgressFill.style.setProperty(
+        "background-color",
+        "var(--yellow)",
+        "important",
+      );
+      this.panelProgressFill.style.setProperty(
+        "border-radius",
+        "3px",
+        "important",
+      );
+      this.panelProgressFill.style.setProperty(
+        "transition",
+        "width 0.1s linear",
+        "important",
+      );
+    }
     if (this.panelPlayPauseBtn) {
       const newBtn = this.panelPlayPauseBtn.cloneNode(true);
       this.panelPlayPauseBtn.parentNode.replaceChild(
