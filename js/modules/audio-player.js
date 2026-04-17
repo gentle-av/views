@@ -10,7 +10,6 @@ const AudioPlayer = {
   manuallyStopped: false,
   isSwitching: false,
   initialized: false,
-
   panelPlayPauseBtn: null,
   panelPrevBtn: null,
   panelNextBtn: null,
@@ -106,7 +105,7 @@ const AudioPlayer = {
     this.isSwitching = true;
     const result = await this.sendToPlayer("/api/previous");
     if (result && result.success) {
-      await this.delay(200);
+      await this.delay(300);
       await this.updateUI();
       if (typeof PlaylistViewer !== "undefined") {
         PlaylistViewer.refresh();
@@ -132,9 +131,12 @@ const AudioPlayer = {
       }
     }
     const result = await this.sendToPlayer("/api/next");
-    setTimeout(() => {
-      this.isSwitching = false;
-    }, 500);
+    await this.delay(300);
+    await this.updateUI();
+    if (typeof PlaylistViewer !== "undefined") {
+      PlaylistViewer.refresh();
+    }
+    this.isSwitching = false;
     return result;
   },
 
@@ -144,6 +146,7 @@ const AudioPlayer = {
       tracks: tracks,
     });
     if (result && result.success) {
+      await this.delay(300);
       await this.updateUI();
       if (typeof PlaylistViewer !== "undefined") {
         PlaylistViewer.refresh();
@@ -169,6 +172,7 @@ const AudioPlayer = {
     this.isSwitching = true;
     const result = await this.sendToPlayer("/api/playIndex", { index: index });
     if (result && result.success) {
+      await this.delay(300);
       await this.updateUI();
       if (typeof PlaylistViewer !== "undefined") {
         PlaylistViewer.refresh();
@@ -202,6 +206,7 @@ const AudioPlayer = {
     const started = await this.checkPlayerAvailable();
     if (!started) return;
     await this.stop();
+    await this.delay(100);
     const trackPaths = album.tracks.map((t) => t.path);
     const result = await this.setPlaylist(trackPaths);
     if (result && result.success) {

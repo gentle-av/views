@@ -94,7 +94,6 @@ const VideoExplorer = {
     const content = document.getElementById("videoContent");
     if (!content) return;
     let touchStartX = 0;
-    let touchEndX = 0;
     let currentCard = null;
     document.querySelectorAll(".item-card").forEach((card) => {
       const newCard = card.cloneNode(true);
@@ -138,11 +137,9 @@ const VideoExplorer = {
           newCard.classList.remove("swipe-left");
           return;
         }
-        if (isDir) {
-          await this.loadDirectory(path, true);
-        } else {
-          await this.playVideo(path, fileName);
-        }
+        e.preventDefault();
+        e.stopPropagation();
+        this.showContextMenu(e.clientX, e.clientY, path, fileName, isDir);
       });
       newCard.addEventListener("contextmenu", (e) => {
         e.preventDefault();
@@ -150,6 +147,40 @@ const VideoExplorer = {
         this.showContextMenu(e.clientX, e.clientY, path, fileName, isDir);
       });
     });
+  },
+
+  showContextMenu(x, y, path, name, isDirectory) {
+    this.hideContextMenu();
+    const menu = document.createElement("div");
+    menu.className = "context-menu";
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+    menu.style.zIndex = "10006";
+    menu.innerHTML = `
+      <div class="context-menu-item delete-item" data-action="delete">
+        <i class="fas fa-trash-alt"></i>
+        <span>Удалить</span>
+      </div>
+    `;
+    document.body.appendChild(menu);
+    this.contextMenu = menu;
+    const deleteBtn = menu.querySelector(".delete-item");
+    deleteBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      this.hideContextMenu();
+      await this.deleteItem(path, name, isDirectory);
+    });
+    const closeMenu = (e) => {
+      if (!menu.contains(e.target)) {
+        this.hideContextMenu();
+        document.removeEventListener("click", closeMenu);
+        document.removeEventListener("contextmenu", closeMenu);
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener("click", closeMenu);
+      document.addEventListener("contextmenu", closeMenu);
+    }, 0);
   },
 
   hideContextMenu() {
