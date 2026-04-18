@@ -48,14 +48,6 @@
   opacity: 1;
 }
 
-.album-card-art {
-  position: relative;
-  aspect-ratio: 1;
-  overflow: hidden;
-  background: var(--bg2);
-  flex-shrink: 0;
-}
-
 .album-card-info {
   padding: 10px;
   flex: 1;

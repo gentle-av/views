@@ -1,4 +1,3 @@
-@import "app-header.css";
 @import "variables.css";
 @import "reset.css";
 @import "sidebar.css";
@@ -19,3 +18,4 @@
 @import "tag-editor.css";
 @import "album-tag-updater.css";
 @import "confirm-dialog.css";
+@import "app-header.css";

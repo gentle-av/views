@@ -1,129 +1,76 @@
 const NavigationManager = {
   currentPage: null,
-  loadingPage: false,
-  callbacks: {
-    onPageChange: null,
-  },
   initialized: false,
-  debug: true,
 
-  log(...args) {
-    if (this.debug) console.log("[NavigationManager]", ...args);
-  },
-
-  init() {
-    if (this.initialized) {
-      this.log("Already initialized");
-      return;
-    }
+  init(events) {
+    if (this.initialized) return;
     this.initialized = true;
-    this.log("Init started");
-    this.attachButtonHandlers();
-    this.log("Init finished");
+    this.events = events;
+    this._attachButtons();
   },
 
-  attachButtonHandlers() {
-    this.log("attachButtonHandlers called");
-    const navVideo = document.getElementById("navVideo");
-    const navAudio = document.getElementById("navAudio");
-    const navVideoBtn = document.getElementById("navVideoBtn");
-    const navAudioBtn = document.getElementById("navAudioBtn");
-    if (navVideo) {
-      navVideo.removeEventListener("click", this.handleVideoClick);
-      this.handleVideoClick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.log("Video button CLICKED");
-        this.switchToPage("video");
-      };
-      navVideo.addEventListener("click", this.handleVideoClick);
-      this.log("Video button handler attached");
-    }
-    if (navAudio) {
-      navAudio.removeEventListener("click", this.handleAudioClick);
-      this.handleAudioClick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.log("Audio button CLICKED");
-        this.switchToPage("audio");
-      };
-      navAudio.addEventListener("click", this.handleAudioClick);
-      this.log("Audio button handler attached");
-    }
+  _attachButtons() {
+    const buttons = ["navVideo", "navAudio", "navVideoBtn", "navAudioBtn"];
 
-    if (navVideoBtn) {
-      navVideoBtn.removeEventListener("click", this.handleVideoBtnClick);
-      this.handleVideoBtnClick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.log("VideoBtn button CLICKED");
-        this.switchToPage("video");
-      };
-      navVideoBtn.addEventListener("click", this.handleVideoBtnClick);
-      this.log("VideoBtn button handler attached");
-    }
-    if (navAudioBtn) {
-      navAudioBtn.removeEventListener("click", this.handleAudioBtnClick);
-      this.handleAudioBtnClick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.log("AudioBtn button CLICKED");
-        this.switchToPage("audio");
-      };
-      navAudioBtn.addEventListener("click", this.handleAudioBtnClick);
-      this.log("AudioBtn button handler attached");
-    }
+    buttons.forEach((id) => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.removeEventListener("click", this._handler);
+        this._handler = (e) => {
+          e.preventDefault();
+          const page = id.includes("Video") ? "video" : "audio";
+          this.switchTo(page);
+        };
+        btn.addEventListener("click", this._handler);
+      }
+    });
   },
 
-  updatePageTitle(page) {
-    const titleElement = document.getElementById("pageTitle");
-    this.log(
-      "updatePageTitle called, page:",
-      page,
-      "titleElement:",
-      titleElement,
-    );
-    if (!titleElement) return;
-    if (page === "video") {
-      titleElement.innerHTML = '<i class="fas fa-video"></i> Видео';
-      this.log("Set video title");
-    } else if (page === "audio") {
-      titleElement.innerHTML = '<i class="fas fa-music"></i> Аудиотека';
-      this.log("Set audio title");
-    }
-  },
+  async switchTo(page) {
+    if (this.currentPage === page) return;
 
-  async switchToPage(page) {
-    this.log(
-      "switchToPage called with:",
-      page,
-      "loadingPage:",
-      this.loadingPage,
-      "currentPage:",
-      this.currentPage,
-    );
-    if (this.loadingPage) {
-      this.log("Already loading, skip");
-      return;
-    }
-    if (this.currentPage === page && this.currentPage !== null) {
-      this.log("Already on page, skip");
-      return;
-    }
-    this.log("Switching to page:", page);
-    this.loadingPage = true;
     this.currentPage = page;
-    this.updatePageTitle(page);
-    if (this.callbacks.onPageChange) {
-      this.log("Calling onPageChange callback");
-      await this.callbacks.onPageChange(page);
+    this._updatePageTitle(page);
+    this._updateActiveButtons(page);
+    const searchBox = document.getElementById("globalSearchBox");
+    if (searchBox) {
+      searchBox.style.display = page === "audio" ? "flex" : "none";
     }
-    this.loadingPage = false;
-    this.log("Switch completed");
+    const container = document.getElementById("pageContainer");
+    if (container) {
+      const response = await fetch(`${page}.html`);
+      const html = await response.text();
+      container.innerHTML = html;
+      this.events.emit(`page:${page}Loaded`);
+    }
   },
 
-  onPageChange(callback) {
-    this.callbacks.onPageChange = callback;
+  _updatePageTitle(page) {
+    const titleEl = document.getElementById("pageTitle");
+    if (titleEl) {
+      const icon = page === "video" ? "fa-video" : "fa-music";
+      const text = page === "video" ? "Видео" : "Аудиотека";
+      titleEl.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
+    }
+  },
+
+  _updateActiveButtons(page) {
+    document
+      .querySelectorAll(".sidebar-btn, .mobile-nav-buttons .header-btn")
+      .forEach((btn) => {
+        const btnPage =
+          btn.getAttribute("data-page") ||
+          (btn.id?.includes("Video")
+            ? "video"
+            : btn.id?.includes("Audio")
+              ? "audio"
+              : null);
+        if (btnPage === page) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
   },
 
   getCurrentPage() {

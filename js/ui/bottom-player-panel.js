@@ -10,7 +10,6 @@ class BottomPlayerPanel {
   _initElements() {
     this.element = document.getElementById("audioPlayerControlPanel");
     if (!this.element) this._createPanel();
-
     this.playPauseBtn = document.getElementById("panelPlayPauseBtn");
     this.prevBtn = document.getElementById("panelPrevBtn");
     this.nextBtn = document.getElementById("panelNextBtn");
@@ -23,7 +22,6 @@ class BottomPlayerPanel {
     this.timeCurrent = document.getElementById("panelTimeCurrent");
     this.timeTotal = document.getElementById("panelTimeTotal");
     this.trackCount = document.getElementById("panelTrackCount");
-
     this._attachEvents();
     this._subscribeToEvents();
   }
@@ -33,49 +31,61 @@ class BottomPlayerPanel {
     this.element.id = "audioPlayerControlPanel";
     this.element.className = "audio-player-control-panel";
     this.element.innerHTML = `
-      <div class="player-panel-content">
-        <div class="player-panel-info">
-          <div class="player-panel-track-info">
-            <div id="panelTrackName" class="player-panel-track-name">—</div>
-            <div id="panelTrackArtist" class="player-panel-track-artist"></div>
-          </div>
-          <div class="player-panel-progress">
-            <span id="panelTimeCurrent" class="player-panel-time-current">0:00</span>
-            <div id="panelProgressBar" class="player-panel-progress-bar">
-              <div id="panelProgressFill" class="player-panel-progress-fill"></div>
+            <div class="player-panel-content">
+                <div class="player-panel-info">
+                    <div class="player-panel-track-info">
+                        <div id="panelTrackName" class="player-panel-track-name">—</div>
+                        <div id="panelTrackArtist" class="player-panel-track-artist"></div>
+                    </div>
+                    <div class="player-panel-progress">
+                        <span id="panelTimeCurrent" class="player-panel-time-current">0:00</span>
+                        <div id="panelProgressBar" class="player-panel-progress-bar">
+                            <div id="panelProgressFill" class="player-panel-progress-fill"></div>
+                        </div>
+                        <span id="panelTimeTotal" class="player-panel-time-total">0:00</span>
+                        <span id="panelTrackCount" class="player-panel-track-count">0/0</span>
+                    </div>
+                </div>
+                <div class="player-panel-controls">
+                    <button id="panelPrevBtn" class="player-panel-btn" title="Предыдущий"><i class="fas fa-backward"></i></button>
+                    <button id="panelPlayPauseBtn" class="player-panel-btn player-panel-play" title="Play/Pause"><i class="fas fa-play"></i></button>
+                    <button id="panelStopBtn" class="player-panel-btn" title="Стоп"><i class="fas fa-stop"></i></button>
+                    <button id="panelNextBtn" class="player-panel-btn" title="Следующий"><i class="fas fa-forward"></i></button>
+                    <button id="panelClearBtn" class="player-panel-btn" title="Очистить"><i class="fas fa-trash"></i></button>
+                </div>
             </div>
-            <span id="panelTimeTotal" class="player-panel-time-total">0:00</span>
-            <span id="panelTrackCount" class="player-panel-track-count">0/0</span>
-          </div>
-        </div>
-        <div class="player-panel-controls">
-          <button id="panelPrevBtn" class="player-panel-btn" title="Предыдущий"><i class="fas fa-backward"></i></button>
-          <button id="panelPlayPauseBtn" class="player-panel-btn player-panel-play" title="Play/Pause"><i class="fas fa-play"></i></button>
-          <button id="panelStopBtn" class="player-panel-btn" title="Стоп"><i class="fas fa-stop"></i></button>
-          <button id="panelNextBtn" class="player-panel-btn" title="Следующий"><i class="fas fa-forward"></i></button>
-          <button id="panelClearBtn" class="player-panel-btn" title="Очистить"><i class="fas fa-trash"></i></button>
-        </div>
-      </div>
-    `;
+        `;
     document.body.appendChild(this.element);
     this._initElements();
   }
 
   _attachEvents() {
-    this.playPauseBtn?.addEventListener("click", () =>
-      this.playback.togglePlayPause(),
-    );
-    this.prevBtn?.addEventListener("click", () => this.playback.previous());
-    this.nextBtn?.addEventListener("click", () => this.playback.next());
-    this.stopBtn?.addEventListener("click", () => this.playback.stop());
-    this.clearBtn?.addEventListener("click", () =>
-      this.playback.api.clearPlaylist(),
-    );
-    this.progressBar?.addEventListener("click", async (e) => {
-      const rect = this.progressBar.getBoundingClientRect();
-      const percent = (e.clientX - rect.left) / rect.width;
-      await this.playback.seek(percent, this.progressBar);
-    });
+    if (this.playPauseBtn) {
+      this.playPauseBtn.addEventListener("click", () =>
+        this.playback.togglePlayPause(),
+      );
+    }
+    if (this.prevBtn) {
+      this.prevBtn.addEventListener("click", () => this.playback.previous());
+    }
+    if (this.nextBtn) {
+      this.nextBtn.addEventListener("click", () => this.playback.next());
+    }
+    if (this.stopBtn) {
+      this.stopBtn.addEventListener("click", () => this.playback.stop());
+    }
+    if (this.clearBtn) {
+      this.clearBtn.addEventListener("click", () =>
+        this.events.emit("playlist:clear"),
+      );
+    }
+    if (this.progressBar) {
+      this.progressBar.addEventListener("click", async (e) => {
+        const rect = this.progressBar.getBoundingClientRect();
+        const percent = (e.clientX - rect.left) / rect.width;
+        await this.playback.seek(percent, this.progressBar);
+      });
+    }
   }
 
   _subscribeToEvents() {
@@ -84,22 +94,20 @@ class BottomPlayerPanel {
     this.events.on("trackChanged", ({ album, trackIndex }) =>
       this._showTrack(album, trackIndex),
     );
+    this.events.on("playlistCleared", () => this._onPlaylistCleared());
   }
 
   async _updateFromState(state) {
     if (!state) return;
-
     if (state.totalTracks > 0) {
       this.element.classList.add("active");
     } else {
       this.element.classList.remove("active");
       return;
     }
-
     if (this.trackCount) {
       this.trackCount.textContent = `${(state.currentIndex || 0) + 1}/${state.totalTracks || 0}`;
     }
-
     const timeInfo = await this.playback.api.getCurrentTime();
     if (timeInfo?.data) {
       const current = timeInfo.data.currentTime || 0;
@@ -112,7 +120,6 @@ class BottomPlayerPanel {
         this.progressFill.style.width = `${(current / duration) * 100}%`;
       }
     }
-
     if (this.playPauseBtn) {
       this.playPauseBtn.innerHTML = state.isPlaying
         ? '<i class="fas fa-pause"></i>'
@@ -129,6 +136,18 @@ class BottomPlayerPanel {
     const track = album.tracks[trackIndex];
     if (this.trackName) this.trackName.textContent = track.displayName;
     if (this.trackArtist) this.trackArtist.textContent = album.artist;
+  }
+
+  _onPlaylistCleared() {
+    if (this.trackName) this.trackName.textContent = "—";
+    if (this.trackArtist) this.trackArtist.textContent = "";
+    if (this.trackCount) this.trackCount.textContent = "0/0";
+    if (this.timeCurrent) this.timeCurrent.textContent = "0:00";
+    if (this.timeTotal) this.timeTotal.textContent = "0:00";
+    if (this.progressFill) this.progressFill.style.width = "0%";
+    if (this.playPauseBtn)
+      this.playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    this.element.classList.remove("active");
   }
 
   _formatTime(seconds) {
