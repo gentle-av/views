@@ -3,7 +3,8 @@ class AlbumModal {
     this.events = events;
     this.modal = document.getElementById("albumModal");
     this.titleEl = document.getElementById("modalAlbumTitle");
-    this.tracksList = document.getElementById("modalTracksList");
+    this.tracksContainer = document.getElementById("modalTracksList");
+    this.trackList = new TrackList(events);
     this._bindEvents();
   }
 
@@ -22,7 +23,7 @@ class AlbumModal {
     if (!this.modal) return;
     this._renderHeader(album);
     this._renderActions(album);
-    this._renderTracks(album);
+    this.trackList.render(this.tracksContainer, album);
     this.modal.classList.add("active");
     this._currentAlbum = album;
   }
@@ -85,32 +86,6 @@ class AlbumModal {
         this.events.emit("album:replacePlaylist", album);
         this.hide();
       });
-  }
-
-  _renderTracks(album) {
-    if (!this.tracksList) return;
-    this.tracksList.innerHTML = album.tracks
-      .map(
-        (track, idx) => `
-            <div class="track-item">
-                <span class="track-number">${(idx + 1).toString().padStart(2, "0")}</span>
-                <span class="track-name">${this._escape(track.displayName)}</span>
-                <span class="track-duration">${track.displayDuration}</span>
-                <button class="track-play-btn" data-index="${idx}">
-                    <i class="fas fa-play"></i>
-                </button>
-            </div>
-        `,
-      )
-      .join("");
-    this.tracksList.querySelectorAll(".track-play-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const index = parseInt(btn.dataset.index);
-        this.events.emit("album:playTrack", { album, trackIndex: index });
-        this.hide();
-      });
-    });
   }
 
   _escape(str) {

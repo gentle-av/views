@@ -443,24 +443,48 @@
   }
 }
 
-.track-play-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--bg2);
-  border: 1px solid var(--bg3);
-  color: var(--yellow);
-  cursor: pointer;
+.track-actions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  gap: 6px;
   flex-shrink: 0;
-  margin-left: 8px;
+}
+
+.track-play-btn,
+.track-add-after-btn,
+.track-edit-btn {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 6px !important;
+  background: var(--bg2) !important;
+  border: 1px solid var(--bg3) !important;
+  color: var(--fg2) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+}
+
+.track-play-btn:hover,
+.track-add-after-btn:hover,
+.track-edit-btn:hover {
+  transform: scale(1.05) !important;
 }
 
 .track-play-btn:hover {
-  background: var(--yellow);
-  color: var(--bg0);
-  transform: scale(1.05);
+  background: var(--yellow) !important;
+  border-color: var(--yellow) !important;
+  color: var(--bg0) !important;
+}
+
+.track-add-after-btn:hover {
+  background: var(--green) !important;
+  border-color: var(--green) !important;
+  color: var(--bg0) !important;
+}
+
+.track-edit-btn:hover {
+  background: var(--orange) !important;
+  border-color: var(--orange) !important;
+  color: var(--bg0) !important;
 }

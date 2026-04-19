@@ -43,6 +43,16 @@ const MediaCenter = {
     this.events.on("playTrack", ({ album, trackIndex }) => {
       this.playback.playTrack(album, trackIndex);
     });
+    this.events.on("track:play", ({ album, trackIndex }) => {
+      this.playback.playTrack(album, trackIndex);
+    });
+    this.events.on("track:addAfterCurrent", ({ album, trackIndex }) => {
+      this.playback.addTrackAfterCurrent(album, trackIndex);
+      Utils.showNotification(`Трек добавлен после текущего`, "success");
+    });
+    this.events.on("track:editMetadata", ({ album, track, trackIndex }) => {
+      TagEditor.showTrackTagEditor(track, album);
+    });
   },
 
   _onAudioPageLoaded() {
