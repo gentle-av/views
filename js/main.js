@@ -16,8 +16,41 @@ const MediaCenter = {
     this.bottomPanel = new BottomPlayerPanel(this.playback, this.events);
     this.playlistPopup = new PlaylistPopup(this.playback, this.events);
     this.videoPlayer = null;
+    this._updateUIForPage("video");
     await NavigationManager.switchTo("video");
     console.log("MediaCenter v2.0 ready");
+  },
+
+  _updateUIForPage(page) {
+    const mainContent = document.querySelector(".main-content");
+    const audioPlayerBar = document.getElementById("audioPlayerBar");
+    const headerPlaylistBtn = document.getElementById("headerPlaylistBtn");
+    const globalSearchBox = document.getElementById("globalSearchBox");
+    if (page === "audio") {
+      mainContent.classList.add("audio-page");
+      mainContent.classList.remove("video-page");
+      if (audioPlayerBar) {
+        audioPlayerBar.style.display = "flex";
+      }
+      if (headerPlaylistBtn) {
+        headerPlaylistBtn.style.display = "flex";
+      }
+      if (globalSearchBox) {
+        globalSearchBox.style.display = "flex";
+      }
+    } else {
+      mainContent.classList.add("video-page");
+      mainContent.classList.remove("audio-page");
+      if (audioPlayerBar) {
+        audioPlayerBar.style.display = "none";
+      }
+      if (headerPlaylistBtn) {
+        headerPlaylistBtn.style.display = "none";
+      }
+      if (globalSearchBox) {
+        globalSearchBox.style.display = "none";
+      }
+    }
   },
 
   _onVideoPageLoaded() {
@@ -27,6 +60,7 @@ const MediaCenter = {
     }
     this._videoPageInitialized = true;
     console.log("Video page loaded, initializing VideoLibrary...");
+    this._updateUIForPage("video");
     if (!this.videoPlayer) {
       console.log("Creating new VideoPlayerController");
       this.videoPlayer = new VideoPlayerController(this.api, this.events);
@@ -59,6 +93,7 @@ const MediaCenter = {
     if (this._audioPageInitialized) return;
     this._audioPageInitialized = true;
     console.log("Audio page loaded, initializing AlbumLibrary...");
+    this._updateUIForPage("audio");
     if (!this.albumModal) {
       this.albumModal = new AlbumModal(this.events);
     }

@@ -163,3 +163,11 @@
     order: -1;
   }
 }
+
+.audio-player-bar {
+  display: none;
+}
+
+.audio-page .audio-player-bar {
+  display: flex;
+}

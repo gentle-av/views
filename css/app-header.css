@@ -263,3 +263,11 @@
     padding: 8px;
   }
 }
+
+.audio-only {
+  display: none;
+}
+
+.audio-page .audio-only {
+  display: flex;
+}
