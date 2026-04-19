@@ -49,10 +49,31 @@ const MediaCenter = {
     if (this._audioPageInitialized) return;
     this._audioPageInitialized = true;
     console.log("Audio page loaded, initializing AlbumLibrary...");
+    if (!this.albumModal) {
+      this.albumModal = new AlbumModal(this.events);
+    }
     if (!this.albumLibrary) {
       this.albumLibrary = new AlbumLibrary(this.musicApi, this.events);
       this.albumLibrary.init();
     }
+    this.events.on("album:play", (album) => this.playback.playAlbum(album));
+    this.events.on("album:addToPlaylist", async (album) => {
+      await this.playback.addAlbumToPlaylist(album);
+      Utils.showNotification(
+        `Альбом "${album.title}" добавлен в плейлист`,
+        "success",
+      );
+    });
+    this.events.on("album:replacePlaylist", async (album) => {
+      await this.playback.api.clearPlaylist();
+      await this.playback.addAlbumToPlaylist(album);
+      this.events.emit("playlistCleared");
+      this.events.emit("playlistChanged");
+      Utils.showNotification(`Плейлист заменен на "${album.title}"`, "success");
+    });
+    this.events.on("album:playTrack", ({ album, trackIndex }) => {
+      this.playback.playTrack(album, trackIndex);
+    });
     const searchInput = document.getElementById("globalSearchInput");
     if (searchInput) {
       searchInput.value = "";

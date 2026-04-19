@@ -61,35 +61,7 @@ class AlbumLibrary {
   }
 
   _showAlbumModal(album) {
-    const modal = document.getElementById("albumModal");
-    const titleEl = document.getElementById("modalAlbumTitle");
-    const tracksList = document.getElementById("modalTracksList");
-    if (!modal) return;
-    if (titleEl) titleEl.textContent = album.displayTitle;
-    if (tracksList) {
-      tracksList.innerHTML = album.tracks
-        .map(
-          (track, idx) => `
-            <div class="track-item">
-                <span class="track-number">${(idx + 1).toString().padStart(2, "0")}</span>
-                <span class="track-name">${this._escape(track.displayName)}</span>
-                <span class="track-duration">${track.displayDuration}</span>
-                <button class="track-play-btn" data-index="${idx}"><i class="fas fa-play"></i></button>
-            </div>
-        `,
-        )
-        .join("");
-      tracksList.querySelectorAll(".track-play-btn").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const index = parseInt(btn.dataset.index);
-          this.events.emit("playTrack", { album, trackIndex: index });
-        });
-      });
-    }
-    modal.classList.add("active");
-    const closeBtn = modal.querySelector(".modal-close");
-    if (closeBtn) closeBtn.onclick = () => modal.classList.remove("active");
+    this.events.emit("album:open", album);
   }
 
   async _loadAlbums() {
