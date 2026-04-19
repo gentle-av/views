@@ -64,6 +64,7 @@ class PlayerApiClient extends ApiClient {
   }
 
   async seek(position) {
+    console.log("Sending seek request for position:", position);
     return this.post("/api/seek", { position });
   }
 

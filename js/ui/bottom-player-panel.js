@@ -113,9 +113,28 @@ class BottomPlayerPanel {
     }
     if (this.progressBar) {
       this.progressBar.addEventListener("click", async (e) => {
+        console.log("Progress bar clicked");
         const rect = this.progressBar.getBoundingClientRect();
         const percent = (e.clientX - rect.left) / rect.width;
-        await this.playback.seek(percent, this.progressBar);
+        console.log(
+          "Click position:",
+          e.clientX,
+          "Bar left:",
+          rect.left,
+          "Width:",
+          rect.width,
+          "Percent:",
+          percent,
+        );
+        const timeInfo = await this.playback.api.getCurrentTime();
+        console.log("Time info:", timeInfo);
+        if (timeInfo?.data?.duration) {
+          const seekTime = timeInfo.data.duration * percent;
+          console.log("Seeking to:", seekTime, "seconds");
+          await this.playback.api.seek(seekTime);
+        } else {
+          console.log("Cannot seek - no duration info");
+        }
       });
     }
   }
