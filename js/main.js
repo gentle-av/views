@@ -14,7 +14,7 @@ const MediaCenter = {
     this.videoLibrary = null;
     this.albumLibrary = null;
     this.bottomPanel = new BottomPlayerPanel(this.playback, this.events);
-    this.playlistPopup = new PlaylistPopup(this.playback, this.events);
+    this.playlistPopup = null;
     this.videoPlayer = null;
     this._updateUIForPage("video");
     await NavigationManager.switchTo("video");
@@ -85,11 +85,15 @@ const MediaCenter = {
       Utils.showNotification(`Трек добавлен после текущего`, "success");
     });
     this.events.on("track:editMetadata", ({ album, track, trackIndex }) => {
-      TagEditor.showTrackTagEditor(track, album);
+      if (window.TagEditor) {
+        window.TagEditor.showTrackTagEditor(track, album);
+      } else {
+        Utils.showNotification("Редактор тегов временно недоступен", "error");
+      }
     });
   },
 
-  _onAudioPageLoaded() {
+  async _onAudioPageLoaded() {
     if (this._audioPageInitialized) return;
     this._audioPageInitialized = true;
     console.log("Audio page loaded, initializing AlbumLibrary...");
@@ -99,7 +103,14 @@ const MediaCenter = {
     }
     if (!this.albumLibrary) {
       this.albumLibrary = new AlbumLibrary(this.musicApi, this.events);
-      this.albumLibrary.init();
+      await this.albumLibrary.init();
+    }
+    if (!this.playlistPopup) {
+      this.playlistPopup = new PlaylistPopup(
+        this.playback,
+        this.events,
+        this.albumLibrary,
+      );
     }
     this.events.on("album:play", (album) => this.playback.playAlbum(album));
     this.events.on("album:addToPlaylist", async (album) => {

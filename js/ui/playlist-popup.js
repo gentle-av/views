@@ -1,16 +1,19 @@
 class PlaylistPopup {
-  constructor(playbackController, events) {
+  constructor(playbackController, events, albumLibrary) {
     this.playback = playbackController;
     this.events = events;
+    this.albumLibrary = albumLibrary;
     this.musicApi = null;
     this.tracksCache = new Map();
     this._init();
   }
+
   _getElements() {
     this.container = document.getElementById("playlistContainer");
     this.popup = document.getElementById("playlistPopup");
     this.badge = document.getElementById("playlistBadge");
   }
+
   async _init() {
     this._getElements();
     if (window.musicApi) {
@@ -22,13 +25,43 @@ class PlaylistPopup {
     await this.refresh();
     setInterval(() => this.refresh(), 5000);
   }
+
+  _findArtistFromLibrary(filePath) {
+    if (!this.albumLibrary || !this.albumLibrary.albums) {
+      return null;
+    }
+    for (const album of this.albumLibrary.albums) {
+      for (const track of album.tracks) {
+        if (track.path === filePath) {
+          return {
+            artist: album.artist,
+            title: track.title || track.name,
+            album: album.title,
+          };
+        }
+      }
+    }
+    return null;
+  }
+
   async _fetchTrackMetadata(filePath) {
     if (this.tracksCache.has(filePath)) {
       return this.tracksCache.get(filePath);
     }
+    const libraryData = this._findArtistFromLibrary(filePath);
+    if (libraryData) {
+      const metadata = {
+        title: libraryData.title,
+        artist: libraryData.artist,
+        album: libraryData.album,
+        duration: 0,
+      };
+      this.tracksCache.set(filePath, metadata);
+      return metadata;
+    }
     if (!this.musicApi) {
-      const fileName = filePath.split("/").pop() || "Unknown";
-      return { title: fileName, artist: "", duration: 0 };
+      const fileName = this._getFileName(filePath);
+      return { title: fileName, artist: "", album: "", duration: 0 };
     }
     try {
       const response = await this.musicApi.getFileMetadata(filePath);
@@ -37,7 +70,19 @@ class PlaylistPopup {
         const metadata = {
           title: fileData.title || this._getFileName(filePath),
           artist: fileData.artist || "",
+          album: fileData.album || "",
           duration: fileData.duration || 0,
+        };
+        this.tracksCache.set(filePath, metadata);
+        return metadata;
+      }
+      const dbData = response?.data?.database;
+      if (dbData && dbData.title && dbData.title !== "Unknown") {
+        const metadata = {
+          title: dbData.title,
+          artist: dbData.artist || "",
+          album: dbData.album || "",
+          duration: dbData.duration || 0,
         };
         this.tracksCache.set(filePath, metadata);
         return metadata;
@@ -45,9 +90,10 @@ class PlaylistPopup {
     } catch (error) {
       console.error("Failed to fetch metadata for:", filePath, error);
     }
-    const fileName = filePath.split("/").pop() || "Unknown";
-    return { title: fileName, artist: "", duration: 0 };
+    const fileName = this._getFileName(filePath);
+    return { title: fileName, artist: "", album: "", duration: 0 };
   }
+
   _getFileName(filePath) {
     const parts = filePath.split("/");
     let fileName = parts.pop() || "Unknown";
@@ -55,14 +101,16 @@ class PlaylistPopup {
     if (lastDot > 0) {
       fileName = fileName.substring(0, lastDot);
     }
-    return fileName;
+    return decodeURIComponent(fileName);
   }
+
   async refresh() {
     this._getElements();
     if (!this.container) return;
     const playlistData = await this.playback.api.getPlaylist();
     const state = await this.playback.api.getPlaybackState();
     let currentPath = state?.data?.currentTrack;
+    let currentIndex = state?.data?.currentIndex ?? -1;
     let tracks = playlistData?.data || [];
     if (!Array.isArray(tracks)) {
       tracks = [];
@@ -75,15 +123,30 @@ class PlaylistPopup {
           path: path,
           title: metadata.title,
           artist: metadata.artist,
+          album: metadata.album,
           duration: metadata.duration,
           index: index,
         };
       }),
     );
-    this._render(tracksWithMetadata, currentPath);
+    this._render(tracksWithMetadata, currentPath, currentIndex);
     this._updateCount(tracksWithMetadata.length);
   }
-  _render(tracks, currentPath) {
+
+  _scrollToCurrentTrack() {
+    if (!this.container) return;
+    const currentItem = this.container.querySelector(
+      ".playlist-track-item.current",
+    );
+    if (currentItem) {
+      currentItem.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }
+
+  _render(tracks, currentPath, currentIndex) {
     if (!this.container) return;
     if (!tracks.length) {
       this.container.innerHTML =
@@ -91,15 +154,30 @@ class PlaylistPopup {
       return;
     }
     let html = '<div class="playlist-tracks-list">';
+    let currentArtist = "";
     tracks.forEach((track, i) => {
-      const isCurrent = track.path === currentPath;
+      const isCurrent = track.path === currentPath || i === currentIndex;
       const trackNumber = i + 1;
-      html += `<div class="playlist-track-item ${isCurrent ? "current" : ""}" data-index="${i}" data-path="${this._escape(track.path)}"><div class="playlist-track-number">${String(trackNumber).padStart(2, "0")}</div><div class="playlist-track-info"><div class="playlist-track-name">${this._escape(track.title)}</div>${track.artist ? `<div class="playlist-track-artist">${this._escape(track.artist)}</div>` : ""}</div><div class="playlist-track-remove-btn" data-index="${i}"><i class="fas fa-trash"></i></div></div>`;
+      const artist = track.artist || "Неизвестный исполнитель";
+      if (artist !== currentArtist) {
+        currentArtist = artist;
+        html += `<div class="playlist-artist-separator" style="padding: 12px 0 6px 0; font-size: 0.8rem; font-weight: 600; color: var(--yellow); border-bottom: 1px solid var(--bg3); margin-top: 8px;"><i class="fas fa-user"></i> ${this._escape(artist)}</div>`;
+      }
+      html += `<div class="playlist-track-item ${isCurrent ? "current" : ""}" data-index="${i}" data-path="${this._escape(track.path)}">
+        <div class="playlist-track-number">${String(trackNumber).padStart(2, "0")}</div>
+        <div class="playlist-track-info">
+          <div class="playlist-track-name">${this._escape(track.title)}</div>
+          ${track.album ? `<div class="playlist-track-album" style="font-size: 0.65rem; color: var(--fg3); margin-top: 2px;"><i class="fas fa-compact-disc"></i> ${this._escape(track.album)}</div>` : ""}
+        </div>
+        <div class="playlist-track-remove-btn" data-index="${i}"><i class="fas fa-trash"></i></div>
+      </div>`;
     });
     html += "</div>";
     this.container.innerHTML = html;
     this._attachTrackEvents();
+    setTimeout(() => this._scrollToCurrentTrack(), 100);
   }
+
   _attachTrackEvents() {
     if (!this.container) return;
     this.container.querySelectorAll(".playlist-track-item").forEach((item) => {
@@ -127,6 +205,7 @@ class PlaylistPopup {
         btn.addEventListener("click", btn._removeHandler);
       });
   }
+
   _attachControls() {
     const closeBtn = document.getElementById("playlistPopupClose");
     const clearBtn = document.getElementById("playlistClearBtn");
@@ -168,6 +247,7 @@ class PlaylistPopup {
       }
     });
   }
+
   _updateCount(count) {
     const countElement = document.getElementById("playlistTrackCount");
     if (countElement) {
@@ -179,6 +259,7 @@ class PlaylistPopup {
       this.badge.style.display = count > 0 ? "inline-block" : "none";
     }
   }
+
   _getTracksWord(count) {
     if (count % 10 === 1 && count % 100 !== 11) return "трек";
     if (
@@ -189,6 +270,7 @@ class PlaylistPopup {
       return "трека";
     return "треков";
   }
+
   _escape(str) {
     if (!str) return "";
     const div = document.createElement("div");
