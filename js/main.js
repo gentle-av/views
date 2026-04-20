@@ -25,6 +25,9 @@ const MediaCenter = {
     const mainContent = document.querySelector(".main-content");
     const audioPlayerBar = document.getElementById("audioPlayerBar");
     const headerPlaylistBtn = document.getElementById("headerPlaylistBtn");
+    const headerRefreshMetadataBtn = document.getElementById(
+      "headerRefreshMetadataBtn",
+    );
     const globalSearchBox = document.getElementById("globalSearchBox");
     if (page === "audio") {
       mainContent.classList.add("audio-page");
@@ -34,6 +37,9 @@ const MediaCenter = {
       }
       if (headerPlaylistBtn) {
         headerPlaylistBtn.style.display = "flex";
+      }
+      if (headerRefreshMetadataBtn) {
+        headerRefreshMetadataBtn.style.display = "flex";
       }
       if (globalSearchBox) {
         globalSearchBox.style.display = "flex";
@@ -46,6 +52,9 @@ const MediaCenter = {
       }
       if (headerPlaylistBtn) {
         headerPlaylistBtn.style.display = "none";
+      }
+      if (headerRefreshMetadataBtn) {
+        headerRefreshMetadataBtn.style.display = "none";
       }
       if (globalSearchBox) {
         globalSearchBox.style.display = "none";
@@ -114,6 +123,42 @@ const MediaCenter = {
       this.playlistPopup.albumLibrary = this.albumLibrary;
       this.playlistPopup.tracksCache.clear();
       this.playlistPopup.refresh();
+    }
+    const refreshMetadataBtn = document.getElementById(
+      "headerRefreshMetadataBtn",
+    );
+    if (refreshMetadataBtn) {
+      refreshMetadataBtn.onclick = async () => {
+        refreshMetadataBtn.disabled = true;
+        refreshMetadataBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i><span>Обновление...</span>';
+        Utils.showNotification("Обновление базы данных...", "info");
+        try {
+          const response = await fetch(
+            `${this.api.baseUrl}/api/music/force-rescan`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            },
+          );
+          const data = await response.json();
+          if (data.status === "success") {
+            Utils.showNotification(
+              `Обновление завершено: добавлено ${data.added_files} файлов`,
+              "success",
+            );
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            Utils.showNotification(`Ошибка: ${data.message}`, "error");
+          }
+        } catch (error) {
+          Utils.showNotification(`Ошибка: ${error.message}`, "error");
+        } finally {
+          refreshMetadataBtn.disabled = false;
+          refreshMetadataBtn.innerHTML =
+            '<i class="fas fa-sync-alt"></i><span>Обновить</span>';
+        }
+      };
     }
     this.events.on("album:play", (album) => this.playback.playAlbum(album));
     this.events.on("album:addToPlaylist", async (album) => {

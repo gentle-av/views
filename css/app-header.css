@@ -271,3 +271,34 @@
 .audio-page .audio-only {
   display: flex;
 }
+
+.refresh-metadata-btn {
+  border-radius: 12px;
+  transition: all var(--transition-fast) ease;
+  background: var(--bg2);
+  border: 1px solid var(--bg3);
+  color: var(--fg0);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  padding: 8px 16px;
+}
+
+.refresh-metadata-btn:hover {
+  background: var(--bg3);
+  border-color: var(--green);
+  color: var(--green);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .refresh-metadata-btn span {
+    display: none;
+  }
+  .refresh-metadata-btn {
+    padding: 10px;
+    min-width: 44px;
+  }
+}
