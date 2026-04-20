@@ -1,9 +1,13 @@
 .main-content {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   height: 100vh;
   padding-bottom: 0;
   position: relative;
+}
+
+.main-content::-webkit-scrollbar {
+  display: none;
 }
 
 .page-container {

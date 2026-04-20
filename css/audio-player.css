@@ -185,3 +185,43 @@
 .audio-page .audio-player-bar {
   display: flex;
 }
+
+body.audio-page {
+  overflow: hidden;
+}
+
+.audio-page .app {
+  overflow: hidden;
+}
+
+.audio-page .main-content {
+  overflow: hidden;
+}
+
+.audio-page .main-content::-webkit-scrollbar {
+  display: none;
+}
+
+.audio-page .scrollable-content {
+  overflow-y: auto;
+  height: calc(100vh - 60px);
+  scrollbar-width: thin;
+}
+
+.audio-page .albums-grid {
+  overflow: visible;
+  max-height: none;
+  padding-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+  body.audio-page {
+    overflow: hidden;
+  }
+  .audio-page .scrollable-content {
+    height: calc(100vh - 50px);
+  }
+  .audio-page .albums-grid {
+    padding-bottom: 100px;
+  }
+}

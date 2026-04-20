@@ -48,7 +48,6 @@ class BottomPlayerPanel {
     this.prevBtn = null;
     this.nextBtn = null;
     this.stopBtn = null;
-    this.clearBtn = null;
     this.progressBar = null;
     this.progressFill = null;
     this.trackName = null;
@@ -73,7 +72,6 @@ class BottomPlayerPanel {
     this.prevBtn = document.getElementById("panelPrevBtn");
     this.nextBtn = document.getElementById("panelNextBtn");
     this.stopBtn = document.getElementById("panelStopBtn");
-    this.clearBtn = document.getElementById("panelClearBtn");
     this.progressBar = document.getElementById("panelProgressBar");
     this.progressFill = document.getElementById("panelProgressFill");
     this.trackName = document.getElementById("panelTrackName");
@@ -112,7 +110,6 @@ class BottomPlayerPanel {
           <button id="panelPlayPauseBtn" class="player-panel-btn player-panel-play" title="Play/Pause"><i class="fas fa-play"></i></button>
           <button id="panelStopBtn" class="player-panel-btn" title="Стоп"><i class="fas fa-stop"></i></button>
           <button id="panelNextBtn" class="player-panel-btn" title="Следующий"><i class="fas fa-forward"></i></button>
-          <button id="panelClearBtn" class="player-panel-btn" title="Очистить"><i class="fas fa-trash"></i></button>
         </div>
       </div>
     `;
@@ -136,11 +133,6 @@ class BottomPlayerPanel {
     }
     if (this.stopBtn) {
       this.stopBtn.addEventListener("click", () => this.playback.stop());
-    }
-    if (this.clearBtn) {
-      this.clearBtn.addEventListener("click", () =>
-        this.events.emit("playlist:clear"),
-      );
     }
     if (this.progressBar) {
       this.progressBar.addEventListener("click", async (e) => {
@@ -167,10 +159,6 @@ class BottomPlayerPanel {
 
   async _updateFromState(state) {
     if (!this.element || !this._isAudioPage) {
-      console.log(
-        "[BottomPlayerPanel] _updateFromState skipped, isAudioPage:",
-        this._isAudioPage,
-      );
       return;
     }
     if (!state) return;
