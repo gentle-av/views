@@ -254,10 +254,6 @@ class PlaylistPopup {
       const tracksWord = this._getTracksWord(count);
       countElement.textContent = `${count} ${tracksWord}`;
     }
-    if (this.badge) {
-      this.badge.textContent = count;
-      this.badge.style.display = count > 0 ? "inline-block" : "none";
-    }
   }
 
   _getTracksWord(count) {
