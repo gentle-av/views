@@ -169,7 +169,7 @@ class VideoLibrary {
     const response = await this.api.post("/api/trash", { path });
     if (response.success) {
       Utils.showNotification(
-        `${isDirectory ? "Папка" : "Файл"} "${name}" удален`,
+        `${isDirectory ? "Папка" : "Файл"} "${name}" ${isDirectory ? "удалена" : "удален"}`,
         "success",
       );
       await this.loadDirectory(this.currentPath, false);

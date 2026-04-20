@@ -9,7 +9,6 @@ class AlbumCard {
     const coverHtml = this.album.coverUrl
       ? `<img src="${this.album.coverUrl}" alt="${this._escape(this.album.title)}" loading="lazy">`
       : `<div class="album-card-placeholder"><i class="fas fa-music"></i></div>`;
-
     this.element = document.createElement("div");
     this.element.className = "album-card";
     this.element.dataset.album = this.album.title;
@@ -18,7 +17,6 @@ class AlbumCard {
       <div class="album-card-art">
         ${coverHtml}
         <button class="album-delete-btn" title="Удалить альбом"><i class="fas fa-trash-alt"></i></button>
-        <button class="album-edit-tags-btn" title="Редактировать теги"><i class="fas fa-edit"></i></button>
       </div>
       <div class="album-card-info">
         <div class="album-card-title" title="${this._escape(this.album.title)}">${this._escape(this.album.title)}</div>
@@ -29,29 +27,19 @@ class AlbumCard {
         </div>
       </div>
     `;
-
     this._attachEvents();
     return this.element;
   }
 
   _attachEvents() {
     const deleteBtn = this.element.querySelector(".album-delete-btn");
-    const editBtn = this.element.querySelector(".album-edit-tags-btn");
-
     deleteBtn?.addEventListener("click", (e) => {
       e.stopPropagation();
       this.events.emit("albumDelete", this.album);
     });
-
-    editBtn?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      this.events.emit("albumEdit", this.album);
-    });
-
     this.element.addEventListener("click", () => {
       this.events.emit("albumClick", this.album);
     });
-
     this.element.addEventListener("contextmenu", (e) => {
       e.preventDefault();
       this.events.emit("albumContextMenu", {
