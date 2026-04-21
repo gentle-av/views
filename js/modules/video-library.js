@@ -7,6 +7,7 @@ class VideoLibrary {
     this.history = [];
     this.container = document.getElementById("videoContent");
     this.breadcrumbs = document.getElementById("videoBreadcrumbs");
+    this.thumbnailCache = new Map();
     this._bindEvents();
     this.loadDirectory(this.currentPath, false);
   }
@@ -16,6 +17,7 @@ class VideoLibrary {
     if (this.container) {
       this.container.innerHTML = "";
     }
+    this.thumbnailCache.clear();
     this.currentPath = null;
     this.history = [];
   }
@@ -42,6 +44,24 @@ class VideoLibrary {
     }
   }
 
+  async _loadThumbnail(videoPath) {
+    if (this.thumbnailCache.has(videoPath)) {
+      return this.thumbnailCache.get(videoPath);
+    }
+    const url = `/api/thumbnail?path=${encodeURIComponent(videoPath)}`;
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.success && data.thumbnail) {
+        this.thumbnailCache.set(videoPath, data.thumbnail);
+        return data.thumbnail;
+      }
+    } catch (error) {
+      console.error("Failed to load thumbnail:", error);
+    }
+    return null;
+  }
+
   _renderContent(items) {
     const visibleItems = items.filter((item) => !item.name.startsWith("."));
     if (visibleItems.length === 0) {
@@ -52,9 +72,19 @@ class VideoLibrary {
     this.container.innerHTML = visibleItems
       .map(
         (item) => `
-        <div class="item-card" data-path="${item.path}" data-is-dir="${item.isDirectory}">
+        <div class="item-card" data-path="${item.path}" data-is-dir="${item.isDirectory}" data-name="${this._escape(item.name)}">
             <div class="item-card-content">
-                <i class="fas ${item.isDirectory ? "fa-folder folder-icon" : "fa-file-video video-icon"}"></i>
+                ${
+                  item.isDirectory
+                    ? `<div class="thumbnail-placeholder folder-placeholder">
+                        <i class="fas fa-folder folder-icon"></i>
+                        <div class="folder-preview-overlay"></div>
+                     </div>`
+                    : `<div class="thumbnail-placeholder video-placeholder" data-video-path="${item.path}">
+                        <i class="fas fa-file-video video-icon-loading"></i>
+                        <div class="thumbnail-loading"></div>
+                     </div>`
+                }
                 <div class="item-name" title="${this._escape(item.name)}">${this._escape(item.name)}</div>
                 ${!item.isDirectory ? `<div class="item-size">${item.size || ""}</div>` : ""}
             </div>
@@ -68,6 +98,30 @@ class VideoLibrary {
       )
       .join("");
     this._attachItemEvents();
+    this._loadVisibleThumbnails();
+  }
+
+  async _loadVisibleThumbnails() {
+    const placeholders = this.container.querySelectorAll(
+      ".thumbnail-placeholder[data-video-path]",
+    );
+    for (const placeholder of placeholders) {
+      const videoPath = placeholder.dataset.videoPath;
+      const thumbnail = await this._loadThumbnail(videoPath);
+      if (thumbnail && placeholder.parentElement) {
+        placeholder.style.backgroundImage = `url('${thumbnail}')`;
+        placeholder.style.backgroundSize = "cover";
+        placeholder.style.backgroundPosition = "center";
+        const icon = placeholder.querySelector(".video-icon-loading");
+        if (icon) {
+          icon.style.display = "none";
+        }
+        const loading = placeholder.querySelector(".thumbnail-loading");
+        if (loading) {
+          loading.style.display = "none";
+        }
+      }
+    }
   }
 
   _attachItemEvents() {
@@ -181,6 +235,7 @@ class VideoLibrary {
         `${isDirectory ? "Папка" : "Файл"} "${name}" ${isDirectory ? "удалена" : "удален"}`,
         "success",
       );
+      this.thumbnailCache.clear();
       await this.loadDirectory(this.currentPath, false);
     } else {
       Utils.showNotification(response.error || "Ошибка удаления", "error");
@@ -189,6 +244,7 @@ class VideoLibrary {
 
   refresh() {
     if (this.currentPath) {
+      this.thumbnailCache.clear();
       this.loadDirectory(this.currentPath, false);
     }
   }
