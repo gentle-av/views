@@ -63,6 +63,9 @@ class AlbumModal {
       <button class="modal-add-btn" style="flex: 1; padding: 10px; background: var(--bg2); color: var(--fg1); border: 1px solid var(--bg3); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
         <i class="fas fa-plus"></i> Добавить в плейлист
       </button>
+      <button class="modal-edit-btn" style="flex: 1; padding: 10px; background: var(--bg2); color: var(--fg1); border: 1px solid var(--bg3); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <i class="fas fa-edit"></i> Редактировать теги
+      </button>
     `;
     modalBody?.insertBefore(actionsDiv, modalBody.firstChild);
     actionsDiv
@@ -75,6 +78,16 @@ class AlbumModal {
       .querySelector(".modal-add-btn")
       ?.addEventListener("click", () => {
         this.events.emit("album:addToPlaylist", album);
+        this.hide();
+      });
+    actionsDiv
+      .querySelector(".modal-edit-btn")
+      ?.addEventListener("click", () => {
+        if (window.TagEditor) {
+          window.TagEditor.showAlbumTagEditor(album);
+        } else {
+          Utils.showNotification("Редактор тегов временно недоступен", "error");
+        }
         this.hide();
       });
   }

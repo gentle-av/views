@@ -75,13 +75,8 @@ class TagEditor {
             <input type="text" id="editAlbumYear" value="${album.year || ""}" placeholder="Год выпуска">
           </div>
           <div class="tag-editor-actions">
-            <button class="tag-editor-save-all" data-action="save-all">Сохранить для всех треков</button>
-            <button class="tag-editor-save" data-action="save">Сохранить только для альбома</button>
+            <button class="tag-editor-save-all" data-action="save-all">Применить</button>
             <button class="tag-editor-cancel">Отмена</button>
-          </div>
-          <div class="tag-editor-note">
-            <i class="fas fa-info-circle"></i>
-            <span>"Сохранить для всех треков" — применит изменения ко всем композициям альбома</span>
           </div>
         </div>
       </div>
@@ -90,7 +85,6 @@ class TagEditor {
     const overlay = modal.querySelector(".tag-editor-overlay");
     const closeBtn = modal.querySelector(".tag-editor-close");
     const cancelBtn = modal.querySelector(".tag-editor-cancel");
-    const saveBtn = modal.querySelector("[data-action='save']");
     const saveAllBtn = modal.querySelector("[data-action='save-all']");
     const closeModal = () => {
       modal.classList.add("closing");
@@ -99,7 +93,7 @@ class TagEditor {
     overlay.addEventListener("click", closeModal);
     closeBtn.addEventListener("click", closeModal);
     cancelBtn.addEventListener("click", closeModal);
-    saveBtn.addEventListener("click", async () => {
+    saveAllBtn.addEventListener("click", async () => {
       const newTitle = document.getElementById("editAlbumTitle").value.trim();
       const newArtist = document.getElementById("editAlbumArtist").value.trim();
       const newYear = document.getElementById("editAlbumYear").value.trim();
@@ -109,35 +103,14 @@ class TagEditor {
         if (newTitle && newTitle !== album.title) tags.album = newTitle;
         if (newArtist && newArtist !== album.artist) tags.artist = newArtist;
         if (newYear && newYear !== album.year) tags.year = parseInt(newYear);
-        if (Object.keys(tags).length > 0) {
-          if (await this.updateTags(track.path, tags)) successCount++;
-        }
-      }
-      if (successCount > 0) {
-        Utils.showNotification(`Обновлено ${successCount} треков`, "success");
-        window.dispatchEvent(new CustomEvent("albumTagsUpdated"));
-      } else {
-        Utils.showNotification("Нет изменений для сохранения", "info");
-      }
-      closeModal();
-    });
-    saveAllBtn.addEventListener("click", async () => {
-      const newTitle = document.getElementById("editAlbumTitle").value.trim();
-      const newArtist = document.getElementById("editAlbumArtist").value.trim();
-      const newYear = document.getElementById("editAlbumYear").value.trim();
-      let successCount = 0;
-      for (const track of album.tracks) {
-        const tags = {};
-        if (newTitle) tags.album = newTitle;
-        if (newArtist) tags.artist = newArtist;
-        if (newYear) tags.year = parseInt(newYear);
+        if (Object.keys(tags).length === 0) continue;
         if (await this.updateTags(track.path, tags)) successCount++;
       }
       if (successCount > 0) {
         Utils.showNotification(`Обновлено ${successCount} треков`, "success");
         window.dispatchEvent(new CustomEvent("albumTagsUpdated"));
       } else {
-        Utils.showNotification("Ошибка при сохранении", "error");
+        Utils.showNotification("Нет изменений для сохранения", "info");
       }
       closeModal();
     });
