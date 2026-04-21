@@ -132,7 +132,7 @@ const MediaCenter = {
         refreshMetadataBtn.disabled = true;
         refreshMetadataBtn.innerHTML =
           '<i class="fas fa-spinner fa-spin"></i><span>Обновление...</span>';
-        Utils.showNotification("Обновление базы данных...", "info");
+        // Utils.showNotification("Обновление базы данных...", "info");
         try {
           const response = await fetch(
             `${this.api.baseUrl}/api/music/force-rescan`,
@@ -143,10 +143,10 @@ const MediaCenter = {
           );
           const data = await response.json();
           if (data.status === "success") {
-            Utils.showNotification(
-              `Обновление завершено: добавлено ${data.added_files} файлов`,
-              "success",
-            );
+            // Utils.showNotification(
+            //   `Обновление завершено: добавлено ${data.added_files} файлов`,
+            //   "success",
+            // );
             setTimeout(() => location.reload(), 1500);
           } else {
             Utils.showNotification(`Ошибка: ${data.message}`, "error");
