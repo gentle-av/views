@@ -55,18 +55,22 @@
   font-weight: 600;
   color: var(--fg0);
   margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.3;
 }
 
 .album-card-artist {
   font-size: 0.75rem;
   color: var(--yellow);
   margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.3;
 }
 
 .album-card-meta {
@@ -165,14 +169,19 @@
   .album-card-title {
     font-size: 1rem;
     white-space: normal;
-    -webkit-line-clamp: 2;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    display: block;
+    -webkit-line-clamp: unset;
   }
 
   .album-card-artist {
     font-size: 0.85rem;
     white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   .album-card-meta {

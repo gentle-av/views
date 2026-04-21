@@ -20,7 +20,7 @@ class AlbumCard {
       </div>
       <div class="album-card-info">
         <div class="album-card-title" title="${this._escape(this.album.title)}">${this._escape(this.album.title)}</div>
-        <div class="album-card-artist">${this._escape(this.album.artist)}</div>
+        <div class="album-card-artist" title="${this._escape(this.album.artist)}">${this._escape(this.album.artist)}</div>
         <div class="album-card-meta">
           ${this.album.year ? `<span>${this.album.year}</span>` : ""}
           <span>${this.album.trackCount} треков</span>
