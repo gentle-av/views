@@ -255,7 +255,7 @@ class VideoPlayerController {
     const command = this.isPlaying ? "pause" : "play";
     await this.api.post("/api/mpv/control", { command: command });
     this.isPlaying = !this.isPlaying;
-    this._updateUI();
+    this._updatePlayPauseButton();
   }
 
   async seek(seconds) {
