@@ -14,32 +14,50 @@
 </div>
 
 <div id="playerControlPage" class="player-control-page" style="display: none">
-  <div class="player-control-header"></div>
+  <div class="player-control-header">
+    <div class="player-file-info">
+      <i class="fas fa-video"></i>
+      <span id="videoFileName" class="video-filename">—</span>
+    </div>
+    <button id="closeControlPage" class="close-control-page" title="Свернуть">
+      <i class="fas fa-chevron-down"></i>
+    </button>
+  </div>
+
+  <div class="player-placeholder" id="playerPlaceholder">
+    <i class="fas fa-play-circle"></i>
+    <div>Выберите видео для воспроизведения</div>
+  </div>
+
+  <div class="player-progress-section">
+    <div class="player-progress-container">
+      <span id="videoCurrentTime" class="video-time">0:00</span>
+      <div id="videoProgressBar" class="video-progress-bar">
+        <div id="videoProgressFill" class="video-progress-fill"></div>
+        <div id="videoProgressHover" class="video-progress-hover"></div>
+      </div>
+      <span id="videoDuration" class="video-time">0:00</span>
+    </div>
+  </div>
+
   <div class="player-controls-center">
     <button id="seekBackwardBtn" class="control-btn" title="Назад 10с">
-      <i class="fas fa-backward"></i>
+      <i class="fas fa-backward-step"></i>
     </button>
-    <button id="playPauseBtn" class="control-btn" title="Пауза">
+    <button id="playPauseBtn" class="control-btn play-pause-btn" title="Пауза">
       <i class="fas fa-pause"></i>
     </button>
     <button id="seekForwardBtn" class="control-btn" title="Вперед 10с">
-      <i class="fas fa-forward"></i>
+      <i class="fas fa-forward-step"></i>
     </button>
     <button id="fullscreenBtn" class="control-btn" title="Полный экран">
       <i class="fas fa-expand"></i>
     </button>
+    <button id="deleteFileBtn" class="control-btn delete-file" title="Удалить">
+      <i class="fas fa-trash-alt"></i>
+    </button>
     <button id="closeFileBtn" class="control-btn close-file" title="Закрыть">
       <i class="fas fa-times"></i>
     </button>
-    <button id="deleteFileBtn" class="control-btn delete-file" title="Удалить">
-      <i class="fas fa-trash"></i>
-    </button>
   </div>
-  <div class="player-placeholder">
-    <i class="fas fa-play-circle"></i>
-    <div>Выберите видео для воспроизведения</div>
-  </div>
-  <button id="closeControlPage" class="close-control-page">
-    <i class="fas fa-chevron-down"></i>
-  </button>
 </div>

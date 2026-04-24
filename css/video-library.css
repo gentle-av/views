@@ -136,3 +136,76 @@
 .item-card:hover {
   transform: translateY(-4px);
 }
+
+.video-progress-container {
+  width: 100%;
+  padding: 10px 0;
+}
+
+.video-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.video-time-display {
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: var(--yellow);
+  min-width: 40px;
+  text-align: center;
+}
+
+.video-progress-track {
+  flex: 1;
+  height: 4px;
+  background: var(--bg3);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+}
+
+.video-progress-track:hover {
+  height: 6px;
+}
+
+.video-progress-filled {
+  height: 100%;
+  background: var(--yellow);
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.player-control-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.8));
+  backdrop-filter: blur(10px);
+  padding: 16px;
+  z-index: 1000;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.player-control-panel.visible {
+  transform: translateY(0);
+}
+
+.video-info {
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.video-title {
+  font-size: 0.9rem;
+  color: var(--fg1);
+  max-width: 80%;
+  margin: 0 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
