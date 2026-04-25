@@ -364,3 +364,151 @@
     font-size: 48px;
   }
 }
+
+@media (max-width: 768px) {
+  .content-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .item-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg2);
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--bg3);
+    min-height: auto;
+  }
+
+  .item-card:hover {
+    background: var(--bg3);
+    transform: translateX(4px);
+    border-color: var(--yellow);
+  }
+
+  .item-card-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .thumbnail-placeholder {
+    width: 60px;
+    height: 60px;
+    aspect-ratio: 1;
+    flex-shrink: 0;
+    border-radius: 8px;
+    position: relative;
+  }
+
+  .thumbnail-placeholder i {
+    display: none;
+  }
+
+  .item-type-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 0.65rem;
+    color: var(--fg0);
+  }
+
+  .item-type-badge.folder {
+    background: rgba(250, 189, 47, 0.8);
+    color: var(--bg0);
+  }
+
+  .item-type-badge.video {
+    background: rgba(52, 152, 219, 0.8);
+    color: var(--bg0);
+  }
+
+  .item-name {
+    flex: 1;
+    font-size: 0.85rem;
+    text-align: left;
+    -webkit-line-clamp: 2;
+  }
+
+  .item-name:before {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    margin-right: 8px;
+  }
+
+  .item-card[data-is-dir="true"] .item-name:before {
+    content: "📁";
+  }
+
+  .item-card[data-is-dir="false"] .item-name:before {
+    content: "🎬";
+  }
+
+  .item-size {
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+
+  .swipe-actions {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 70px;
+    background: var(--red);
+    border-radius: 0 12px 12px 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+  }
+
+  .item-card.swipe-left {
+    transform: translateX(-70px);
+  }
+
+  .item-card.swipe-left .swipe-actions {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .swipe-delete-btn {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: var(--bg0);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .folder-placeholder,
+  .video-placeholder {
+    background-size: cover;
+    background-position: center;
+  }
+
+  .folder-placeholder .folder-icon,
+  .video-placeholder .video-icon-loading {
+    display: none;
+  }
+}

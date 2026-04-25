@@ -173,3 +173,139 @@
     max-width: 140px;
   }
 }
+
+@media (max-width: 768px) {
+  .explorer-header {
+    padding: 8px 12px;
+    background: var(--bg1);
+    border-bottom: 1px solid var(--bg3);
+  }
+
+  .breadcrumbs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 6px 0;
+    margin: 0;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .breadcrumbs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .breadcrumb-root {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg2);
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .breadcrumb-root i {
+    font-size: 0.8rem;
+    color: var(--yellow);
+  }
+
+  .breadcrumb-root span {
+    font-size: 0.75rem;
+    color: var(--fg1);
+    font-weight: 500;
+  }
+
+  .breadcrumb-root:active {
+    background: var(--yellow);
+    transform: scale(0.96);
+  }
+
+  .breadcrumb-root:active i,
+  .breadcrumb-root:active span {
+    color: var(--bg0);
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg2);
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    max-width: 200px;
+    white-space: nowrap;
+  }
+
+  .breadcrumb i {
+    font-size: 0.7rem;
+    color: var(--yellow);
+    flex-shrink: 0;
+  }
+
+  .breadcrumb .breadcrumb-text {
+    font-size: 0.75rem;
+    color: var(--fg1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  .breadcrumb:active {
+    background: var(--bg3);
+    transform: scale(0.96);
+  }
+
+  .breadcrumb.active {
+    background: var(--yellow);
+    pointer-events: none;
+  }
+
+  .breadcrumb.active .breadcrumb-text {
+    color: var(--bg0);
+    font-weight: 600;
+  }
+
+  .breadcrumb.active i {
+    color: var(--bg0);
+  }
+}
+
+@media (max-width: 480px) {
+  .explorer-header {
+    padding: 6px 10px;
+  }
+
+  .breadcrumb-root {
+    padding: 5px 10px;
+  }
+
+  .breadcrumb-root i {
+    font-size: 0.7rem;
+  }
+
+  .breadcrumb-root span {
+    font-size: 0.7rem;
+  }
+
+  .breadcrumb {
+    padding: 5px 10px;
+    max-width: 160px;
+  }
+
+  .breadcrumb i {
+    font-size: 0.65rem;
+  }
+
+  .breadcrumb .breadcrumb-text {
+    font-size: 0.7rem;
+  }
+}

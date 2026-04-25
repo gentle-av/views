@@ -72,29 +72,27 @@ class VideoLibrary {
     this.container.innerHTML = visibleItems
       .map(
         (item) => `
-      <div class="item-card" data-path="${item.path}" data-is-dir="${item.isDirectory}" data-name="${this._escape(item.name)}">
-          <div class="item-card-content">
-              ${
-                item.isDirectory
-                  ? `<div class="thumbnail-placeholder folder-placeholder" data-folder-path="${item.path}">
-                      <i class="fas fa-folder folder-icon"></i>
-                      <div class="folder-thumbnail-overlay"></div>
-                    </div>`
-                  : `<div class="thumbnail-placeholder video-placeholder" data-video-path="${item.path}">
-                      <i class="fas fa-file-video video-icon-loading"></i>
-                      <div class="thumbnail-loading"></div>
-                    </div>`
-              }
-              <div class="item-name" title="${this._escape(item.name)}">${this._escape(item.name)}</div>
-              ${!item.isDirectory ? `<div class="item-size">${item.size || ""}</div>` : ""}
-          </div>
-          <div class="swipe-actions">
-              <button class="swipe-delete-btn" data-path="${item.path}" data-name="${this._escape(item.name)}" data-is-dir="${item.isDirectory}">
-                  <i class="fas fa-trash-alt"></i>
-              </button>
-          </div>
-      </div>
-    `,
+    <div class="item-card" data-path="${item.path}" data-is-dir="${item.isDirectory}" data-name="${this._escape(item.name)}">
+        <div class="item-card-content">
+            ${
+              item.isDirectory
+                ? `<div class="thumbnail-placeholder folder-placeholder" data-folder-path="${item.path}" style="background-image: url(''); background-size: cover; background-position: center;">
+                    <span class="item-type-badge folder">Папка</span>
+                  </div>`
+                : `<div class="thumbnail-placeholder video-placeholder" data-video-path="${item.path}" style="background-image: url(''); background-size: cover; background-position: center;">
+                    <span class="item-type-badge video">Видео</span>
+                  </div>`
+            }
+            <div class="item-name" title="${this._escape(item.name)}">${this._escape(item.name)}</div>
+            ${!item.isDirectory ? `<div class="item-size">${item.size || ""}</div>` : ""}
+        </div>
+        <div class="swipe-actions">
+            <button class="swipe-delete-btn" data-path="${item.path}" data-name="${this._escape(item.name)}" data-is-dir="${item.isDirectory}">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+    </div>
+  `,
       )
       .join("");
     this._attachItemEvents();
@@ -123,7 +121,6 @@ class VideoLibrary {
         placeholder.style.backgroundImage = `url('${thumbnail}')`;
         placeholder.style.backgroundSize = "cover";
         placeholder.style.backgroundPosition = "center";
-        // Иконку НЕ скрываем, оставляем поверх превью
         const icon = placeholder.querySelector(".video-icon-loading");
         if (icon) {
           icon.style.position = "absolute";
