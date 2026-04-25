@@ -114,33 +114,18 @@ class BottomPlayerPanel {
     this.events.on("playlistCleared", () => this._onPlaylistCleared());
   }
 
+  _extractTrackNameFromPath(filePath) {
+    if (!filePath) return null;
+    const parts = filePath.split("/");
+    let fileName = parts[parts.length - 1];
+    fileName = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
+    return fileName;
+  }
+
   _startAutoUpdate() {
     setInterval(async () => {
       try {
         if (!this._isAudioPage || !this.element) return;
-        const stateRes = await fetch("/api/playbackState");
-        const stateData = await stateRes.json();
-        const state = stateData.data;
-        if (state) {
-          const trackCountEl = document.getElementById("panelTrackCount");
-          const playPauseBtn = document.getElementById("panelPlayPauseBtn");
-          if (trackCountEl) {
-            trackCountEl.textContent = `${(state.currentIndex || 0) + 1}/${state.totalTracks || 0}`;
-          }
-          if (playPauseBtn) {
-            playPauseBtn.innerHTML = state.isPlaying
-              ? '<i class="fas fa-pause"></i>'
-              : '<i class="fas fa-play"></i>';
-          }
-        }
-        const res = await fetch("/api/currentTrack");
-        const data = await res.json();
-        if (data.success && data.data) {
-          const trackNameEl = document.getElementById("panelTrackName");
-          if (trackNameEl && data.data.track) {
-            trackNameEl.textContent = data.data.track;
-          }
-        }
         const timeRes = await fetch("/api/currentTime");
         const timeData = await timeRes.json();
         if (timeData.data && timeData.data.duration > 0) {
@@ -155,7 +140,7 @@ class BottomPlayerPanel {
             const secs = Math.floor(timeData.data.currentTime % 60);
             timeCurrent.textContent = `${mins}:${secs.toString().padStart(2, "0")}`;
           }
-          if (timeTotal) {
+          if (timeTotal && timeData.data.duration) {
             const mins = Math.floor(timeData.data.duration / 60);
             const secs = Math.floor(timeData.data.duration % 60);
             timeTotal.textContent = `${mins}:${secs.toString().padStart(2, "0")}`;
@@ -173,14 +158,17 @@ class BottomPlayerPanel {
     if (this.trackCount) {
       this.trackCount.textContent = `${(state.currentIndex || 0) + 1}/${state.totalTracks || 0}`;
     }
-    let trackNameText = "—";
-    if (state.totalTracks > 0) {
-      trackNameText = state.track || "—";
+    if (this.trackName) {
+      let trackNameText = "—";
+      if (state.currentTrackName && state.currentTrackName.trim() !== "") {
+        trackNameText = state.currentTrackName;
+      } else if (state.currentTrack) {
+        trackNameText = this._extractTrackNameFromPath(state.currentTrack);
+      }
+      if (this.trackName.textContent !== trackNameText) {
+        this.trackName.textContent = trackNameText;
+      }
     }
-    if (this.trackName) this.trackName.textContent = trackNameText;
-
-    // Убираем await из этого метода - он не может быть async из-за синхронного вызова
-    // Вместо этого используем значения из state, если они есть
     if (
       state.currentTime !== undefined &&
       state.duration !== undefined &&
@@ -196,7 +184,6 @@ class BottomPlayerPanel {
         this.progressFill.style.width = `${(current / duration) * 100}%`;
       }
     }
-
     if (this.playPauseBtn) {
       this.playPauseBtn.innerHTML =
         state.isPlaying && state.totalTracks > 0
