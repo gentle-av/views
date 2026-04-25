@@ -6,27 +6,33 @@ class AlbumLibrary {
     this.filteredAlbums = [];
     this.container = document.getElementById("albumsGrid");
     this._loading = false;
+    this._isDestroyed = false;
+    this._pendingRenders = [];
   }
 
   destroy() {
     console.log("[AlbumLibrary] destroy called");
     this._loading = false;
+    this._isDestroyed = true;
     this.albums = [];
     this.filteredAlbums = [];
     if (this.container) {
       this.container.innerHTML = "";
     }
+    if (this._animationFrame) {
+      cancelAnimationFrame(this._animationFrame);
+    }
   }
 
   async init() {
-    await this._loadAlbums();
-    this.events.on("albumDelete", () => this._loadAlbums());
-    this.events.on("albumEdit", () => this._loadAlbums());
+    await this._loadAlbumsAsync();
+    this.events.on("albumDelete", () => this._loadAlbumsAsync());
+    this.events.on("albumEdit", () => this._loadAlbumsAsync());
     this.events.on("albumContextMenu", ({ x, y, album }) =>
       this._showContextMenu(x, y, album),
     );
     this.events.on("albumClick", (album) => this._showAlbumModal(album));
-    window.addEventListener("albumTagsUpdated", () => this._loadAlbums());
+    window.addEventListener("albumTagsUpdated", () => this._loadAlbumsAsync());
   }
 
   _showContextMenu(x, y, album) {
@@ -75,23 +81,28 @@ class AlbumLibrary {
     this.events.emit("album:open", album);
   }
 
-  async _loadAlbums() {
-    if (this._loading) return;
+  async _loadAlbumsAsync() {
+    if (this._loading || this._isDestroyed) return;
     this._loading = true;
-    this._showLoading();
-
     const artistsData = await this.api.getArtists();
-    if (!artistsData?.artists) {
-      this._showError();
+    if (!artistsData?.artists || this._isDestroyed) {
+      if (!this._isDestroyed) this._showError();
       this._loading = false;
       return;
     }
-
+    this.albums = [];
+    this.filteredAlbums = [];
+    if (this.container) {
+      this.container.innerHTML = "";
+    }
     const uniqueAlbums = new Map();
+    let processedArtists = 0;
     for (const artist of artistsData.artists) {
+      if (this._isDestroyed) break;
       const albumsData = await this.api.getAlbums(artist);
       if (albumsData?.albums) {
         for (const albumData of albumsData.albums) {
+          if (this._isDestroyed) break;
           const key = `${albumData.artist}|${albumData.album}`;
           if (!uniqueAlbums.has(key)) {
             const tracksData = await this.api.getTracks(
@@ -110,19 +121,52 @@ class AlbumLibrary {
               coverUrl,
             });
             uniqueAlbums.set(key, album);
+            this.albums.push(album);
+            const currentAlbums = Array.from(uniqueAlbums.values());
+            this.filteredAlbums = [...currentAlbums];
+            this._renderStreaming(currentAlbums);
+            await this._delay(50);
           }
         }
       }
+      processedArtists++;
+      if (processedArtists % 3 === 0) {
+        await this._delay(10);
+      }
     }
-
     this.albums = Array.from(uniqueAlbums.values());
     this.filteredAlbums = [...this.albums];
     this._render();
     this._loading = false;
   }
 
+  _renderStreaming(albums) {
+    if (!this.container || this._isDestroyed) return;
+    if (this._animationFrame) {
+      cancelAnimationFrame(this._animationFrame);
+    }
+    this._animationFrame = requestAnimationFrame(() => {
+      if (!this.container || this._isDestroyed) return;
+      const existingCards = this.container.children;
+      const existingCount = existingCards.length;
+      if (existingCount === 0 && albums.length > 0) {
+        this.container.innerHTML = "";
+      }
+      const remainingAlbums = albums.slice(existingCount);
+      for (let i = 0; i < remainingAlbums.length; i++) {
+        const album = remainingAlbums[i];
+        const card = new AlbumCard(album, this.events);
+        this.container.appendChild(card.render());
+      }
+    });
+  }
+
+  _delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   _render() {
-    if (!this.container) return;
+    if (!this.container || this._isDestroyed) return;
     if (this.filteredAlbums.length === 0) {
       this.container.innerHTML =
         '<div class="empty"><i class="fas fa-music"></i> Альбомы не найдены</div>';
@@ -136,6 +180,7 @@ class AlbumLibrary {
   }
 
   search(term) {
+    this._closeAllSwipes();
     if (!term.trim()) {
       this.filteredAlbums = [...this.albums];
     } else {
@@ -146,18 +191,30 @@ class AlbumLibrary {
           a.artist.toLowerCase().includes(lowerTerm),
       );
     }
-    this._render();
+    if (this.filteredAlbums.length === this.albums.length) {
+      this._renderStreaming(this.filteredAlbums);
+    } else {
+      this._render();
+    }
+  }
+
+  _closeAllSwipes() {
+    if (!this.container) return;
+    const cards = this.container.querySelectorAll(".album-card");
+    cards.forEach((card) => {
+      card.classList.remove("swipe-left");
+      card.style.transform = "translateX(0)";
+    });
   }
 
   _showLoading() {
-    if (this.container) {
-      this.container.innerHTML =
-        '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка...</div>';
+    if (this.container && !this._isDestroyed) {
+      this.container.innerHTML = "";
     }
   }
 
   _showError() {
-    if (this.container) {
+    if (this.container && !this._isDestroyed) {
       this.container.innerHTML =
         '<div class="empty"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки</div>';
     }

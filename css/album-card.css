@@ -1,7 +1,7 @@
 .album-card {
   background: var(--bg1);
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
   transition: all var(--transition-normal);
   border: 1px solid var(--bg2);
@@ -153,6 +153,16 @@
     gap: 18px;
     padding: 14px;
     max-width: none;
+    position: relative;
+    background: var(--bg1);
+    border-radius: 12px;
+    transition: transform 0.3s ease;
+    transform: translateX(0);
+    z-index: 2;
+  }
+
+  .album-card.swipe-left {
+    transform: translateX(-80px);
   }
 
   .album-card-art {
@@ -164,6 +174,7 @@
 
   .album-card-info {
     padding: 0;
+    flex: 1;
   }
 
   .album-card-title {
@@ -189,9 +200,61 @@
   }
 
   .album-delete-btn {
-    opacity: 1;
-    left: 8px;
-    top: 8px;
+    display: none;
+  }
+}
+
+.album-swipe-delete-container {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .album-swipe-delete-container {
+    display: block;
+    position: relative;
+    margin-bottom: 14px;
+  }
+
+  .album-swipe-delete-inner {
+    position: relative;
+    width: 100%;
+  }
+
+  .album-swipe-delete-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 80px;
+    background: linear-gradient(135deg, var(--red) 0%, #d63031 100%);
+    border: none;
+    border-radius: 12px;
+    color: var(--bg0);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    z-index: 1;
+  }
+
+  .album-swipe-delete-btn i {
+    font-size: 28px;
+    margin-bottom: 4px;
+  }
+
+  .album-swipe-delete-btn:active {
+    transform: scale(0.97);
+  }
+}
+
+@media (min-width: 769px) {
+  .album-swipe-delete-container {
+    display: none;
   }
 }
 
