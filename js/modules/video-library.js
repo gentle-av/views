@@ -77,10 +77,10 @@ class VideoLibrary {
             ${
               item.isDirectory
                 ? `<div class="thumbnail-placeholder folder-placeholder" data-folder-path="${item.path}" style="background-image: url(''); background-size: cover; background-position: center;">
-                    <span class="item-type-badge folder"></span>
+                    <i class="fas fa-folder folder-icon"></i>
                   </div>`
                 : `<div class="thumbnail-placeholder video-placeholder" data-video-path="${item.path}" style="background-image: url(''); background-size: cover; background-position: center;">
-                    <span class="item-type-badge video"></span>
+                    <i class="fas fa-play-circle video-icon-loading"></i>
                   </div>`
             }
             <div class="item-name" title="${this._escape(item.name)}">${this._escape(item.name)}</div>
@@ -100,16 +100,6 @@ class VideoLibrary {
     this._loadVisibleFolderPreviews();
   }
 
-  async _loadVisibleFolderThumbnails() {
-    const folderPlaceholders = this.container.querySelectorAll(
-      ".thumbnail-placeholder.folder-placeholder[data-folder-path]",
-    );
-    for (const placeholder of folderPlaceholders) {
-      const folderPath = placeholder.dataset.folderPath;
-      await this._loadFolderThumbnail(folderPath, placeholder);
-    }
-  }
-
   async _loadVisibleThumbnails() {
     const placeholders = this.container.querySelectorAll(
       ".thumbnail-placeholder[data-video-path]",
@@ -121,20 +111,6 @@ class VideoLibrary {
         placeholder.style.backgroundImage = `url('${thumbnail}')`;
         placeholder.style.backgroundSize = "cover";
         placeholder.style.backgroundPosition = "center";
-        const icon = placeholder.querySelector(".video-icon-loading");
-        if (icon) {
-          icon.style.position = "absolute";
-          icon.style.zIndex = "2";
-          icon.style.backgroundColor = "rgba(0,0,0,0.5)";
-          icon.style.padding = "4px 6px";
-          icon.style.borderRadius = "6px";
-          icon.style.fontSize = "20px";
-          icon.style.margin = "6px 0 0 6px";
-        }
-        const loading = placeholder.querySelector(".thumbnail-loading");
-        if (loading) {
-          loading.style.display = "none";
-        }
       }
     }
   }
@@ -167,6 +143,9 @@ class VideoLibrary {
           );
           if (confirmed) {
             this.events.emit("video:delete", { path, name, isDir });
+            if (CustomDeleteDialogInstance.close) {
+              CustomDeleteDialogInstance.close();
+            }
           }
         };
         deleteBtn.addEventListener("click", deleteHandler);
@@ -208,6 +187,9 @@ class VideoLibrary {
       );
       if (confirmed) {
         this.events.emit("video:delete", { path, name, isDir: isDirectory });
+        if (CustomDeleteDialogInstance.close) {
+          CustomDeleteDialogInstance.close();
+        }
       }
     });
     const closeMenu = (e) => {
@@ -340,14 +322,6 @@ class VideoLibrary {
         placeholder.style.backgroundImage = `url('${thumbnail}')`;
         placeholder.style.backgroundSize = "cover";
         placeholder.style.backgroundPosition = "center";
-        const icon = placeholder.querySelector(".folder-icon");
-        if (icon) {
-          icon.style.display = "none";
-        }
-        const overlay = document.createElement("div");
-        overlay.className = "folder-video-count";
-        overlay.textContent = "📁";
-        placeholder.appendChild(overlay);
       }
     }
   }
@@ -365,16 +339,6 @@ class VideoLibrary {
           placeholder.style.backgroundImage = `url('${thumbnail}')`;
           placeholder.style.backgroundSize = "cover";
           placeholder.style.backgroundPosition = "center";
-          const icon = placeholder.querySelector(".folder-icon");
-          if (icon) {
-            icon.style.position = "absolute";
-            icon.style.zIndex = "2";
-            icon.style.backgroundColor = "rgba(0,0,0,0.5)";
-            icon.style.padding = "6px 8px";
-            icon.style.borderRadius = "8px";
-            icon.style.fontSize = "28px";
-            icon.style.margin = "8px 0 0 8px";
-          }
         }
       }
     }

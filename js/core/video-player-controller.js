@@ -6,14 +6,12 @@ class VideoPlayerController {
     this.isPlaying = false;
     this.isFullscreen = false;
     this.panel = null;
-    this._isStarting = false;
     this._progressInterval = null;
-    this._statusCheckInterval = null;
     this._duration = 0;
     this._currentTime = 0;
     this._bindEvents();
     this._initPanel();
-    this._startStatusChecking();
+    this._startProgressPolling();
     setTimeout(() => this._checkExistingPlayback(), 1000);
   }
 
@@ -25,7 +23,6 @@ class VideoPlayerController {
         if (this.panel) {
           this._bindUIEvents();
           observer.disconnect();
-          setTimeout(() => this._checkExistingPlayback(), 100);
         }
       });
       observer.observe(document.body, { childList: true, subtree: true });
@@ -35,82 +32,28 @@ class VideoPlayerController {
     }
   }
 
-  _startStatusChecking() {
-    if (this._statusCheckInterval) {
-      clearInterval(this._statusCheckInterval);
-    }
-    this._statusCheckInterval = setInterval(async () => {
-      try {
-        const response = await this.api.get("/api/video/status");
-        if (
-          response.success &&
-          response.playing &&
-          !response.paused &&
-          response.currentFile
-        ) {
-          if (!this.panel || this.panel.style.display !== "flex") {
-            console.log("Player is active but panel is hidden, restoring...");
-            this.currentFile = response.currentFile;
-            this.isPlaying = true;
-            this._currentTime = response.currentTime || 0;
-            this._duration = response.duration || 0;
-            this._updateFileInfo(this.currentFile);
-            this._updateProgressBar(this._currentTime, this._duration);
-            this._updateTimeDisplay(this._currentTime, this._duration);
-            this._updatePlayPauseButton();
-            this._loadVideoPreview(this.currentFile);
-            this.show();
-            if (!this._progressInterval) {
-              this._startProgressPolling();
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Status check failed:", error);
-      }
-    }, 3000);
-  }
-
   async _checkExistingPlayback() {
-    console.log("[VideoPlayer] _checkExistingPlayback started");
     try {
       const response = await this.api.get("/api/video/status");
-      console.log("[VideoPlayer] Status response:", response);
       if (response.success && response.playing && response.currentFile) {
-        console.log(
-          "[VideoPlayer] Found active playback:",
-          response.currentFile,
-        );
+        this.currentFile = response.currentFile;
         this.isPlaying = !response.paused;
         this._currentTime = response.currentTime || 0;
         this._duration = response.duration || 0;
-        this.currentFile = response.currentFile;
         this._updateFileInfo(this.currentFile);
         this._updateProgressBar(this._currentTime, this._duration);
         this._updateTimeDisplay(this._currentTime, this._duration);
         this._updatePlayPauseButton();
-        await this._loadVideoPreview(this.currentFile);
+        this._loadVideoPreview(this.currentFile);
         this.show();
-        this._startProgressPolling();
-        this._updateUI();
-      } else {
-        console.log("[VideoPlayer] No active playback found");
-        if (this.panel) {
-          this.panel.style.display = "none";
-        }
       }
     } catch (error) {
-      console.error("[VideoPlayer] Failed to check existing playback:", error);
-      if (this.panel) {
-        this.panel.style.display = "none";
-      }
+      console.error("Failed to check existing playback:", error);
     }
   }
 
   _bindEvents() {
     this.events.on("playback:videoStart", (path) => this.startPlayback(path));
-    this.events.on("player:show", () => this.show());
-    this.events.on("player:hide", () => this.hide());
     this.events.on("page:videoLoaded", () => this._checkExistingPlayback());
   }
 
@@ -134,7 +77,7 @@ class VideoPlayerController {
       ?.addEventListener("click", () => this.stop());
     document
       .getElementById("deleteFileBtn")
-      ?.addEventListener("click", () => this.deleteCurrentFile());
+      ?.addEventListener("click", () => this.closeAndDelete());
     document
       .getElementById("closeControlPage")
       ?.addEventListener("click", () => this.hide());
@@ -160,18 +103,12 @@ class VideoPlayerController {
       console.error("Player control panel not found");
       return;
     }
-    if (this._isStarting) {
-      console.log("Already starting playback, ignoring");
-      return;
-    }
     if (this.currentFile === path && this.panel.style.display === "flex") {
-      console.log("Already playing this file");
       return;
     }
-    this._isStarting = true;
     try {
       this.currentFile = path;
-      this.show();
+      console.log("Saved currentFile:", this.currentFile);
       this._updateFileInfo(path);
       await this._loadVideoPreview(path);
       this._updateProgressBar(0, 0);
@@ -179,30 +116,16 @@ class VideoPlayerController {
       const response = await this.api.post("/api/open", { path });
       if (response.success) {
         this.isPlaying = true;
-        this._startProgressPolling();
-        setTimeout(async () => {
-          const status = await this.api.get("/api/video/status");
-          if (
-            status.success &&
-            status.duration === 0 &&
-            status.currentTime === 0
-          ) {
-            console.log("Video has zero duration, closing panel");
-            this.stop();
-          }
-        }, 1000);
+        this.show();
+        setTimeout(() => {
+          this._startProgressPolling();
+        }, 500);
       } else {
         console.error("Failed to open video:", response.error);
-        this.hide();
       }
       this._updateUI();
     } catch (error) {
       console.error("Start playback error:", error);
-      this.hide();
-    } finally {
-      setTimeout(() => {
-        this._isStarting = false;
-      }, 500);
     }
   }
 
@@ -222,27 +145,16 @@ class VideoPlayerController {
       if (!this.currentFile) return;
       try {
         const response = await this.api.get("/api/video/status");
-        if (response.success) {
-          if (response.playing) {
-            if (response.duration === 0 && response.currentTime === 0) {
-              console.log("Detected zero duration video, stopping");
-              this.stop();
-              return;
-            }
-            this.isPlaying = !response.paused;
-            this._currentTime = response.currentTime || 0;
-            this._duration = response.duration || 0;
-            this._updateProgressBar(this._currentTime, this._duration);
-            this._updateTimeDisplay(this._currentTime, this._duration);
-            this._updatePlayPauseButton();
-            if (this.panel && this.panel.style.display !== "flex") {
-              this.show();
-            }
-          } else if (!response.playing && this.currentFile) {
-            if (response.reason === "process_dead") {
-              console.log("Video process died, stopping");
-              this.stop();
-            }
+        if (response.success && response.playing) {
+          this.isPlaying = !response.paused;
+          this._currentTime = response.currentTime || 0;
+          this._duration = response.duration || 0;
+          this._updateProgressBar(this._currentTime, this._duration);
+          this._updateTimeDisplay(this._currentTime, this._duration);
+          this._updatePlayPauseButton();
+        } else if (response.success && !response.playing && this.currentFile) {
+          if (response.reason === "process_dead") {
+            this.stop();
           }
         }
       } catch (error) {
@@ -254,8 +166,7 @@ class VideoPlayerController {
   _updateProgressBar(currentTime, duration) {
     const progressFill = document.getElementById("videoProgressFill");
     if (progressFill && duration > 0) {
-      const percent = (currentTime / duration) * 100;
-      progressFill.style.width = `${percent}%`;
+      progressFill.style.width = `${(currentTime / duration) * 100}%`;
     }
   }
 
@@ -283,19 +194,17 @@ class VideoPlayerController {
 
   async _handleProgressBarClick(e) {
     const progressBar = document.getElementById("videoProgressBar");
-    if (!progressBar) return;
+    if (!progressBar || this._duration === 0) return;
     const rect = progressBar.getBoundingClientRect();
     const percent = (e.clientX - rect.left) / rect.width;
     const seekTime = this._duration * percent;
-    if (this._duration > 0 && seekTime >= 0 && seekTime <= this._duration) {
-      await this.seekTo(seekTime);
-    }
+    await this.seekTo(seekTime);
   }
 
   async _handleProgressBarHover(e) {
     const progressBar = document.getElementById("videoProgressBar");
     const hoverFill = document.getElementById("videoProgressHover");
-    if (!progressBar || !hoverFill) return;
+    if (!progressBar || !hoverFill || this._duration === 0) return;
     const rect = progressBar.getBoundingClientRect();
     const percent = (e.clientX - rect.left) / rect.width;
     hoverFill.style.width = `${percent * 100}%`;
@@ -315,12 +224,8 @@ class VideoPlayerController {
   _hideProgressHover() {
     const hoverFill = document.getElementById("videoProgressHover");
     const timeTooltip = document.getElementById("videoProgressTooltip");
-    if (hoverFill) {
-      hoverFill.style.width = "0%";
-    }
-    if (timeTooltip) {
-      timeTooltip.style.display = "none";
-    }
+    if (hoverFill) hoverFill.style.width = "0%";
+    if (timeTooltip) timeTooltip.style.display = "none";
   }
 
   async seekTo(time) {
@@ -354,7 +259,6 @@ class VideoPlayerController {
   async toggleFullscreen() {
     await this.api.post("/api/mpv/control", { command: "fullscreen" });
     this.isFullscreen = !this.isFullscreen;
-    this._updateUI();
   }
 
   async stop() {
@@ -383,24 +287,59 @@ class VideoPlayerController {
   }
 
   async deleteCurrentFile() {
-    if (!this.currentFile) return;
+    const filePath = this.currentFile;
+    if (!filePath) {
+      console.error("No current file to delete");
+      return;
+    }
+    const fileName = filePath.split("/").pop();
+    console.log("Deleting file, saved path:", filePath);
     const confirmed = await CustomDeleteDialogInstance.showConfirm(
-      this.currentFile.split("/").pop(),
+      fileName,
       false,
     );
     if (confirmed) {
-      await this.api.post("/api/trash", { path: this.currentFile });
-      if (this._progressInterval) {
-        clearInterval(this._progressInterval);
-        this._progressInterval = null;
+      CustomDeleteDialogInstance.close();
+      await this.stop();
+      const response = await this.api.post("/api/trash", { path: filePath });
+      console.log("Trash response:", response);
+      if (response.success) {
+        Utils.showNotification(
+          `Файл "${fileName}" отправлен в корзину`,
+          "success",
+        );
+      } else {
+        Utils.showNotification(response.error || "Ошибка удаления", "error");
       }
-      this.currentFile = null;
-      this.isPlaying = false;
-      this._duration = 0;
-      this._currentTime = 0;
-      this.hide();
       this.events.emit("video:refresh");
-      this.events.emit("playback:videoStopped");
+    }
+  }
+
+  async closeAndDelete() {
+    const filePath = this.currentFile;
+    if (!filePath) {
+      console.error("No current file to delete");
+      return;
+    }
+    const fileName = filePath.split("/").pop();
+    console.log("Closing and deleting video, saved path:", filePath);
+    const confirmed = await CustomDeleteDialogInstance.showConfirm(
+      fileName,
+      false,
+    );
+    if (confirmed) {
+      CustomDeleteDialogInstance.close();
+      await this.stop();
+      const response = await this.api.post("/api/trash", { path: filePath });
+      if (response.success) {
+        Utils.showNotification(
+          `Видео "${fileName}" закрыто и отправлено в корзину`,
+          "success",
+        );
+      } else {
+        Utils.showNotification(response.error || "Ошибка удаления", "error");
+      }
+      this.events.emit("video:refresh");
     }
   }
 

@@ -105,6 +105,9 @@
   font-size: 28px;
   color: #f39c12;
   margin: 8px 0 0 8px;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .video-placeholder {
@@ -119,6 +122,9 @@
   color: #3498db;
   margin: 8px 0 0 8px;
   animation: none;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .thumbnail-loading {
