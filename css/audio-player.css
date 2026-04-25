@@ -22,16 +22,25 @@
   flex: 1;
   overflow: hidden;
   position: relative;
+  height: 100vh;
 }
 
 .scrollable-content {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 100px;
+  min-height: 0;
+  padding-bottom: 80px;
 }
 
 .audio-page .scrollable-content {
-  padding-bottom: 100px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.audio-page .scrollable-content::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .player-panel-content {
@@ -164,11 +173,6 @@
     width: 100%;
     justify-content: center;
   }
-
-  .scrollable-content,
-  .audio-page .scrollable-content {
-    padding-bottom: 180px;
-  }
 }
 
 .playlist-popup.open {
@@ -178,5 +182,14 @@
 @media (max-width: 768px) {
   .playlist-popup.open {
     bottom: 180px;
+  }
+}
+
+.audio-page .audio-player-control-panel {
+}
+
+@media (max-width: 768px) {
+  .scrollable-content {
+    padding-bottom: 100px;
   }
 }

@@ -308,24 +308,24 @@
   }
 }
 
-@media (min-width: 769px) {
-  .albums-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 20px;
-  }
-
-  .playlist-section {
-    margin-top: 30px;
-  }
-
-  .playlist-container {
-    max-width: 100%;
-  }
+/* Растягивание на всю высоту */
+.scrollable-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
-@media (min-width: 1400px) {
-  .albums-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 24px;
-  }
+.audio-library {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.albums-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
 }
