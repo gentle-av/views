@@ -227,6 +227,15 @@ class VideoLibrary {
     }, 300);
   }
 
+  playVideo(path) {
+    if (this._debounceTimeout) {
+      clearTimeout(this._debounceTimeout);
+    }
+    this._debounceTimeout = setTimeout(() => {
+      this._executePlayVideo(path);
+    }, 300);
+  }
+
   async _executePlayVideo(path) {
     if (this.activeVideos && this.activeVideos.has(path)) {
       console.log("playVideo ignored - video already playing:", path);
@@ -235,20 +244,34 @@ class VideoLibrary {
     if (!this.activeVideos) {
       this.activeVideos = new Set();
     }
-    this.activeVideos.add(path);
-    console.log("playVideo called with path:", path);
-    this.events.emit("playback:videoStart", path);
     const onClose = () => {
+      console.log("video closed, removing from active set:", path);
       if (this.activeVideos) {
         this.activeVideos.delete(path);
       }
       this.events.off("playback:videoClose", onClose);
+      this.events.off("playback:timeUpdate", onTimeUpdate);
     };
-    this.events.once("playback:videoClose", onClose);
+    const onTimeUpdate = (currentTime, duration) => {
+      console.log("timeUpdate received:", currentTime, duration);
+      if (currentTime === 0 && (duration === 0 || duration === undefined)) {
+        console.log("triggering closeWindow");
+        this.events.emit("playback:closeWindow");
+        this.activeVideos.delete(path);
+        this.events.off("playback:videoClose", onClose);
+        this.events.off("playback:timeUpdate", onTimeUpdate);
+      }
+    };
+    this.events.on("playback:videoClose", onClose);
+    this.events.on("playback:timeUpdate", onTimeUpdate);
+    this.activeVideos.add(path);
+    console.log("playVideo called with path:", path);
+    this.events.emit("playback:videoStart", path);
     setTimeout(() => {
       if (this.activeVideos && this.activeVideos.has(path)) {
         this.activeVideos.delete(path);
       }
+      this.events.off("playback:timeUpdate", onTimeUpdate);
     }, 3600000);
   }
 

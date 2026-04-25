@@ -55,6 +55,7 @@ class VideoPlayerController {
   _bindEvents() {
     this.events.on("playback:videoStart", (path) => this.startPlayback(path));
     this.events.on("page:videoLoaded", () => this._checkExistingPlayback());
+    this.events.on("playback:closeWindow", () => this.stop());
   }
 
   _bindUIEvents() {
@@ -152,6 +153,11 @@ class VideoPlayerController {
           this._updateProgressBar(this._currentTime, this._duration);
           this._updateTimeDisplay(this._currentTime, this._duration);
           this._updatePlayPauseButton();
+          this.events.emit(
+            "playback:timeUpdate",
+            this._currentTime,
+            this._duration,
+          );
         } else if (response.success && !response.playing && this.currentFile) {
           if (response.reason === "process_dead") {
             this.stop();
