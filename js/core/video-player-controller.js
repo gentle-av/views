@@ -8,10 +8,12 @@ class VideoPlayerController {
     this.panel = null;
     this._isStarting = false;
     this._progressInterval = null;
+    this._statusCheckInterval = null;
     this._duration = 0;
     this._currentTime = 0;
     this._bindEvents();
     this._initPanel();
+    this._startStatusChecking();
     this._checkExistingPlayback();
   }
 
@@ -32,6 +34,41 @@ class VideoPlayerController {
     }
   }
 
+  _startStatusChecking() {
+    if (this._statusCheckInterval) {
+      clearInterval(this._statusCheckInterval);
+    }
+    this._statusCheckInterval = setInterval(async () => {
+      try {
+        const response = await this.api.get("/api/video/status");
+        if (
+          response.success &&
+          response.playing &&
+          !response.paused &&
+          response.currentFile
+        ) {
+          if (!this.panel || this.panel.style.display !== "flex") {
+            console.log("Player is active but panel is hidden, restoring...");
+            this.currentFile = response.currentFile;
+            this.isPlaying = true;
+            this._currentTime = response.currentTime || 0;
+            this._duration = response.duration || 0;
+            this._updateFileInfo(this.currentFile);
+            this._updateProgressBar(this._currentTime, this._duration);
+            this._updateTimeDisplay(this._currentTime, this._duration);
+            this._updatePlayPauseButton();
+            this.show();
+            if (!this._progressInterval) {
+              this._startProgressPolling();
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Status check failed:", error);
+      }
+    }, 3000);
+  }
+
   async _checkExistingPlayback() {
     try {
       const response = await this.api.get("/api/video/status");
@@ -47,10 +84,12 @@ class VideoPlayerController {
         this._startProgressPolling();
         this._updateUI();
       } else {
-        this.hide();
+        if (this.panel) {
+          this.panel.style.display = "none";
+        }
       }
     } catch (error) {
-      this.hide();
+      console.error("Failed to check existing playback:", error);
     }
   }
 
@@ -104,12 +143,15 @@ class VideoPlayerController {
       this.panel = document.getElementById("playerControlPage");
     }
     if (!this.panel) {
+      console.error("Player control panel not found");
       return;
     }
     if (this._isStarting) {
+      console.log("Already starting playback, ignoring");
       return;
     }
     if (this.currentFile === path && this.panel.style.display === "flex") {
+      console.log("Already playing this file");
       return;
     }
     this._isStarting = true;
@@ -123,7 +165,19 @@ class VideoPlayerController {
       if (response.success) {
         this.isPlaying = true;
         this._startProgressPolling();
+        setTimeout(async () => {
+          const status = await this.api.get("/api/video/status");
+          if (
+            status.success &&
+            status.duration === 0 &&
+            status.currentTime === 0
+          ) {
+            console.log("Video has zero duration, closing panel");
+            this.stop();
+          }
+        }, 1000);
       } else {
+        console.error("Failed to open video:", response.error);
         this.hide();
       }
       this._updateUI();
@@ -152,14 +206,23 @@ class VideoPlayerController {
         const response = await this.api.get("/api/video/status");
         if (response.success) {
           if (response.playing) {
+            if (response.duration === 0 && response.currentTime === 0) {
+              console.log("Detected zero duration video, stopping");
+              this.stop();
+              return;
+            }
             this.isPlaying = !response.paused;
             this._currentTime = response.currentTime || 0;
             this._duration = response.duration || 0;
             this._updateProgressBar(this._currentTime, this._duration);
             this._updateTimeDisplay(this._currentTime, this._duration);
             this._updatePlayPauseButton();
+            if (this.panel && this.panel.style.display !== "flex") {
+              this.show();
+            }
           } else if (!response.playing && this.currentFile) {
             if (response.reason === "process_dead") {
+              console.log("Video process died, stopping");
               this.stop();
             }
           }
@@ -219,12 +282,16 @@ class VideoPlayerController {
     const percent = (e.clientX - rect.left) / rect.width;
     hoverFill.style.width = `${percent * 100}%`;
     const hoverTime = this._duration * percent;
-    const timeTooltip = document.getElementById("videoProgressTooltip");
-    if (timeTooltip) {
-      timeTooltip.textContent = this._formatTime(hoverTime);
-      timeTooltip.style.left = `${e.clientX - rect.left - 25}px`;
-      timeTooltip.style.display = "block";
+    let timeTooltip = document.getElementById("videoProgressTooltip");
+    if (!timeTooltip) {
+      timeTooltip = document.createElement("div");
+      timeTooltip.id = "videoProgressTooltip";
+      timeTooltip.className = "video-progress-tooltip";
+      progressBar.parentElement.appendChild(timeTooltip);
     }
+    timeTooltip.textContent = this._formatTime(hoverTime);
+    timeTooltip.style.left = `${e.clientX - rect.left - 25}px`;
+    timeTooltip.style.display = "block";
   }
 
   _hideProgressHover() {
@@ -294,8 +361,17 @@ class VideoPlayerController {
     );
     if (confirmed) {
       await this.api.post("/api/trash", { path: this.currentFile });
-      await this.stop();
+      if (this._progressInterval) {
+        clearInterval(this._progressInterval);
+        this._progressInterval = null;
+      }
+      this.currentFile = null;
+      this.isPlaying = false;
+      this._duration = 0;
+      this._currentTime = 0;
+      this.hide();
       this.events.emit("video:refresh");
+      this.events.emit("playback:videoStopped");
     }
   }
 
@@ -303,6 +379,7 @@ class VideoPlayerController {
     if (this.panel) {
       this.panel.style.display = "flex";
       this.panel.classList.add("active");
+      console.log("Player panel shown");
     }
   }
 
@@ -310,10 +387,7 @@ class VideoPlayerController {
     if (this.panel) {
       this.panel.style.display = "none";
       this.panel.classList.remove("active");
-    }
-    if (this._progressInterval) {
-      clearInterval(this._progressInterval);
-      this._progressInterval = null;
+      console.log("Player panel hidden");
     }
   }
 
