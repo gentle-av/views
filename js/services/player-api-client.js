@@ -30,10 +30,16 @@ class PlayerApiClient extends ApiClient {
         response.data.currentTrack &&
         typeof response.data.currentTrack === "string"
       ) {
-        const fileName = decodeURIComponent(
-          response.data.currentTrack.split("/").pop(),
-        ).replace(/\.(flac|mp3|m4a|wav)$/i, "");
-        response.data.currentTrackName = fileName;
+        try {
+          const decodedPath = decodeURIComponent(response.data.currentTrack);
+          const fileName = decodedPath
+            .split("/")
+            .pop()
+            .replace(/\.(flac|mp3|m4a|wav)$/i, "");
+          response.data.currentTrackName = fileName;
+        } catch (e) {
+          response.data.currentTrackName = "";
+        }
       }
     }
     return response;
@@ -68,7 +74,6 @@ class PlayerApiClient extends ApiClient {
   }
 
   async seek(position) {
-    console.log("Sending seek request for position:", position);
     return this.post("/api/seek", { position });
   }
 

@@ -1,29 +1,21 @@
 class Album {
   constructor(data) {
-    this.title = data.title || data.name || "";
+    this.title = data.title || "";
     this.artist = data.artist || "";
     this.year = data.year || "";
+    this.tracks = data.tracks || [];
     this.coverUrl = data.coverUrl || null;
-    this.tracks = (data.tracks || []).map((t) => new Track(t));
-    this._rawData = data;
-  }
-
-  get trackCount() {
-    return this.tracks.length;
-  }
-
-  get displayTitle() {
-    return `${this.artist} — ${this.title}`;
+    this.trackCount = this.tracks.length;
   }
 
   getTrackPaths() {
-    return this.tracks.map((t) => t.path);
+    return this.tracks.map((track) => track.path);
   }
 
-  fillTrackCache(cacheMap) {
+  fillTrackCache(cache) {
     for (const track of this.tracks) {
       if (track.path && track.title) {
-        cacheMap.set(track.path, track.title);
+        cache.set(track.path, track.title);
       }
     }
   }

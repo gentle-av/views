@@ -21,13 +21,7 @@ class MusicScanner {
       );
       const data = await response.json();
       if (data.status === "success") {
-        this.showStatus(
-          `Обновление завершено: добавлено ${data.added_files} файлов, удалено ${data.removed_files} старых записей`,
-          "green",
-        );
-        if (data.total_files && this.onScanComplete) {
-          this.onScanComplete(data.total_files);
-        }
+        this.showStatus(`Обновление запущено в фоне`, "green");
         setTimeout(() => this.hideStatus(), 3000);
       } else {
         this.showStatus(`Ошибка: ${data.message}`, "red");

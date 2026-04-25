@@ -14,13 +14,23 @@ class MusicApiClient extends ApiClient {
   }
 
   async fetchAlbumCover(album, artist) {
-    const response = await fetch(
-      `${this.baseUrl}/api/music/albumart/album/${encodeURIComponent(album)}?artist=${encodeURIComponent(artist)}`,
-    );
-    if (response.ok) {
-      const blob = await response.blob();
-      return URL.createObjectURL(blob);
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/music/albumart/album/${encodeURIComponent(album)}?artist=${encodeURIComponent(artist)}`,
+      );
+      if (response.ok) {
+        const blob = await response.blob();
+        return URL.createObjectURL(blob);
+      }
+      return null;
+    } catch {
+      return null;
     }
-    return null;
+  }
+
+  async getFileMetadata(filePath) {
+    return this.get(
+      `/api/music/file-metadata?path=${encodeURIComponent(filePath)}`,
+    );
   }
 }

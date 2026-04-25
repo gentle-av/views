@@ -147,51 +147,55 @@ class BottomPlayerPanel {
     let lastTrack = "";
     setInterval(async () => {
       try {
-        const res = await fetch("/api/playbackState");
+        const panel = document.getElementById("audioPlayerControlPanel");
+        if (!panel || !this._isAudioPage) {
+          return;
+        }
+        const res = await fetch("/api/currentTrack");
         const data = await res.json();
-        const state = data.data;
-        if (state && state.currentTrack) {
-          const trackName =
-            state.currentTrackName ||
-            decodeURIComponent(state.currentTrack.split("/").pop()).replace(
-              /\.(flac|mp3|m4a|wav)$/i,
-              "",
-            );
+        if (data.success && data.data) {
+          let trackName = data.data.track || "—";
           if (trackName !== lastTrack) {
             lastTrack = trackName;
             const trackNameEl = document.getElementById("panelTrackName");
-            const trackCountEl = document.getElementById("panelTrackCount");
-            const playPauseBtn = document.getElementById("panelPlayPauseBtn");
-            if (trackNameEl) trackNameEl.textContent = trackName;
-            if (trackCountEl)
-              trackCountEl.textContent = `${(state.currentIndex || 0) + 1}/${state.totalTracks || 0}`;
-            if (playPauseBtn)
-              playPauseBtn.innerHTML = state.isPlaying
-                ? '<i class="fas fa-pause"></i>'
-                : '<i class="fas fa-play"></i>';
-            const panel = document.getElementById("audioPlayerControlPanel");
-            if (panel)
-              panel.style.display = state.totalTracks > 0 ? "flex" : "none";
+            if (trackNameEl) {
+              trackNameEl.textContent = trackName;
+            }
           }
-          const timeRes = await fetch("/api/currentTime");
-          const timeData = await timeRes.json();
-          if (timeData.data && timeData.data.duration > 0) {
-            const percent =
-              (timeData.data.currentTime / timeData.data.duration) * 100;
-            const progressFill = document.getElementById("panelProgressFill");
-            if (progressFill) progressFill.style.width = `${percent}%`;
-            const timeCurrent = document.getElementById("panelTimeCurrent");
-            const timeTotal = document.getElementById("panelTimeTotal");
-            if (timeCurrent) {
-              const mins = Math.floor(timeData.data.currentTime / 60);
-              const secs = Math.floor(timeData.data.currentTime % 60);
-              timeCurrent.textContent = `${mins}:${secs.toString().padStart(2, "0")}`;
-            }
-            if (timeTotal) {
-              const mins = Math.floor(timeData.data.duration / 60);
-              const secs = Math.floor(timeData.data.duration % 60);
-              timeTotal.textContent = `${mins}:${secs.toString().padStart(2, "0")}`;
-            }
+        }
+        const stateRes = await fetch("/api/playbackState");
+        const stateData = await stateRes.json();
+        const state = stateData.data;
+        if (state) {
+          const trackCountEl = document.getElementById("panelTrackCount");
+          const playPauseBtn = document.getElementById("panelPlayPauseBtn");
+          if (trackCountEl)
+            trackCountEl.textContent = `${(state.currentIndex || 0) + 1}/${state.totalTracks || 0}`;
+          if (playPauseBtn)
+            playPauseBtn.innerHTML = state.isPlaying
+              ? '<i class="fas fa-pause"></i>'
+              : '<i class="fas fa-play"></i>';
+          if (panel)
+            panel.style.display = state.totalTracks > 0 ? "flex" : "none";
+        }
+        const timeRes = await fetch("/api/currentTime");
+        const timeData = await timeRes.json();
+        if (timeData.data && timeData.data.duration > 0) {
+          const percent =
+            (timeData.data.currentTime / timeData.data.duration) * 100;
+          const progressFill = document.getElementById("panelProgressFill");
+          if (progressFill) progressFill.style.width = `${percent}%`;
+          const timeCurrent = document.getElementById("panelTimeCurrent");
+          const timeTotal = document.getElementById("panelTimeTotal");
+          if (timeCurrent) {
+            const mins = Math.floor(timeData.data.currentTime / 60);
+            const secs = Math.floor(timeData.data.currentTime % 60);
+            timeCurrent.textContent = `${mins}:${secs.toString().padStart(2, "0")}`;
+          }
+          if (timeTotal) {
+            const mins = Math.floor(timeData.data.duration / 60);
+            const secs = Math.floor(timeData.data.duration % 60);
+            timeTotal.textContent = `${mins}:${secs.toString().padStart(2, "0")}`;
           }
         }
       } catch (e) {
@@ -208,17 +212,7 @@ class BottomPlayerPanel {
     }
     let trackNameText = "—";
     if (state.totalTracks > 0) {
-      trackNameText =
-        state.currentTrackName ||
-        (state.currentTrack
-          ? decodeURIComponent(state.currentTrack.split("/").pop()).replace(
-              /\.(flac|mp3|m4a|wav)$/i,
-              "",
-            )
-          : "—");
-    }
-    if (this.trackName) {
-      this.trackName.textContent = trackNameText;
+      trackNameText = state.track || "—";
     }
     const timeInfo = await this.playback.api.getCurrentTime();
     if (timeInfo?.data && state.totalTracks > 0) {

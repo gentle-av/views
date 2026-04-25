@@ -25,6 +25,32 @@ class PlaybackController {
     return filename;
   }
 
+  async _updateCurrentTrackName() {
+    const state = await this.api.getPlaybackState();
+    if (!state?.success) return;
+    const currentPath = state.data.currentTrack;
+    if (!currentPath) return;
+    let trackName = this._trackNameCache.get(currentPath);
+    if (!trackName && this._currentAlbum) {
+      const track = this._currentAlbum.tracks.find(
+        (t) => t.path === currentPath,
+      );
+      if (track && track.title) {
+        trackName = track.title;
+        this._trackNameCache.set(currentPath, trackName);
+      }
+    }
+    if (!trackName) {
+      let filename = currentPath.split("/").pop();
+      trackName = filename.replace(/\.(flac|mp3|m4a|wav)$/i, "");
+    }
+    this.events.emit("stateChange", {
+      ...state.data,
+      currentTrackName: trackName,
+    });
+    return trackName;
+  }
+
   _startPolling() {
     if (this._pollingInterval) {
       clearInterval(this._pollingInterval);
@@ -34,25 +60,10 @@ class PlaybackController {
         const state = await this.api.getPlaybackState();
         if (state?.success) {
           this._isPlaying = state.data.isPlaying;
-          const currentPath = state.data.currentTrack;
-          let trackName = this._trackNameCache.get(currentPath);
-          if (!trackName && currentPath) {
-            let filename = currentPath.split("/").pop();
-            filename = filename.replace(/\.(flac|mp3|m4a|wav)$/i, "");
-            trackName = filename;
-            if (this._currentAlbum) {
-              const track = this._currentAlbum.tracks.find(
-                (t) => t.path === currentPath,
-              );
-              if (track && track.title) {
-                trackName = track.title;
-                this._trackNameCache.set(currentPath, trackName);
-              }
-            }
-          }
+          const trackName = state.data.track || "";
           this.events.emit("stateChange", {
             ...state.data,
-            currentTrackName: trackName || "",
+            currentTrackName: trackName,
           });
         }
       }
@@ -78,6 +89,7 @@ class PlaybackController {
     await this.api.play();
     this._isSwitching = false;
     this.events.emit("albumChanged", album);
+    setTimeout(() => this._updateCurrentTrackName(), 50);
   }
 
   async playTrack(album, trackIndex) {
@@ -92,6 +104,7 @@ class PlaybackController {
     await this.api.play();
     this._isSwitching = false;
     this.events.emit("trackChanged", { album, trackIndex });
+    setTimeout(() => this._updateCurrentTrackName(), 50);
   }
 
   async addAlbumToPlaylist(album) {
@@ -126,10 +139,12 @@ class PlaybackController {
 
   async next() {
     await this.api.next();
+    setTimeout(() => this._updateCurrentTrackName(), 50);
   }
 
   async previous() {
     await this.api.previous();
+    setTimeout(() => this._updateCurrentTrackName(), 50);
   }
 
   async stop() {
