@@ -119,6 +119,11 @@ const MediaCenter = {
           }
         }
       }
+      if (this.bottomPanel) {
+        this.bottomPanel.forceUpdate();
+      } else {
+        console.log("[MediaCenter] bottomPanel is NULL!");
+      }
     });
     if (!this.playlistPopup) {
       this.playlistPopup = new PlaylistPopup(
@@ -187,6 +192,10 @@ const MediaCenter = {
     this.events.on("album:playTrack", ({ album, trackIndex }) => {
       this.playback.playTrack(album, trackIndex);
     });
+    if (this.bottomPanel && this.bottomPanel.element) {
+      this.bottomPanel.element.style.display = "flex";
+      this.bottomPanel.forceUpdate();
+    }
   },
 };
 
