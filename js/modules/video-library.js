@@ -77,10 +77,10 @@ class VideoLibrary {
             ${
               item.isDirectory
                 ? `<div class="thumbnail-placeholder folder-placeholder" data-folder-path="${item.path}" style="background-image: url(''); background-size: cover; background-position: center;">
-                    <span class="item-type-badge folder">Папка</span>
+                    <span class="item-type-badge folder"></span>
                   </div>`
                 : `<div class="thumbnail-placeholder video-placeholder" data-video-path="${item.path}" style="background-image: url(''); background-size: cover; background-position: center;">
-                    <span class="item-type-badge video">Видео</span>
+                    <span class="item-type-badge video"></span>
                   </div>`
             }
             <div class="item-name" title="${this._escape(item.name)}">${this._escape(item.name)}</div>
