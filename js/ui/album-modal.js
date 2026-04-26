@@ -38,7 +38,6 @@ class AlbumModal {
     if (window.MediaCenter && window.MediaCenter._showOverlay) {
       window.MediaCenter._showOverlay();
     }
-    this.modal.style.zIndex = "10011";
     this._renderHeader(album);
     this._renderActions(album);
     if (this.tracksContainer) {
