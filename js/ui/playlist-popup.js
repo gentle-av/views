@@ -61,7 +61,13 @@ class PlaylistPopup {
     }
     if (!this.musicApi) {
       const fileName = this._getFileName(filePath);
-      return { title: fileName, artist: "", album: "", duration: 0 };
+      const artistFromPath = this._extractArtistFromPath(filePath);
+      return {
+        title: fileName,
+        artist: artistFromPath || "Неизвестный исполнитель",
+        album: "",
+        duration: 0,
+      };
     }
     try {
       const response = await this.musicApi.getFileMetadata(filePath);
@@ -69,7 +75,10 @@ class PlaylistPopup {
         const fileData = response.data.file;
         const metadata = {
           title: fileData.title || this._getFileName(filePath),
-          artist: fileData.artist || "",
+          artist:
+            fileData.artist ||
+            this._extractArtistFromPath(filePath) ||
+            "Неизвестный исполнитель",
           album: fileData.album || "",
           duration: fileData.duration || 0,
         };
@@ -80,7 +89,10 @@ class PlaylistPopup {
       if (dbData && dbData.title && dbData.title !== "Unknown") {
         const metadata = {
           title: dbData.title,
-          artist: dbData.artist || "",
+          artist:
+            dbData.artist ||
+            this._extractArtistFromPath(filePath) ||
+            "Неизвестный исполнитель",
           album: dbData.album || "",
           duration: dbData.duration || 0,
         };
@@ -91,7 +103,22 @@ class PlaylistPopup {
       console.error("Failed to fetch metadata for:", filePath, error);
     }
     const fileName = this._getFileName(filePath);
-    return { title: fileName, artist: "", album: "", duration: 0 };
+    const artistFromPath = this._extractArtistFromPath(filePath);
+    return {
+      title: fileName,
+      artist: artistFromPath || "Неизвестный исполнитель",
+      album: "",
+      duration: 0,
+    };
+  }
+
+  _extractArtistFromPath(filePath) {
+    const parts = filePath.split("/");
+    const musicIndex = parts.findIndex((part) => part === "music");
+    if (musicIndex !== -1 && parts.length > musicIndex + 1) {
+      return parts[musicIndex + 1];
+    }
+    return null;
   }
 
   _getFileName(filePath) {
@@ -155,23 +182,27 @@ class PlaylistPopup {
     }
     let html = '<div class="playlist-tracks-list">';
     let currentArtist = "";
-    tracks.forEach((track, i) => {
+    for (const [i, track] of tracks.entries()) {
       const isCurrent = track.path === currentPath || i === currentIndex;
       const trackNumber = i + 1;
-      const artist = track.artist || "Неизвестный исполнитель";
+      let artist = track.artist || "Неизвестный исполнитель";
+      if (artist === "Неизвестный исполнитель" || !artist) {
+        artist =
+          this._extractArtistFromPath(track.path) || "Неизвестный исполнитель";
+      }
       if (artist !== currentArtist) {
         currentArtist = artist;
         html += `<div class="playlist-artist-separator" style="padding: 12px 0 6px 0; font-size: 0.8rem; font-weight: 600; color: var(--yellow); border-bottom: 1px solid var(--bg3); margin-top: 8px;"><i class="fas fa-user"></i> ${this._escape(artist)}</div>`;
       }
       html += `<div class="playlist-track-item ${isCurrent ? "current" : ""}" data-index="${i}" data-path="${this._escape(track.path)}">
-        <div class="playlist-track-number">${String(trackNumber).padStart(2, "0")}</div>
-        <div class="playlist-track-info">
-          <div class="playlist-track-name">${this._escape(track.title)}</div>
-          ${track.album ? `<div class="playlist-track-album" style="font-size: 0.65rem; color: var(--fg3); margin-top: 2px;"><i class="fas fa-compact-disc"></i> ${this._escape(track.album)}</div>` : ""}
-        </div>
-        <div class="playlist-track-remove-btn" data-index="${i}"><i class="fas fa-trash"></i></div>
-      </div>`;
-    });
+      <div class="playlist-track-number">${String(trackNumber).padStart(2, "0")}</div>
+      <div class="playlist-track-info">
+        <div class="playlist-track-name">${this._escape(track.title)}</div>
+        ${track.album ? `<div class="playlist-track-album" style="font-size: 0.65rem; color: var(--fg3); margin-top: 2px;"><i class="fas fa-compact-disc"></i> ${this._escape(track.album)}</div>` : ""}
+      </div>
+      <div class="playlist-track-remove-btn" data-index="${i}"><i class="fas fa-trash"></i></div>
+    </div>`;
+    }
     html += "</div>";
     this.container.innerHTML = html;
     this._attachTrackEvents();
