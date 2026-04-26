@@ -23,30 +23,59 @@ class AlbumCard {
     this.element.dataset.album = this.album.title;
     this.element.dataset.artist = this.album.artist;
     this.element.innerHTML = `
-      <div class="album-card-art">
-        ${coverHtml}
-      </div>
-      <div class="album-card-info">
-        <div class="album-card-title" title="${this._escape(this.album.title)}">${this._escape(this.album.title)}</div>
-        <div class="album-card-artist" title="${this._escape(this.album.artist)}">${this._escape(this.album.artist)}</div>
-        <div class="album-card-meta">
-          ${this.album.year ? `<span>${this.album.year}</span>` : ""}
-          <span>${this.album.trackCount} треков</span>
-        </div>
-      </div>
-    `;
+    <div class="album-card-art">
+      ${coverHtml}
+    </div>
+    <div class="album-card-info">
+      <div class="album-card-title" title="${this._escape(this.album.title)}">${this._escape(this.album.title)}</div>
+      <div class="album-card-artist" title="${this._escape(this.album.artist)}">${this._escape(this.album.artist)}</div>
+      ${this.album.year ? `<div class="album-card-year">${this.album.year}</div>` : ""}
+    </div>
+  `;
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "album-swipe-delete-btn";
     deleteBtn.title = "Удалить альбом";
     deleteBtn.innerHTML = `
-      <i class="fas fa-trash-alt"></i>
-      <span>Удалить</span>
-    `;
+    <i class="fas fa-trash-alt"></i>
+    <span>Удалить</span>
+  `;
     this.container.appendChild(this.element);
     this.container.appendChild(deleteBtn);
     this._attachEvents(deleteBtn);
     this._initSwipe();
+    this._initTitleScroll();
     return this.container;
+  }
+
+  _initTitleScroll() {
+    const titleElement = this.element.querySelector(".album-card-title");
+    if (!titleElement) return;
+    let isDragging = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    titleElement.addEventListener("mousedown", (e) => {
+      if (titleElement.scrollWidth <= titleElement.clientWidth) return;
+      isDragging = true;
+      startX = e.pageX - titleElement.offsetLeft;
+      scrollLeft = titleElement.scrollLeft;
+      titleElement.style.cursor = "grabbing";
+      e.preventDefault();
+    });
+    document.addEventListener("mouseup", () => {
+      isDragging = false;
+      titleElement.style.cursor = "grab";
+    });
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      const x = e.pageX - titleElement.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      titleElement.scrollLeft = scrollLeft - walk;
+    });
+    titleElement.addEventListener("wheel", (e) => {
+      if (titleElement.scrollWidth <= titleElement.clientWidth) return;
+      e.preventDefault();
+      titleElement.scrollLeft += e.deltaY;
+    });
   }
 
   _initSwipe() {
