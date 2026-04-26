@@ -94,7 +94,7 @@ const MediaCenter = {
         this.albumModal.hide();
         this.albumModal = null;
       }
-      this.albumModal = new AlbumModal(this.events);
+      this.albumModal = new AlbumModal(this.events, this.musicApi);
       const trackList = new TrackList(this.events);
       this.albumModal.setTrackList(trackList);
     }

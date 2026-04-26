@@ -7,6 +7,13 @@ class AlbumLibrary {
     this.container = document.getElementById("albumsGrid");
     this._loading = false;
     this._isDestroyed = false;
+    this._currentPage = 1;
+    this._pageSize = 20;
+    this._totalPages = 0;
+    this._currentArtist = null;
+    this._artistsList = [];
+    this._currentArtistIndex = 0;
+    this._isLoadingMore = false;
   }
 
   destroy() {
@@ -17,19 +24,112 @@ class AlbumLibrary {
     if (this.container) {
       this.container.innerHTML = "";
     }
+    window.removeEventListener("scroll", this._handleScroll.bind(this));
   }
 
   async init() {
-    await this._loadAlbumsAsync();
-    this.events.on("albumDelete", () => this._loadAlbumsAsync());
-    this.events.on("albumEdit", () => this._loadAlbumsAsync());
+    await this._loadArtistsAndFirstAlbums();
+    this.events.on("albumDelete", () => this.refresh());
+    this.events.on("albumEdit", () => this.refresh());
     this.events.on("albumContextMenu", ({ x, y, album }) =>
       this._showContextMenu(x, y, album),
     );
     this.events.on("albumClick", (album) => {
       this.events.emit("album:open", album);
     });
-    window.addEventListener("albumTagsUpdated", () => this._loadAlbumsAsync());
+    window.addEventListener("albumTagsUpdated", () => this.refresh());
+    window.addEventListener("scroll", this._handleScroll.bind(this));
+  }
+
+  async refresh() {
+    this.albums = [];
+    this.filteredAlbums = [];
+    this._currentPage = 1;
+    this._currentArtistIndex = 0;
+    this._artistsList = await this.api.getArtists();
+    await this._loadMoreAlbums();
+    this._render();
+  }
+
+  async _loadArtistsAndFirstAlbums() {
+    if (this._loading || this._isDestroyed) return;
+    this._loading = true;
+    if (this.container) {
+      this.container.innerHTML =
+        '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка альбомов...</div>';
+    }
+    this._artistsList = await this.api.getArtists();
+    if (
+      !this._artistsList ||
+      this._artistsList.length === 0 ||
+      this._isDestroyed
+    ) {
+      if (!this._isDestroyed) this._showError();
+      this._loading = false;
+      return;
+    }
+    this.albums = [];
+    this.filteredAlbums = [];
+    this._currentArtistIndex = 0;
+    this._currentArtist = this._artistsList[0];
+    await this._loadMoreAlbums();
+    this._loading = false;
+  }
+
+  async _loadMoreAlbums() {
+    if (this._isLoadingMore || this._isDestroyed) return;
+    this._isLoadingMore = true;
+    this._render();
+    while (this._currentArtistIndex < this._artistsList.length) {
+      const artist = this._artistsList[this._currentArtistIndex];
+      const result = await this.api.getAlbumsPaginated(
+        artist,
+        this._currentPage,
+        this._pageSize,
+      );
+      if (result.albums && result.albums.length > 0) {
+        for (const albumData of result.albums) {
+          const key = `${albumData.artist}|${albumData.album}`;
+          if (!this.albums.some((a) => `${a.artist}|${a.title}` === key)) {
+            const coverUrl = await this.api.fetchAlbumCover(
+              albumData.album,
+              albumData.artist,
+            );
+            const album = new Album({
+              title: albumData.album,
+              artist: albumData.artist,
+              year: albumData.year,
+              tracks: [],
+              coverUrl,
+            });
+            this.albums.push(album);
+          }
+        }
+        this.filteredAlbums = [...this.albums];
+        this._render();
+        if (result.pagination.hasNext) {
+          this._currentPage++;
+          this._isLoadingMore = false;
+          return;
+        }
+      }
+      this._currentArtistIndex++;
+      this._currentPage = 1;
+    }
+    this._isLoadingMore = false;
+    this._render();
+  }
+
+  _handleScroll() {
+    if (this._isDestroyed || this._isLoadingMore || this._loading) return;
+    const scrollable = document.getElementById("scrollableContent");
+    if (!scrollable) return;
+    const scrollHeight = scrollable.scrollHeight;
+    const scrollTop = scrollable.scrollTop;
+    const clientHeight = scrollable.clientHeight;
+    if (scrollHeight - scrollTop - clientHeight < 300) {
+      this._loadMoreAlbums();
+    }
   }
 
   _showContextMenu(x, y, album) {
@@ -81,88 +181,46 @@ class AlbumLibrary {
   }
 
   async _loadAlbumsAsync() {
-    if (this._loading || this._isDestroyed) return;
-    this._loading = true;
-    if (this.container) {
-      this.container.innerHTML =
-        '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка альбомов...</div>';
-    }
-    const artistsData = await this.api.getArtists();
-    console.log("[DEBUG] artistsData:", artistsData);
-    if (!artistsData?.artists || this._isDestroyed) {
-      if (!this._isDestroyed) this._showError();
-      this._loading = false;
-      return;
-    }
-    this.albums = [];
-    this.filteredAlbums = [];
-    const uniqueAlbums = new Map();
-    for (const artist of artistsData.artists) {
-      if (this._isDestroyed) break;
-      const albumsData = await this.api.getAlbums(artist);
-      if (albumsData?.albums) {
-        for (const albumData of albumsData.albums) {
-          if (this._isDestroyed) break;
-          const key = `${albumData.artist}|${albumData.album}`;
-          if (!uniqueAlbums.has(key)) {
-            const tracksData = await this.api.getTracks(
-              albumData.album,
-              albumData.artist,
-            );
-            const coverUrl = await this.api.fetchAlbumCover(
-              albumData.album,
-              albumData.artist,
-            );
-            const normalizedTracks = (tracksData.tracks || []).map((track) => ({
-              ...track,
-              title:
-                track.title ||
-                track.name ||
-                this._extractNameFromPath(track.path),
-            }));
-            const album = new Album({
-              title: albumData.album,
-              artist: albumData.artist,
-              year: albumData.year,
-              tracks: normalizedTracks,
-              coverUrl,
-            });
-            uniqueAlbums.set(key, album);
-            this.albums.push(album);
-            if (window.MediaCenter && window.MediaCenter.playback) {
-              for (const track of album.tracks) {
-                if (track.path && track.title) {
-                  window.MediaCenter.playback._trackNameCache.set(
-                    track.path,
-                    track.title,
-                  );
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    this.albums = Array.from(uniqueAlbums.values());
-    this.filteredAlbums = [...this.albums];
-    console.log("[DEBUG] Total albums loaded:", this.albums.length);
-    console.log("[DEBUG] First album tracks:", this.albums[0]?.tracks);
-    this._render();
-    this._loading = false;
+    await this._loadArtistsAndFirstAlbums();
   }
 
   _render() {
     if (!this.container || this._isDestroyed) return;
-    if (this.filteredAlbums.length === 0) {
+    const loadingIndicator = this.container.querySelector(".loading");
+    if (
+      loadingIndicator &&
+      this.filteredAlbums.length === 0 &&
+      !this._isLoadingMore
+    ) {
+      return;
+    }
+    if (loadingIndicator) {
+      loadingIndicator.remove();
+    }
+    if (this.filteredAlbums.length === 0 && !this._isLoadingMore) {
       this.container.innerHTML =
         '<div class="empty"><i class="fas fa-music"></i> Альбомы не найдены</div>';
       return;
     }
-    this.container.innerHTML = "";
-    for (let i = 0; i < this.filteredAlbums.length; i++) {
-      const album = this.filteredAlbums[i];
+    const existingCards = this.container.querySelectorAll(
+      ".album-swipe-delete-container",
+    );
+    const existingCount = existingCards.length;
+    const newAlbums = this.filteredAlbums.slice(existingCount);
+    for (const album of newAlbums) {
       const card = new AlbumCard(album, this.events);
       this.container.appendChild(card.render());
+    }
+    const oldLoadingMore = this.container.querySelector(".loading-more");
+    if (oldLoadingMore) {
+      oldLoadingMore.remove();
+    }
+    if (this._isLoadingMore) {
+      const loadingMore = document.createElement("div");
+      loadingMore.className = "loading-more";
+      loadingMore.innerHTML =
+        '<i class="fas fa-spinner fa-spin"></i> Загрузка альбомов...';
+      this.container.appendChild(loadingMore);
     }
   }
 
@@ -178,6 +236,7 @@ class AlbumLibrary {
           a.artist.toLowerCase().includes(lowerTerm),
       );
     }
+    this.container.innerHTML = "";
     this._render();
   }
 

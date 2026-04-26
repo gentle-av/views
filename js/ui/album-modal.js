@@ -1,6 +1,7 @@
 class AlbumModal {
-  constructor(events) {
+  constructor(events, musicApi = null) {
     this.events = events;
+    this.musicApi = musicApi;
     this.modal = document.getElementById("albumModal");
     this.titleEl = document.getElementById("modalAlbumTitle");
     this.tracksContainer = document.getElementById("modalTracksList");
@@ -9,13 +10,17 @@ class AlbumModal {
     this._bindEvents();
   }
 
+  setMusicApi(musicApi) {
+    this.musicApi = musicApi;
+  }
+
   setTrackList(trackList) {
     this.trackList = trackList;
   }
 
   _bindEvents() {
-    this.events.on("album:open", (album) => {
-      this.show(album);
+    this.events.on("album:open", async (album) => {
+      await this.show(album);
     });
     if (this.modal) {
       const closeBtn = this.modal.querySelector(".modal-close");
@@ -28,12 +33,54 @@ class AlbumModal {
     }
   }
 
-  show(album) {
+  async show(album) {
     if (!this.modal || !album) return;
     this._renderHeader(album);
     this._renderActions(album);
-    if (this.trackList && this.tracksContainer) {
-      this.trackList.render(this.tracksContainer, album);
+    if (this.tracksContainer) {
+      this.tracksContainer.innerHTML =
+        '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка треков...</div>';
+    }
+    if (album.tracks && album.tracks.length > 0) {
+      if (this.trackList && this.tracksContainer) {
+        this.trackList.render(this.tracksContainer, album);
+      }
+    } else if (this.musicApi) {
+      try {
+        const tracksData = await this.musicApi.getTracks(
+          album.title,
+          album.artist,
+          true,
+        );
+        const coverUrl = await this.musicApi.fetchAlbumCover(
+          album.title,
+          album.artist,
+        );
+        const normalizedTracks = (tracksData || []).map((track, idx) => ({
+          ...track,
+          title:
+            track.title || track.name || this._extractNameFromPath(track.path),
+          displayName:
+            track.title || track.name || this._extractNameFromPath(track.path),
+          trackNumber: track.track || idx + 1,
+        }));
+        album.tracks = normalizedTracks;
+        album.coverUrl = coverUrl;
+        if (this.trackList && this.tracksContainer) {
+          this.trackList.render(this.tracksContainer, album);
+        }
+      } catch (error) {
+        console.error("Failed to load tracks:", error);
+        if (this.tracksContainer) {
+          this.tracksContainer.innerHTML =
+            '<div class="empty"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки треков</div>';
+        }
+      }
+    } else {
+      if (this.tracksContainer) {
+        this.tracksContainer.innerHTML =
+          '<div class="empty"><i class="fas fa-exclamation-triangle"></i> Нет треков</div>';
+      }
     }
     this.modal.classList.add("active");
     this._currentAlbum = album;
@@ -55,7 +102,7 @@ class AlbumModal {
         <div style="flex: 1;">
           <div style="font-size: 1.1rem; font-weight: 600;">${this._escape(album.title)}</div>
           <div style="font-size: 0.85rem; color: var(--yellow);">${this._escape(album.artist)}</div>
-          <div style="font-size: 0.75rem; color: var(--fg3);">${album.trackCount} треков</div>
+          <div style="font-size: 0.75rem; color: var(--fg3);">${album.trackCount || (album.tracks ? album.tracks.length : 0)} треков</div>
         </div>
       </div>
     `;
@@ -107,6 +154,12 @@ class AlbumModal {
         this.hide();
       });
     }
+  }
+
+  _extractNameFromPath(path) {
+    if (!path) return "Без названия";
+    const fileName = path.split("/").pop();
+    return fileName.replace(/\.(flac|mp3|m4a|wav)$/i, "");
   }
 
   _escape(str) {
