@@ -9,6 +9,19 @@ class MusicApiClient extends ApiClient {
     this._cacheTimestamps = new Map();
   }
 
+  async getFileMetadata(filePath) {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/music/file-metadata?path=${encodeURIComponent(filePath)}`,
+      );
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Failed to fetch file metadata:", error);
+      return null;
+    }
+  }
+
   _isCacheValid(key) {
     const timestamp = this._cacheTimestamps.get(key);
     if (!timestamp) return false;

@@ -1,7 +1,7 @@
 .playlist-popup {
   position: fixed;
   top: 70px;
-  right: 10px;
+  right: 70px;
   width: 450px;
   max-width: calc(100vw - 40px);
   max-height: 70vh;

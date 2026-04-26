@@ -15,7 +15,11 @@ const MediaCenter = {
     this.albumLibrary = null;
     this.albumModal = null;
     if (typeof BottomPlayerPanel !== "undefined") {
-      this.bottomPanel = new BottomPlayerPanel(this.playback, this.events);
+      this.bottomPanel = new BottomPlayerPanel(
+        this.playback,
+        this.events,
+        this.musicApi,
+      );
     } else {
       this.bottomPanel = null;
     }

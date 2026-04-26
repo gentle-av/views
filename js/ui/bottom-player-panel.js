@@ -1,15 +1,63 @@
 class BottomPlayerPanel {
-  constructor(playbackController, events) {
+  constructor(playbackController, events, musicApi) {
     this.playback = playbackController;
     this.events = events;
+    this.musicApi = musicApi;
     this.element = null;
     this._isAudioPage = false;
+    this._pendingTrackPath = null;
+    this._currentDisplayedTrack = null;
     this._createPanel();
     this._initElements();
     this._attachEvents();
     this._subscribeToEvents();
     this._startAutoUpdate();
     this._listenToPageChanges();
+  }
+
+  async _updateTrackNameWithMetadata(filePath) {
+    if (this._currentDisplayedTrack === filePath) return;
+    this._pendingTrackPath = filePath;
+    const metadataTitle = await this._fetchTrackMetadata(filePath);
+    if (this._pendingTrackPath !== filePath) return;
+    if (metadataTitle && this.trackName) {
+      this.trackName.textContent = metadataTitle;
+      this._currentDisplayedTrack = filePath;
+    } else if (this.trackName && this._currentDisplayedTrack !== filePath) {
+      const pathName = this._extractTrackNameFromPath(filePath);
+      this.trackName.textContent = pathName;
+      this._currentDisplayedTrack = filePath;
+    }
+    this._pendingTrackPath = null;
+  }
+
+  async _fetchTrackMetadata(filePath) {
+    if (!this.musicApi) return null;
+    try {
+      const response = await this.musicApi.getFileMetadata(filePath);
+      if (
+        response &&
+        response.data &&
+        response.data.file &&
+        response.data.file.title
+      ) {
+        return response.data.file.title;
+      }
+      if (
+        response &&
+        response.data &&
+        response.data.database &&
+        response.data.database.title
+      ) {
+        const dbTitle = response.data.database.title;
+        if (dbTitle && dbTitle !== "Unknown") {
+          return dbTitle;
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch metadata:", error);
+    }
+    return null;
   }
 
   _listenToPageChanges() {
@@ -119,6 +167,7 @@ class BottomPlayerPanel {
     const parts = filePath.split("/");
     let fileName = parts[parts.length - 1];
     fileName = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
+    console.log("_extractTrackNameFromPath:", filePath, "->", fileName);
     return fileName;
   }
 
@@ -145,11 +194,18 @@ class BottomPlayerPanel {
             const secs = Math.floor(timeData.data.duration % 60);
             timeTotal.textContent = `${mins}:${secs.toString().padStart(2, "0")}`;
           }
+          const state = await this.playback.api.getPlaybackState();
+          if (state?.data?.currentTrack && this.trackName) {
+            const currentTrack = state.data.currentTrack;
+            if (this._currentDisplayedTrack !== currentTrack) {
+              this._updateTrackNameWithMetadata(currentTrack);
+            }
+          }
         }
       } catch (e) {
         console.error("Auto update error:", e);
       }
-    }, 500);
+    }, 1000);
   }
 
   _updateFromState(state) {
@@ -158,16 +214,12 @@ class BottomPlayerPanel {
     if (this.trackCount) {
       this.trackCount.textContent = `${(state.currentIndex || 0) + 1}/${state.totalTracks || 0}`;
     }
-    if (this.trackName) {
-      let trackNameText = "—";
-      if (state.currentTrackName && state.currentTrackName.trim() !== "") {
-        trackNameText = state.currentTrackName;
-      } else if (state.currentTrack) {
-        trackNameText = this._extractTrackNameFromPath(state.currentTrack);
-      }
-      if (this.trackName.textContent !== trackNameText) {
-        this.trackName.textContent = trackNameText;
-      }
+    if (
+      this.trackName &&
+      state.currentTrack &&
+      this._currentDisplayedTrack !== state.currentTrack
+    ) {
+      this._updateTrackNameWithMetadata(state.currentTrack);
     }
     if (
       state.currentTime !== undefined &&
@@ -201,8 +253,11 @@ class BottomPlayerPanel {
   _showTrack(album, trackIndex) {
     if (!this.element || !this._isAudioPage) return;
     const track = album.tracks[trackIndex];
-    if (this.trackName) this.trackName.textContent = track.displayName;
-    if (this.trackArtist) this.trackArtist.textContent = album.artist;
+    if (track && track.displayName) {
+      if (this.trackName) this.trackName.textContent = track.displayName;
+      if (this.trackArtist) this.trackArtist.textContent = album.artist;
+      if (track.path) this._currentDisplayedTrack = track.path;
+    }
   }
 
   _onPlaylistCleared() {
@@ -215,6 +270,8 @@ class BottomPlayerPanel {
     if (this.progressFill) this.progressFill.style.width = "0%";
     if (this.playPauseBtn)
       this.playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    this._currentDisplayedTrack = null;
+    this._pendingTrackPath = null;
   }
 
   _formatTime(seconds) {
