@@ -160,6 +160,9 @@
 
 @media (max-width: 768px) {
   .audio-player-control-panel {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
     padding: 10px 12px;
   }
 
