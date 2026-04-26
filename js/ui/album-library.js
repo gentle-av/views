@@ -140,27 +140,36 @@ class AlbumLibrary {
     menu.style.left = x + "px";
     menu.style.top = y + "px";
     menu.innerHTML = `
-        <div class="context-menu-item" data-action="delete">
-            <i class="fas fa-trash-alt"></i> Удалить альбом
-        </div>
-        <div class="context-menu-item" data-action="edit">
-            <i class="fas fa-edit"></i> Редактировать теги
-        </div>
-    `;
+    <div class="context-menu-item" data-action="delete">
+      <i class="fas fa-trash-alt"></i> Удалить альбом
+    </div>
+    <div class="context-menu-item" data-action="edit">
+      <i class="fas fa-edit"></i> Редактировать теги
+    </div>
+  `;
     document.body.appendChild(menu);
+    if (window.MediaCenter && window.MediaCenter._showOverlay) {
+      window.MediaCenter._showOverlay();
+    }
+    const closeMenuWithOverlay = () => {
+      menu.remove();
+      if (window.MediaCenter && window.MediaCenter._hideOverlay) {
+        window.MediaCenter._hideOverlay();
+      }
+    };
     menu
       .querySelector('[data-action="delete"]')
       .addEventListener("click", () => {
         this.events.emit("albumDelete", album);
-        menu.remove();
+        closeMenuWithOverlay();
       });
     menu.querySelector('[data-action="edit"]').addEventListener("click", () => {
       this.events.emit("albumEdit", album);
-      menu.remove();
+      closeMenuWithOverlay();
     });
     const closeMenu = (e) => {
       if (!menu.contains(e.target)) {
-        menu.remove();
+        closeMenuWithOverlay();
         document.removeEventListener("click", closeMenu);
       }
     };

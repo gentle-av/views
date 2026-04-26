@@ -5,6 +5,9 @@ class CustomDeleteDialog {
   }
 
   showConfirm(fileName, isDirectory = false) {
+    if (window.MediaCenter && window.MediaCenter._showOverlay) {
+      window.MediaCenter._showOverlay();
+    }
     return new Promise((resolve) => {
       this.resolveCallback = resolve;
       this.createModal(fileName, isDirectory);
@@ -119,6 +122,9 @@ class CustomDeleteDialog {
           this.modal.parentNode.removeChild(this.modal);
         }
         this.modal = null;
+        if (window.MediaCenter && window.MediaCenter._hideOverlay) {
+          window.MediaCenter._hideOverlay();
+        }
       }, 200);
     }
     if (this.handlers && this.modal) {

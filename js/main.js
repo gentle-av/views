@@ -180,6 +180,25 @@ const MediaCenter = {
       this.bottomPanel.forceUpdate();
     }
   },
+
+  _showOverlay() {
+    let overlay = document.querySelector(".overlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "overlay";
+      document.body.insertBefore(overlay, document.body.firstChild);
+    }
+    overlay.classList.add("active");
+    overlay.style.display = "block";
+  },
+
+  _hideOverlay() {
+    const overlay = document.querySelector(".overlay");
+    if (overlay) {
+      overlay.classList.remove("active");
+      overlay.style.display = "none";
+    }
+  },
 };
 
 if (document.readyState === "loading") {

@@ -35,6 +35,10 @@ class AlbumModal {
 
   async show(album) {
     if (!this.modal || !album) return;
+    if (window.MediaCenter && window.MediaCenter._showOverlay) {
+      window.MediaCenter._showOverlay();
+    }
+    this.modal.style.zIndex = "10011";
     this._renderHeader(album);
     this._renderActions(album);
     if (this.tracksContainer) {
@@ -89,6 +93,10 @@ class AlbumModal {
   hide() {
     if (this.modal) {
       this.modal.classList.remove("active");
+      this.modal.style.zIndex = "";
+      if (window.MediaCenter && window.MediaCenter._hideOverlay) {
+        window.MediaCenter._hideOverlay();
+      }
     }
   }
 

@@ -105,22 +105,25 @@ class RefreshButtonManager {
 
   showLastRefreshPopup() {
     this.closePopup();
+    if (window.MediaCenter && window.MediaCenter._showOverlay) {
+      window.MediaCenter._showOverlay();
+    }
     this.popup = document.createElement("div");
     this.popup.className = "refresh-time-popup";
     this.popup.innerHTML = `
-      <div class="refresh-time-popup-content">
-        <div class="refresh-time-popup-header">
-          <i class="fas fa-sync-alt"></i>
-          <span>Сканирование метаданных</span>
-          <button class="refresh-time-popup-close">&times;</button>
-        </div>
-        <div class="refresh-time-popup-body">
-          <div class="refresh-time-status" style="margin-top: 12px; font-size: 0.85rem; color: var(--yellow);">
-            <i class="fas fa-spinner fa-spin"></i> Обновление базы данных...
-          </div>
+    <div class="refresh-time-popup-content">
+      <div class="refresh-time-popup-header">
+        <i class="fas fa-sync-alt"></i>
+        <span>Сканирование метаданных</span>
+        <button class="refresh-time-popup-close">&times;</button>
+      </div>
+      <div class="refresh-time-popup-body">
+        <div class="refresh-time-status" style="margin-top: 12px; font-size: 0.85rem; color: var(--yellow);">
+          <i class="fas fa-spinner fa-spin"></i> Обновление базы данных...
         </div>
       </div>
-    `;
+    </div>
+  `;
     document.body.appendChild(this.popup);
     const closeBtn = this.popup.querySelector(".refresh-time-popup-close");
     if (closeBtn) {
@@ -145,9 +148,15 @@ class RefreshButtonManager {
           this.popup.remove();
         }
         this.popup = null;
+        if (window.MediaCenter && window.MediaCenter._hideOverlay) {
+          window.MediaCenter._hideOverlay();
+        }
       }, 200);
     } else {
       this.popup = null;
+      if (window.MediaCenter && window.MediaCenter._hideOverlay) {
+        window.MediaCenter._hideOverlay();
+      }
     }
   }
 }

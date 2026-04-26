@@ -245,6 +245,7 @@ class PlaylistPopup {
       closeBtn.addEventListener("click", () => {
         this._getElements();
         this.popup?.classList.remove("open");
+        this._hideOverlay();
       });
     }
     if (clearBtn) {
@@ -261,8 +262,13 @@ class PlaylistPopup {
         e.stopPropagation();
         this._getElements();
         if (this.popup) {
-          this.popup.classList.toggle("open");
-          this.refresh();
+          const isOpen = this.popup.classList.toggle("open");
+          if (isOpen) {
+            this._showOverlay();
+            this.refresh();
+          } else {
+            this._hideOverlay();
+          }
         }
       });
     }
@@ -275,6 +281,7 @@ class PlaylistPopup {
         !this.popup.contains(e.target)
       ) {
         this.popup.classList.remove("open");
+        this._hideOverlay();
       }
     });
   }
@@ -303,5 +310,24 @@ class PlaylistPopup {
     const div = document.createElement("div");
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  _showOverlay() {
+    let overlay = document.querySelector(".overlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "overlay";
+      document.body.appendChild(overlay);
+    }
+    overlay.classList.add("active");
+    overlay.style.display = "block";
+  }
+
+  _hideOverlay() {
+    const overlay = document.querySelector(".overlay");
+    if (overlay) {
+      overlay.classList.remove("active");
+      overlay.style.display = "none";
+    }
   }
 }

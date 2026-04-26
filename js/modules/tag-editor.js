@@ -49,35 +49,38 @@ class TagEditor {
   }
 
   showAlbumTagEditor(album) {
+    if (window.MediaCenter && window.MediaCenter._showOverlay) {
+      window.MediaCenter._showOverlay();
+    }
     const modal = document.createElement("div");
     modal.className = "tag-editor-modal";
     modal.innerHTML = `
-      <div class="tag-editor-overlay"></div>
-      <div class="tag-editor-container">
-        <div class="tag-editor-header">
-          <h3>Редактирование тегов альбома</h3>
-          <button class="tag-editor-close"><i class="fas fa-times"></i></button>
+    <div class="tag-editor-overlay"></div>
+    <div class="tag-editor-container">
+      <div class="tag-editor-header">
+        <h3>Редактирование тегов альбома</h3>
+        <button class="tag-editor-close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="tag-editor-content">
+        <div class="tag-editor-field">
+          <label>Альбом:</label>
+          <input type="text" id="editAlbumTitle" value="${this.escapeHtml(album.title)}" placeholder="Название альбома">
         </div>
-        <div class="tag-editor-content">
-          <div class="tag-editor-field">
-            <label>Альбом:</label>
-            <input type="text" id="editAlbumTitle" value="${this.escapeHtml(album.title)}" placeholder="Название альбома">
-          </div>
-          <div class="tag-editor-field">
-            <label>Исполнитель:</label>
-            <input type="text" id="editAlbumArtist" value="${this.escapeHtml(album.artist)}" placeholder="Исполнитель">
-          </div>
-          <div class="tag-editor-field">
-            <label>Год:</label>
-            <input type="text" id="editAlbumYear" value="${album.year || ""}" placeholder="Год выпуска">
-          </div>
-          <div class="tag-editor-actions">
-            <button class="tag-editor-save-all" data-action="save-all">Применить</button>
-            <button class="tag-editor-cancel">Отмена</button>
-          </div>
+        <div class="tag-editor-field">
+          <label>Исполнитель:</label>
+          <input type="text" id="editAlbumArtist" value="${this.escapeHtml(album.artist)}" placeholder="Исполнитель">
+        </div>
+        <div class="tag-editor-field">
+          <label>Год:</label>
+          <input type="text" id="editAlbumYear" value="${album.year || ""}" placeholder="Год выпуска">
+        </div>
+        <div class="tag-editor-actions">
+          <button class="tag-editor-save-all" data-action="save-all">Применить</button>
+          <button class="tag-editor-cancel">Отмена</button>
         </div>
       </div>
-    `;
+    </div>
+  `;
     document.body.appendChild(modal);
     const overlay = modal.querySelector(".tag-editor-overlay");
     const closeBtn = modal.querySelector(".tag-editor-close");
@@ -85,7 +88,12 @@ class TagEditor {
     const saveAllBtn = modal.querySelector("[data-action='save-all']");
     const closeModal = () => {
       modal.classList.add("closing");
-      setTimeout(() => modal.remove(), 200);
+      setTimeout(() => {
+        modal.remove();
+        if (window.MediaCenter && window.MediaCenter._hideOverlay) {
+          window.MediaCenter._hideOverlay();
+        }
+      }, 200);
     };
     overlay.addEventListener("click", closeModal);
     closeBtn.addEventListener("click", closeModal);
@@ -114,6 +122,9 @@ class TagEditor {
   }
 
   showTrackTagEditor(track, album = null) {
+    if (window.MediaCenter && window.MediaCenter._showOverlay) {
+      window.MediaCenter._showOverlay();
+    }
     const trackName =
       track.name ||
       track.title ||
@@ -126,40 +137,40 @@ class TagEditor {
     const modal = document.createElement("div");
     modal.className = "tag-editor-modal";
     modal.innerHTML = `
-      <div class="tag-editor-overlay"></div>
-      <div class="tag-editor-container">
-        <div class="tag-editor-header">
-          <h3>Редактирование тегов трека</h3>
-          <button class="tag-editor-close"><i class="fas fa-times"></i></button>
+    <div class="tag-editor-overlay"></div>
+    <div class="tag-editor-container">
+      <div class="tag-editor-header">
+        <h3>Редактирование тегов трека</h3>
+        <button class="tag-editor-close"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="tag-editor-content">
+        <div class="tag-editor-field">
+          <label>Название трека:</label>
+          <input type="text" id="editTrackTitle" value="${this.escapeHtml(trackName)}" placeholder="Название трека">
         </div>
-        <div class="tag-editor-content">
-          <div class="tag-editor-field">
-            <label>Название трека:</label>
-            <input type="text" id="editTrackTitle" value="${this.escapeHtml(trackName)}" placeholder="Название трека">
-          </div>
-          <div class="tag-editor-field">
-            <label>Исполнитель:</label>
-            <input type="text" id="editTrackArtist" value="${album ? this.escapeHtml(album.artist) : ""}" placeholder="Исполнитель">
-          </div>
-          <div class="tag-editor-field">
-            <label>Альбом:</label>
-            <input type="text" id="editTrackAlbum" value="${album ? this.escapeHtml(album.title) : ""}" placeholder="Альбом">
-          </div>
-          <div class="tag-editor-field">
-            <label>Номер трека:</label>
-            <input type="number" id="editTrackNumber" value="${track.trackNumber || track.number || ""}" placeholder="Номер трека">
-          </div>
-          <div class="tag-editor-field">
-            <label>Год:</label>
-            <input type="text" id="editTrackYear" value="${album ? album.year || "" : ""}" placeholder="Год выпуска">
-          </div>
-          <div class="tag-editor-actions">
-            <button class="tag-editor-save" data-action="save">Сохранить</button>
-            <button class="tag-editor-cancel">Отмена</button>
-          </div>
+        <div class="tag-editor-field">
+          <label>Исполнитель:</label>
+          <input type="text" id="editTrackArtist" value="${album ? this.escapeHtml(album.artist) : ""}" placeholder="Исполнитель">
+        </div>
+        <div class="tag-editor-field">
+          <label>Альбом:</label>
+          <input type="text" id="editTrackAlbum" value="${album ? this.escapeHtml(album.title) : ""}" placeholder="Альбом">
+        </div>
+        <div class="tag-editor-field">
+          <label>Номер трека:</label>
+          <input type="number" id="editTrackNumber" value="${track.trackNumber || track.number || ""}" placeholder="Номер трека">
+        </div>
+        <div class="tag-editor-field">
+          <label>Год:</label>
+          <input type="text" id="editTrackYear" value="${album ? album.year || "" : ""}" placeholder="Год выпуска">
+        </div>
+        <div class="tag-editor-actions">
+          <button class="tag-editor-save" data-action="save">Сохранить</button>
+          <button class="tag-editor-cancel">Отмена</button>
         </div>
       </div>
-    `;
+    </div>
+  `;
     document.body.appendChild(modal);
     const overlay = modal.querySelector(".tag-editor-overlay");
     const closeBtn = modal.querySelector(".tag-editor-close");
@@ -167,7 +178,12 @@ class TagEditor {
     const saveBtn = modal.querySelector("[data-action='save']");
     const closeModal = () => {
       modal.classList.add("closing");
-      setTimeout(() => modal.remove(), 200);
+      setTimeout(() => {
+        modal.remove();
+        if (window.MediaCenter && window.MediaCenter._hideOverlay) {
+          window.MediaCenter._hideOverlay();
+        }
+      }, 200);
     };
     overlay.addEventListener("click", closeModal);
     closeBtn.addEventListener("click", closeModal);
