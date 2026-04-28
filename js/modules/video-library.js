@@ -227,15 +227,6 @@ class VideoLibrary {
     }, 300);
   }
 
-  playVideo(path) {
-    if (this._debounceTimeout) {
-      clearTimeout(this._debounceTimeout);
-    }
-    this._debounceTimeout = setTimeout(() => {
-      this._executePlayVideo(path);
-    }, 300);
-  }
-
   async _executePlayVideo(path) {
     if (this.activeVideos && this.activeVideos.has(path)) {
       console.log("playVideo ignored - video already playing:", path);
@@ -255,7 +246,7 @@ class VideoLibrary {
     const onTimeUpdate = (currentTime, duration) => {
       if (currentTime === 0 && (duration === 0 || duration === undefined)) {
         console.log("triggering closeWindow");
-        this.events.emit("playback:closeWindow");
+        // this.events.emit("playback:closeWindow");
         this.activeVideos.delete(path);
         this.events.off("playback:videoClose", onClose);
         this.events.off("playback:timeUpdate", onTimeUpdate);
