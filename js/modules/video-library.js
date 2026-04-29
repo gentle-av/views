@@ -9,8 +9,11 @@ class VideoLibrary {
     this.breadcrumbs = document.getElementById("videoBreadcrumbs");
     this.thumbnailCache = new Map();
     this._debounceTimeout = null;
+    this._boundHandleOrientation = this._handleOrientationChange.bind(this);
     this._bindEvents();
     this.loadDirectory(this.currentPath, false);
+    window.addEventListener("orientationchange", this._boundHandleOrientation);
+    window.addEventListener("resize", this._boundHandleOrientation);
   }
 
   destroy() {
@@ -26,6 +29,11 @@ class VideoLibrary {
     }
     this.currentPath = null;
     this.history = [];
+    window.removeEventListener(
+      "orientationchange",
+      this._boundHandleOrientation,
+    );
+    window.removeEventListener("resize", this._boundHandleOrientation);
   }
 
   _bindEvents() {
@@ -246,7 +254,6 @@ class VideoLibrary {
     const onTimeUpdate = (currentTime, duration) => {
       if (currentTime === 0 && (duration === 0 || duration === undefined)) {
         console.log("triggering closeWindow");
-        // this.events.emit("playback:closeWindow");
         this.activeVideos.delete(path);
         this.events.off("playback:videoClose", onClose);
         this.events.off("playback:timeUpdate", onTimeUpdate);
@@ -283,6 +290,25 @@ class VideoLibrary {
     if (this.currentPath) {
       this.thumbnailCache.clear();
       this.loadDirectory(this.currentPath, false);
+    }
+  }
+
+  _handleOrientationChange() {
+    const playerPage = document.getElementById("playerControlPage");
+    if (playerPage && playerPage.classList.contains("active")) {
+      setTimeout(() => {
+        playerPage.classList.remove("active");
+        void playerPage.offsetHeight;
+        playerPage.classList.add("active");
+        playerPage.style.display = "flex";
+      }, 10);
+      const progressFill = document.getElementById("videoProgressFill");
+      if (progressFill && this.currentVideoElement) {
+        const currentTime = this.currentVideoElement?.currentTime || 0;
+        const duration = this.currentVideoElement?.duration || 1;
+        const percent = (currentTime / duration) * 100;
+        progressFill.style.width = `${percent}%`;
+      }
     }
   }
 
@@ -398,10 +424,8 @@ class VideoLibrary {
       name,
     );
     if (!newName || newName === name) return;
-
     const dirPath = path.substring(0, path.lastIndexOf("/"));
     const newPath = dirPath + "/" + newName;
-
     const response = await this.api.post("/api/rename", { path, newPath });
     if (response.success) {
       Utils.showNotification(
@@ -435,7 +459,6 @@ class VideoLibrary {
   async moveItem(path, name, isDirectory) {
     const targetPath = prompt("Введите путь назначения:", "/mnt/video/");
     if (!targetPath) return;
-
     const response = await this.api.post("/api/move", {
       path,
       newPath: targetPath + "/" + name,
