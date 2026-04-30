@@ -7,12 +7,63 @@ class BottomPlayerPanel {
     this._isAudioPage = false;
     this._pendingTrackPath = null;
     this._currentDisplayedTrack = null;
+    this._volume = 50;
+    this._isMuted = false;
+    this._currentOutput = "speakers";
+    this._audioSettingsCollapsed = this._loadSettingsState();
     this._createPanel();
     this._initElements();
     this._attachEvents();
     this._subscribeToEvents();
     this._startAutoUpdate();
     this._listenToPageChanges();
+    this._loadInitialVolume();
+    this._loadInitialAudioOutput();
+  }
+
+  _loadSettingsState() {
+    try {
+      const saved = localStorage.getItem("audioSettingsCollapsed");
+      return saved === "true";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  _saveSettingsState() {
+    try {
+      localStorage.setItem(
+        "audioSettingsCollapsed",
+        this._audioSettingsCollapsed,
+      );
+    } catch (e) {}
+  }
+
+  async _loadInitialVolume() {
+    try {
+      const response = await fetch("/api/simple/volume");
+      const data = await response.json();
+      if (data.success && data.data && typeof data.data.volume === "number") {
+        this._volume = data.data.volume;
+        this._isMuted = false;
+        this._updateVolumeUI();
+      }
+    } catch (error) {
+      console.error("Failed to load volume:", error);
+    }
+  }
+
+  async _loadInitialAudioOutput() {
+    try {
+      const response = await fetch("/api/audio/output");
+      const data = await response.json();
+      if (data.success && data.data && data.data.current) {
+        this._currentOutput = data.data.current;
+        this._updateOutputUI();
+      }
+    } catch (error) {
+      console.error("Failed to load audio output:", error);
+    }
   }
 
   async _updateTrackNameWithMetadata(filePath) {
@@ -90,6 +141,13 @@ class BottomPlayerPanel {
     this.timeCurrent = document.getElementById("panelTimeCurrent");
     this.timeTotal = document.getElementById("panelTimeTotal");
     this.trackCount = document.getElementById("panelTrackCount");
+    this.volumeSlider = document.getElementById("panelVolumeSlider");
+    this.volumeValue = document.getElementById("panelVolumeValue");
+    this.volumeMuteBtn = document.getElementById("panelVolumeMuteBtn");
+    this.speakersBtn = document.getElementById("panelSpeakersBtn");
+    this.headphonesBtn = document.getElementById("panelHeadphonesBtn");
+    this.settingsToggleBtn = document.getElementById("panelSettingsToggleBtn");
+    this.audioSettingsContainer = document.getElementById("panelAudioSettings");
   }
 
   _createPanel() {
@@ -118,6 +176,25 @@ class BottomPlayerPanel {
           <button id="panelPlayPauseBtn" class="player-panel-btn player-panel-play" title="Play/Pause"><i class="fas fa-play"></i></button>
           <button id="panelStopBtn" class="player-panel-btn" title="Стоп"><i class="fas fa-stop"></i></button>
           <button id="panelNextBtn" class="player-panel-btn" title="Следующий"><i class="fas fa-forward"></i></button>
+          <button id="panelSettingsToggleBtn" class="player-panel-btn player-panel-settings-toggle" title="Настройки аудио"><i class="fas fa-sliders-h"></i></button>
+        </div>
+      </div>
+      <div id="panelAudioSettings" class="player-panel-audio-settings ${this._audioSettingsCollapsed ? "collapsed" : ""}">
+        <div class="player-panel-volume-section">
+          <div class="player-panel-volume-controls">
+            <button id="panelVolumeMuteBtn" class="player-panel-volume-mute" title="Мьют"><i class="fas fa-volume-up"></i></button>
+            <input type="range" id="panelVolumeSlider" class="player-panel-volume-slider" min="0" max="100" value="50">
+            <span id="panelVolumeValue" class="player-panel-volume-value">50%</span>
+          </div>
+        </div>
+        <div class="player-panel-output-section">
+          <span class="player-panel-output-label"><i class="fas fa-exchange-alt"></i> Аудиовыход:</span>
+          <button id="panelSpeakersBtn" class="player-panel-output-btn speakers-btn" title="Колонки">
+            <i class="fas fa-volume-up"></i><span>Колонки</span>
+          </button>
+          <button id="panelHeadphonesBtn" class="player-panel-output-btn headphones-btn" title="Наушники">
+            <i class="fas fa-headphones"></i><span>Наушники</span>
+          </button>
         </div>
       </div>
     `;
@@ -151,6 +228,156 @@ class BottomPlayerPanel {
         }
       });
     }
+    if (this.volumeSlider) {
+      this.volumeSlider.addEventListener("input", (e) => {
+        const value = parseInt(e.target.value);
+        this._volume = value;
+        this._updateVolumeUI();
+        this._setVolume(value);
+      });
+    }
+    if (this.volumeMuteBtn) {
+      this.volumeMuteBtn.addEventListener("click", () => this._toggleMute());
+    }
+    if (this.speakersBtn) {
+      this.speakersBtn.addEventListener("click", () =>
+        this._switchToSpeakers(),
+      );
+    }
+    if (this.headphonesBtn) {
+      this.headphonesBtn.addEventListener("click", () =>
+        this._switchToHeadphones(),
+      );
+    }
+    if (this.settingsToggleBtn) {
+      this.settingsToggleBtn.addEventListener("click", () =>
+        this._toggleAudioSettings(),
+      );
+    }
+  }
+
+  async _setVolume(volume) {
+    try {
+      const response = await fetch("/api/simple/volume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ volume: volume }),
+      });
+      const data = await response.json();
+      if (!data.success) {
+        console.error("Failed to set volume:", data.message);
+      }
+    } catch (error) {
+      console.error("Error setting volume:", error);
+    }
+  }
+
+  async _toggleMute() {
+    try {
+      const response = await fetch("/api/simple/volume/mute", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (data.success && data.data) {
+        this._isMuted = data.data.muted;
+        this._updateVolumeUI();
+        if (this._isMuted) {
+          this.volumeMuteBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+        } else {
+          this.volumeMuteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+        }
+      }
+    } catch (error) {
+      console.error("Error toggling mute:", error);
+    }
+  }
+
+  async _switchToSpeakers() {
+    try {
+      const response = await fetch("/api/audio/output/speakers", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (data.success) {
+        this._currentOutput = "speakers";
+        this._updateOutputUI();
+        this._showNotification("Переключено на колонки");
+      }
+    } catch (error) {
+      console.error("Error switching to speakers:", error);
+    }
+  }
+
+  async _switchToHeadphones() {
+    try {
+      const response = await fetch("/api/audio/output/headphones", {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (data.success) {
+        this._currentOutput = "headphones";
+        this._updateOutputUI();
+        this._showNotification("Переключено на наушники");
+      }
+    } catch (error) {
+      console.error("Error switching to headphones:", error);
+    }
+  }
+
+  _updateVolumeUI() {
+    if (this.volumeSlider) {
+      this.volumeSlider.value = this._volume;
+    }
+    if (this.volumeValue) {
+      this.volumeValue.textContent = this._volume + "%";
+    }
+  }
+
+  _updateOutputUI() {
+    if (this.speakersBtn) {
+      if (this._currentOutput === "speakers") {
+        this.speakersBtn.classList.add("active");
+      } else {
+        this.speakersBtn.classList.remove("active");
+      }
+    }
+    if (this.headphonesBtn) {
+      if (this._currentOutput === "headphones") {
+        this.headphonesBtn.classList.add("active");
+      } else {
+        this.headphonesBtn.classList.remove("active");
+      }
+    }
+  }
+
+  _toggleAudioSettings() {
+    this._audioSettingsCollapsed = !this._audioSettingsCollapsed;
+    this._saveSettingsState();
+    if (this.audioSettingsContainer) {
+      if (this._audioSettingsCollapsed) {
+        this.audioSettingsContainer.classList.add("collapsed");
+      } else {
+        this.audioSettingsContainer.classList.remove("collapsed");
+      }
+    }
+    if (this.settingsToggleBtn) {
+      if (this._audioSettingsCollapsed) {
+        this.settingsToggleBtn.classList.add("collapsed");
+      } else {
+        this.settingsToggleBtn.classList.remove("collapsed");
+      }
+    }
+  }
+
+  _showNotification(message) {
+    const notification = document.createElement("div");
+    notification.className = "player-panel-notification";
+    notification.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+      notification.classList.add("fade-out");
+      setTimeout(() => notification.remove(), 300);
+    }, 2000);
   }
 
   _subscribeToEvents() {
@@ -167,7 +394,6 @@ class BottomPlayerPanel {
     const parts = filePath.split("/");
     let fileName = parts[parts.length - 1];
     fileName = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
-    console.log("_extractTrackNameFromPath:", filePath, "->", fileName);
     return fileName;
   }
 

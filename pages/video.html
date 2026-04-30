@@ -66,29 +66,58 @@
     <button id="closeFileBtn" class="control-btn close-file" title="Закрыть">
       <i class="fas fa-times"></i>
     </button>
+  </div>
 
-    <div class="volume-controls">
+  <div class="player-controls-bottom">
+    <div class="volume-section">
+      <div class="volume-controls">
+        <button
+          id="volumeDownBtn"
+          class="control-btn volume-btn"
+          title="Уменьшить громкость"
+        >
+          <i class="fas fa-volume-down"></i>
+        </button>
+        <div class="volume-slider-container">
+          <div id="volumeSlider" class="volume-slider">
+            <div id="volumeFill" class="volume-fill"></div>
+          </div>
+          <span id="volumeValue" class="volume-value">100%</span>
+        </div>
+        <button
+          id="volumeUpBtn"
+          class="control-btn volume-btn"
+          title="Увеличить громкость"
+        >
+          <i class="fas fa-volume-up"></i>
+        </button>
+        <button
+          id="volumeMuteBtn"
+          class="control-btn volume-mute-btn"
+          title="Выключить звук"
+        >
+          <i class="fas fa-volume-up"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="audio-output-section">
+      <span class="output-label">Выход:</span>
       <button
-        id="volumeDownBtn"
-        class="control-btn volume-btn"
-        title="Уменьшить громкость"
-      >
-        <i class="fas fa-volume-down"></i>
-      </button>
-      <span id="volumeValue" class="volume-value">100%</span>
-      <button
-        id="volumeUpBtn"
-        class="control-btn volume-btn"
-        title="Увеличить громкость"
+        id="switchToSpeakersBtn"
+        class="output-btn speakers-btn"
+        title="Колонки"
       >
         <i class="fas fa-volume-up"></i>
+        <span>Колонки</span>
       </button>
       <button
-        id="volumeMuteBtn"
-        class="control-btn volume-mute-btn"
-        title="Выключить звук"
+        id="switchToHeadphonesBtn"
+        class="output-btn headphones-btn"
+        title="Наушники"
       >
-        <i class="fas fa-volume-mute"></i>
+        <i class="fas fa-headphones"></i>
+        <span>Наушники</span>
       </button>
     </div>
   </div>

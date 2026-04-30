@@ -13,13 +13,18 @@ class VideoPlayerController {
     this._currentVolume = 100;
     this._isMuted = false;
     this._volumePollInterval = null;
+    this._currentOutput = "speakers";
     this._volumeUpHandler = null;
     this._volumeDownHandler = null;
     this._volumeMuteHandler = null;
+    this._volumeSliderHandler = null;
+    this._speakersHandler = null;
+    this._headphonesHandler = null;
     this._bindEvents();
     this._initPanel();
     this._startProgressPolling();
     this._loadCurrentVolume();
+    this._loadCurrentOutput();
     this._startVolumePolling();
   }
 
@@ -71,6 +76,7 @@ class VideoPlayerController {
         this._updatePlayPauseButton();
         this._loadVideoPreview(this.currentFile);
         await this._loadCurrentVolume();
+        await this._loadCurrentOutput();
         this.show();
         return true;
       } else if (
@@ -82,6 +88,7 @@ class VideoPlayerController {
         this.isPlaying = false;
         this._updateFileInfo(this.currentFile);
         await this._loadCurrentVolume();
+        await this._loadCurrentOutput();
         this.show();
         return true;
       }
@@ -123,6 +130,7 @@ class VideoPlayerController {
     const volumeUpBtn = document.getElementById("volumeUpBtn");
     const volumeDownBtn = document.getElementById("volumeDownBtn");
     const volumeMuteBtn = document.getElementById("volumeMuteBtn");
+    const volumeSlider = document.getElementById("volumeSlider");
     if (volumeUpBtn) {
       if (this._volumeUpHandler)
         volumeUpBtn.removeEventListener("click", this._volumeUpHandler);
@@ -140,6 +148,26 @@ class VideoPlayerController {
         volumeMuteBtn.removeEventListener("click", this._volumeMuteHandler);
       this._volumeMuteHandler = () => this.toggleMute();
       volumeMuteBtn.addEventListener("click", this._volumeMuteHandler);
+    }
+    if (volumeSlider) {
+      if (this._volumeSliderHandler)
+        volumeSlider.removeEventListener("click", this._volumeSliderHandler);
+      this._volumeSliderHandler = (e) => this._handleVolumeSliderClick(e);
+      volumeSlider.addEventListener("click", this._volumeSliderHandler);
+    }
+    const speakersBtn = document.getElementById("switchToSpeakersBtn");
+    const headphonesBtn = document.getElementById("switchToHeadphonesBtn");
+    if (speakersBtn) {
+      if (this._speakersHandler)
+        speakersBtn.removeEventListener("click", this._speakersHandler);
+      this._speakersHandler = () => this.switchToSpeakers();
+      speakersBtn.addEventListener("click", this._speakersHandler);
+    }
+    if (headphonesBtn) {
+      if (this._headphonesHandler)
+        headphonesBtn.removeEventListener("click", this._headphonesHandler);
+      this._headphonesHandler = () => this.switchToHeadphones();
+      headphonesBtn.addEventListener("click", this._headphonesHandler);
     }
     const progressBar = document.getElementById("videoProgressBar");
     if (progressBar) {
@@ -172,6 +200,18 @@ class VideoPlayerController {
     }
   }
 
+  async _loadCurrentOutput() {
+    try {
+      const response = await this.api.get("/api/audio/output");
+      if (response.success && response.data && response.data.current) {
+        this._currentOutput = response.data.current;
+        this._updateOutputButtons();
+      }
+    } catch (error) {
+      console.error("Failed to load audio output:", error);
+    }
+  }
+
   _startVolumePolling() {
     if (this._volumePollInterval) clearInterval(this._volumePollInterval);
     this._volumePollInterval = setInterval(async () => {
@@ -198,6 +238,15 @@ class VideoPlayerController {
             this._updateVolumeDisplay();
           }
         }
+        const outputResponse = await this.api.get("/api/audio/output");
+        if (
+          outputResponse.success &&
+          outputResponse.data &&
+          outputResponse.data.current !== this._currentOutput
+        ) {
+          this._currentOutput = outputResponse.data.current;
+          this._updateOutputButtons();
+        }
       } catch (error) {
         console.error("Failed to poll volume:", error);
       }
@@ -206,27 +255,93 @@ class VideoPlayerController {
 
   _updateVolumeDisplay() {
     const volumeValueSpan = document.getElementById("volumeValue");
+    const volumeFill = document.getElementById("volumeFill");
+    const volumeMuteBtn = document.getElementById("volumeMuteBtn");
     if (volumeValueSpan) {
       volumeValueSpan.textContent = this._isMuted
         ? "0%"
         : `${this._currentVolume}%`;
     }
-    const volumeMuteBtn = document.getElementById("volumeMuteBtn");
+    if (volumeFill) {
+      const percent = this._isMuted ? 0 : this._currentVolume;
+      volumeFill.style.width = `${percent}%`;
+      volumeFill.classList.remove("animate");
+      void volumeFill.offsetWidth;
+      volumeFill.classList.add("animate");
+    }
     if (volumeMuteBtn) {
       const icon = volumeMuteBtn.querySelector("i");
       if (this._isMuted || this._currentVolume === 0) {
         icon.className = "fas fa-volume-mute";
         volumeMuteBtn.title = "Включить звук";
+        volumeMuteBtn.classList.add("muted");
       } else if (this._currentVolume < 30) {
         icon.className = "fas fa-volume-off";
         volumeMuteBtn.title = "Выключить звук";
+        volumeMuteBtn.classList.remove("muted");
       } else if (this._currentVolume < 70) {
         icon.className = "fas fa-volume-down";
         volumeMuteBtn.title = "Выключить звук";
+        volumeMuteBtn.classList.remove("muted");
       } else {
         icon.className = "fas fa-volume-up";
         volumeMuteBtn.title = "Выключить звук";
+        volumeMuteBtn.classList.remove("muted");
       }
+    }
+  }
+
+  _updateOutputButtons() {
+    const speakersBtn = document.getElementById("switchToSpeakersBtn");
+    const headphonesBtn = document.getElementById("switchToHeadphonesBtn");
+    if (speakersBtn) {
+      if (this._currentOutput === "speakers") {
+        speakersBtn.classList.add("active");
+      } else {
+        speakersBtn.classList.remove("active");
+      }
+    }
+    if (headphonesBtn) {
+      if (this._currentOutput === "headphones") {
+        headphonesBtn.classList.add("active");
+      } else {
+        headphonesBtn.classList.remove("active");
+      }
+    }
+  }
+
+  _handleVolumeSliderClick(e) {
+    const slider = document.getElementById("volumeSlider");
+    if (!slider) return;
+    const rect = slider.getBoundingClientRect();
+    const percent = Math.min(
+      100,
+      Math.max(0, ((e.clientX - rect.left) / rect.width) * 100),
+    );
+    const volume = Math.round(percent);
+    this.setVolume(volume);
+  }
+
+  async setVolume(volume) {
+    if (volume < 0) volume = 0;
+    if (volume > 100) volume = 100;
+    try {
+      const response = await this.api.post("/api/simple/volume", {
+        volume: volume,
+      });
+      if (
+        response.success &&
+        response.data &&
+        response.data.volume !== undefined
+      ) {
+        this._currentVolume = response.data.volume;
+        if (this._currentVolume > 0 && this._isMuted) {
+          this._isMuted = false;
+        }
+        this._updateVolumeDisplay();
+      }
+    } catch (error) {
+      console.error("Failed to set volume:", error);
     }
   }
 
@@ -265,6 +380,11 @@ class VideoPlayerController {
   }
 
   async toggleMute() {
+    const btn = document.getElementById("volumeMuteBtn");
+    if (btn) {
+      btn.classList.add("animate-pop");
+      setTimeout(() => btn.classList.remove("animate-pop"), 300);
+    }
     try {
       const response = await this.api.post("/api/simple/volume/mute");
       if (response.success && response.data) {
@@ -278,6 +398,40 @@ class VideoPlayerController {
       }
     } catch (error) {
       console.error("Failed to toggle mute:", error);
+    }
+  }
+
+  async switchToSpeakers() {
+    try {
+      const response = await this.api.post("/api/audio/output/speakers");
+      if (response.success) {
+        this._currentOutput = "speakers";
+        this._updateOutputButtons();
+        const btn = document.getElementById("switchToSpeakersBtn");
+        if (btn) {
+          btn.classList.add("animate-switch");
+          setTimeout(() => btn.classList.remove("animate-switch"), 300);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to switch to speakers:", error);
+    }
+  }
+
+  async switchToHeadphones() {
+    try {
+      const response = await this.api.post("/api/audio/output/headphones");
+      if (response.success) {
+        this._currentOutput = "headphones";
+        this._updateOutputButtons();
+        const btn = document.getElementById("switchToHeadphonesBtn");
+        if (btn) {
+          btn.classList.add("animate-switch");
+          setTimeout(() => btn.classList.remove("animate-switch"), 300);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to switch to headphones:", error);
     }
   }
 
