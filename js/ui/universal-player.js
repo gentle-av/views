@@ -27,6 +27,7 @@ class UniversalPlayer {
     this._loadInitialVolume();
     this._loadInitialAudioOutput();
     this._startProgressPolling();
+    this._startVolumePolling();
   }
 
   _createPanel() {
@@ -114,17 +115,11 @@ class UniversalPlayer {
     this.volumeUp = document.getElementById("universalBottomVolumeUp");
     this.volumeMute = document.getElementById("universalBottomVolumeMute");
     this.volumeValue = document.getElementById("universalBottomVolumeValue");
+    this.volumeFill = document.getElementById("universalVolumeFill");
     this.speakersBtn = document.getElementById("universalBottomSpeakersBtn");
     this.headphonesBtn = document.getElementById(
       "universalBottomHeadphonesBtn",
     );
-    console.log("[UniversalPlayer] Elements initialized:", {
-      element: !!this.element,
-      trackName: !!this.trackName,
-      trackArtist: !!this.trackArtist,
-      trackCount: !!this.trackCount,
-      progressBar: !!this.progressBar,
-    });
   }
 
   _attachEvents() {
@@ -182,7 +177,6 @@ class UniversalPlayer {
   }
 
   _subscribeToEvents() {
-    console.log("[UniversalPlayer] Subscribing to events");
     this.events.on("playback:videoStart", (path) =>
       this.startPlayback(path, "video"),
     );
@@ -191,18 +185,10 @@ class UniversalPlayer {
     );
     this.events.on("playback:videoStopped", () => this.stop());
     this.events.on("playback:audioStopped", () => this.stop());
-    this.events.on("stateChange", (state) => {
-      console.log("[UniversalPlayer] stateChange event received:", state);
-      this._updateFromState(state);
-    });
+    this.events.on("stateChange", (state) => this._updateFromState(state));
     this.events.on("trackChanged", ({ album, trackIndex }) => {
-      console.log("[UniversalPlayer] trackChanged event received:", {
-        album,
-        trackIndex,
-      });
       if (album && album.tracks && album.tracks[trackIndex]) {
         const track = album.tracks[trackIndex];
-        console.log("[UniversalPlayer] Track data:", track);
         this._updateTrackInfo(track.displayName || track.title, album.artist);
         if (track.path) {
           this.currentFile = track.path;
@@ -220,14 +206,47 @@ class UniversalPlayer {
   }
 
   _updateFromState(state) {
-    console.log("[UniversalPlayer] _updateFromState:", state);
     if (!state) return;
     if (state.currentTrack) {
       this.currentFile = state.currentTrack;
-      const fileName = this.currentFile.split("/").pop();
+      let fileName = this.currentFile.split("/").pop();
+      fileName = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
+      const match = fileName.match(/^\d+\s*[-.]?\s*(.+)$/);
+      if (match) {
+        fileName = match[1];
+      }
       if (this.trackName) {
         this.trackName.textContent = this._escape(fileName);
-        console.log("[UniversalPlayer] Track name set to:", fileName);
+      }
+      if (this.musicApi && this.currentFile) {
+        this.musicApi
+          .getFileMetadata(this.currentFile)
+          .then((metadata) => {
+            if (
+              metadata &&
+              metadata.data &&
+              metadata.data.file &&
+              metadata.data.file.artist
+            ) {
+              if (this.trackArtist) {
+                this.trackArtist.textContent = this._escape(
+                  metadata.data.file.artist,
+                );
+              }
+            } else if (
+              metadata &&
+              metadata.data &&
+              metadata.data.database &&
+              metadata.data.database.artist
+            ) {
+              if (this.trackArtist) {
+                this.trackArtist.textContent = this._escape(
+                  metadata.data.database.artist,
+                );
+              }
+            }
+          })
+          .catch(() => {});
       }
     }
     this.isPlaying = state.isPlaying || false;
@@ -235,19 +254,22 @@ class UniversalPlayer {
     if (state.currentIndex !== undefined && state.totalTracks !== undefined) {
       if (this.trackCount) {
         this.trackCount.textContent = `${state.currentIndex + 1}/${state.totalTracks}`;
-        console.log(
-          "[UniversalPlayer] Track count set to:",
-          `${state.currentIndex + 1}/${state.totalTracks}`,
-        );
       }
     }
   }
 
   _updateTrackInfo(title, artist) {
-    console.log("[UniversalPlayer] _updateTrackInfo:", { title, artist });
-    if (this.trackName) this.trackName.textContent = this._escape(title || "—");
-    if (this.trackArtist)
+    if (this.trackName) {
+      let trackTitle = title || "—";
+      const match = trackTitle.match(/^\d+\s*[-.]?\s*(.+)$/);
+      if (match) {
+        trackTitle = match[1];
+      }
+      this.trackName.textContent = this._escape(trackTitle);
+    }
+    if (this.trackArtist) {
       this.trackArtist.textContent = this._escape(artist || "");
+    }
   }
 
   setMediaType(type) {
@@ -303,7 +325,6 @@ class UniversalPlayer {
   }
 
   async startPlayback(path, type) {
-    console.log("[UniversalPlayer] startPlayback called:", { path, type });
     this.mediaType = type;
     this.currentFile = path;
     this._updateFileInfo(path);
@@ -329,11 +350,19 @@ class UniversalPlayer {
         Utils.showNotification("Ошибка запуска видео", "error");
       }
     } else {
-      console.log("[UniversalPlayer] Starting audio playback");
       await this._loadAlbumCover(path);
       this.show();
       this._startProgressPolling();
       this._updatePlayPauseButton(true);
+      setTimeout(async () => {
+        if (this.playerApi) {
+          const timeInfo = await this.playerApi.getCurrentTime();
+          if (timeInfo && timeInfo.data && timeInfo.data.duration > 0) {
+            this._duration = timeInfo.data.duration;
+            this._updateTimeDisplay(this._currentTime, this._duration);
+          }
+        }
+      }, 500);
     }
   }
 
@@ -348,8 +377,11 @@ class UniversalPlayer {
   }
 
   _updateFileInfo(path) {
+    if (!path) {
+      if (this.trackName) this.trackName.textContent = "—";
+      return;
+    }
     const fileName = path.split("/").pop();
-    console.log("[UniversalPlayer] _updateFileInfo:", fileName);
     if (this.trackName) this.trackName.textContent = this._escape(fileName);
   }
 
@@ -372,18 +404,13 @@ class UniversalPlayer {
   }
 
   async _loadAlbumCover(filePath) {
-    console.log("[UniversalPlayer] _loadAlbumCover:", filePath);
     if (!this.previewImg || !this.previewIcon) return;
     this.previewImg.style.display = "none";
     this.previewIcon.style.display = "flex";
     this.previewIcon.className = "fas fa-music";
-    if (!this.musicApi) {
-      console.log("[UniversalPlayer] No musicApi, skipping album cover");
-      return;
-    }
+    if (!this.musicApi) return;
     try {
       const metadata = await this.musicApi.getFileMetadata(filePath);
-      console.log("[UniversalPlayer] Metadata response:", metadata);
       if (
         metadata &&
         metadata.data &&
@@ -393,29 +420,44 @@ class UniversalPlayer {
         this.previewImg.src = metadata.data.file.cover;
         this.previewImg.style.display = "block";
         this.previewIcon.style.display = "none";
-        console.log("[UniversalPlayer] Album cover loaded from file metadata");
         return;
       }
       let artist = "",
         title = "";
       if (metadata && metadata.data && metadata.data.database) {
         artist = metadata.data.database.artist || "";
-        title = metadata.data.database.title || "";
+        title = metadata.data.database.album || "";
       }
       if (!title) {
-        const fileName = filePath.split("/").pop();
-        title = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
+        const pathParts = filePath.split("/");
+        if (pathParts.length >= 2) {
+          title = pathParts[pathParts.length - 2];
+        }
       }
-      console.log("[UniversalPlayer] Looking for cover for:", {
-        title,
-        artist,
-      });
-      const coverUrl = await this.musicApi.fetchAlbumCover(title, artist);
-      if (coverUrl) {
+      if (title) {
+        let albumArtUrl = `/api/music/albumart/album/${encodeURIComponent(title)}`;
+        if (artist) {
+          albumArtUrl += `?artist=${encodeURIComponent(artist)}`;
+        }
+        const coverResponse = await fetch(albumArtUrl);
+        if (coverResponse.ok) {
+          const blob = await coverResponse.blob();
+          const coverUrl = URL.createObjectURL(blob);
+          this.previewImg.src = coverUrl;
+          this.previewImg.style.display = "block";
+          this.previewIcon.style.display = "none";
+          return;
+        }
+      }
+      const encodedPath = encodeURIComponent(filePath).replace(/%2F/g, "/");
+      const fileArtUrl = `/api/music/albumart/${encodedPath}`;
+      const fileResponse = await fetch(fileArtUrl);
+      if (fileResponse.ok) {
+        const blob = await fileResponse.blob();
+        const coverUrl = URL.createObjectURL(blob);
         this.previewImg.src = coverUrl;
         this.previewImg.style.display = "block";
         this.previewIcon.style.display = "none";
-        console.log("[UniversalPlayer] Album cover loaded from API");
       }
     } catch (error) {
       console.error("Failed to load album cover:", error);
@@ -424,10 +466,6 @@ class UniversalPlayer {
 
   _startProgressPolling() {
     if (this._progressInterval) clearInterval(this._progressInterval);
-    console.log(
-      "[UniversalPlayer] Starting progress polling for mediaType:",
-      this.mediaType,
-    );
     this._progressInterval = setInterval(async () => {
       if (this._isDestroyed) return;
       try {
@@ -440,12 +478,19 @@ class UniversalPlayer {
             this._updateProgressBar(this._currentTime, this._duration);
             this._updateTimeDisplay(this._currentTime, this._duration);
             this._updatePlayPauseButton(this.isPlaying);
+            if (response.currentFile && !this.currentFile) {
+              this.currentFile = response.currentFile;
+              this._updateFileInfo(this.currentFile);
+            }
           } else if (
             response.success &&
             !response.playing &&
             this.currentFile
           ) {
-            if (response.reason === "process_dead") this.stop();
+            if (response.reason === "process_dead") {
+              this.currentFile = null;
+              this._updateFileInfo("");
+            }
           }
         }
         if (this.playerApi) {
@@ -478,8 +523,17 @@ class UniversalPlayer {
             ) {
               this.trackCount.textContent = `${state.data.currentIndex + 1}/${state.data.totalTracks}`;
             }
-            if (state.data.currentTrackName && this.trackArtist) {
-              this.trackArtist.textContent = state.data.currentTrackName;
+            if (
+              (!state.data.currentTrack || state.data.totalTracks === 0) &&
+              this.currentFile
+            ) {
+              this.currentFile = null;
+              if (this.trackName) this.trackName.textContent = "—";
+              if (this.trackArtist) this.trackArtist.textContent = "";
+              if (this.trackCount) this.trackCount.textContent = "";
+              if (this.progressFill) this.progressFill.style.width = "0%";
+              if (this.timeCurrent) this.timeCurrent.textContent = "0:00";
+              if (this.timeTotal) this.timeTotal.textContent = "0:00";
             }
           }
         }
@@ -490,61 +544,18 @@ class UniversalPlayer {
   }
 
   _updateProgressBar(currentTime, duration) {
-    console.log(
-      "[UniversalPlayer] _updateProgressBar called - currentTime:",
-      currentTime,
-      "duration:",
-      duration,
-    );
     if (this.progressFill && duration > 0) {
-      const percent = (currentTime / duration) * 100;
-      console.log(
-        "[UniversalPlayer] Setting progress width to:",
-        percent + "%",
-      );
-      this.progressFill.style.width = `${percent}%`;
-    } else if (this.progressFill) {
-      console.log(
-        "[UniversalPlayer] Duration is 0, cannot update progress bar",
-      );
-    } else {
-      console.log("[UniversalPlayer] progressFill element not found");
+      this.progressFill.style.width = `${(currentTime / duration) * 100}%`;
     }
   }
 
   _updateTimeDisplay(currentTime, duration) {
-    console.log(
-      "[UniversalPlayer] _updateTimeDisplay called - currentTime:",
-      currentTime,
-      "duration:",
-      duration,
-    );
     if (this.timeCurrent) {
-      const formattedCurrent = this._formatTime(currentTime);
-      console.log(
-        "[UniversalPlayer] Setting current time to:",
-        formattedCurrent,
-      );
-      this.timeCurrent.textContent = formattedCurrent;
-    } else {
-      console.log("[UniversalPlayer] timeCurrent element not found");
+      this.timeCurrent.textContent = this._formatTime(currentTime);
     }
     if (this.timeTotal) {
-      if (duration > 0) {
-        const formattedDuration = this._formatTime(duration);
-        console.log(
-          "[UniversalPlayer] Setting total time to:",
-          formattedDuration,
-        );
-        this.timeTotal.textContent = formattedDuration;
-      } else {
-        console.log(
-          "[UniversalPlayer] Duration is 0, setting total time to 0:00",
-        );
-        this.timeTotal.textContent = "0:00";
-      }
-    } else {
-      console.log("[UniversalPlayer] timeTotal element not found");
+      this.timeTotal.textContent =
+        duration > 0 ? this._formatTime(duration) : "0:00";
     }
   }
 
@@ -585,21 +596,28 @@ class UniversalPlayer {
   }
 
   async _togglePlayPause() {
-    if (!this.currentFile) return;
     if (this.mediaType === "video") {
-      const command = this.isPlaying ? "pause" : "play";
-      await this.api.post("/api/mpv/control", { command: command });
-      this.isPlaying = !this.isPlaying;
-      this._updatePlayPauseButton(this.isPlaying);
-    } else if (this.playerApi) {
-      if (this.isPlaying) {
-        await this.playerApi.pause();
+      if (this.currentFile) {
+        const command = this.isPlaying ? "pause" : "play";
+        await this.api.post("/api/mpv/control", { command: command });
+        this.isPlaying = !this.isPlaying;
       } else {
-        await this.playerApi.play();
+        Utils.showNotification("Нет активного видео", "info");
       }
-      this.isPlaying = !this.isPlaying;
-      this._updatePlayPauseButton(this.isPlaying);
+    } else if (this.playerApi) {
+      const state = await this.playerApi.getPlaybackState();
+      if (state && state.data && state.data.totalTracks > 0) {
+        if (this.isPlaying) {
+          await this.playerApi.pause();
+        } else {
+          await this.playerApi.play();
+        }
+        this.isPlaying = !this.isPlaying;
+      } else {
+        Utils.showNotification("Плейлист пуст", "info");
+      }
     }
+    this._updatePlayPauseButton(this.isPlaying);
   }
 
   async _previous() {
@@ -648,7 +666,7 @@ class UniversalPlayer {
       this.previewIcon.style.display = "flex";
       this.previewIcon.className = "fas fa-play-circle";
     }
-    this.hide();
+    this._startProgressPolling();
   }
 
   _toggleFullscreen() {
@@ -763,7 +781,36 @@ class UniversalPlayer {
 
   _updateVolumeUI() {
     if (this.volumeValue) {
-      this.volumeValue.textContent = this._currentVolume + "%";
+      this.volumeValue.textContent = this._isMuted
+        ? "0%"
+        : `${this._currentVolume}%`;
+    }
+    if (this.volumeFill) {
+      const percent = this._isMuted ? 0 : this._currentVolume;
+      this.volumeFill.style.width = `${percent}%`;
+      this.volumeFill.classList.remove("animate");
+      void this.volumeFill.offsetWidth;
+      this.volumeFill.classList.add("animate");
+    }
+    if (this.volumeMute) {
+      const icon = this.volumeMute.querySelector("i");
+      if (this._isMuted || this._currentVolume === 0) {
+        icon.className = "fas fa-volume-mute";
+        this.volumeMute.title = "Включить звук";
+        this.volumeMute.classList.add("muted");
+      } else if (this._currentVolume < 30) {
+        icon.className = "fas fa-volume-off";
+        this.volumeMute.title = "Выключить звук";
+        this.volumeMute.classList.remove("muted");
+      } else if (this._currentVolume < 70) {
+        icon.className = "fas fa-volume-down";
+        this.volumeMute.title = "Выключить звук";
+        this.volumeMute.classList.remove("muted");
+      } else {
+        icon.className = "fas fa-volume-up";
+        this.volumeMute.title = "Выключить звук";
+        this.volumeMute.classList.remove("muted");
+      }
     }
   }
 
@@ -800,6 +847,47 @@ class UniversalPlayer {
     }
   }
 
+  _startVolumePolling() {
+    if (this._volumePollInterval) clearInterval(this._volumePollInterval);
+    this._volumePollInterval = setInterval(async () => {
+      if (this._isDestroyed) return;
+      try {
+        const response = await this.api.get("/api/simple/volume");
+        if (response.success && response.data) {
+          let updated = false;
+          if (
+            response.data.volume !== undefined &&
+            this._currentVolume !== response.data.volume
+          ) {
+            this._currentVolume = response.data.volume;
+            updated = true;
+          }
+          if (
+            response.data.muted !== undefined &&
+            this._isMuted !== response.data.muted
+          ) {
+            this._isMuted = response.data.muted;
+            updated = true;
+          }
+          if (updated) {
+            this._updateVolumeUI();
+          }
+        }
+        const outputResponse = await this.api.get("/api/audio/output");
+        if (
+          outputResponse.success &&
+          outputResponse.data &&
+          outputResponse.data.current !== this._currentOutput
+        ) {
+          this._currentOutput = outputResponse.data.current;
+          this._updateOutputUI();
+        }
+      } catch (error) {
+        console.error("Failed to poll volume:", error);
+      }
+    }, 2000);
+  }
+
   async _loadInitialAudioOutput() {
     try {
       const response = await this.api.get("/api/audio/output");
@@ -832,13 +920,9 @@ class UniversalPlayer {
   }
 
   show() {
-    console.log("[UniversalPlayer] show() called");
     if (this.element) {
       this.element.classList.add("active");
       this.element.style.display = "flex";
-      console.log("[UniversalPlayer] Panel shown");
-    } else {
-      console.error("[UniversalPlayer] element is null!");
     }
   }
 
@@ -854,8 +938,9 @@ class UniversalPlayer {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    if (hours > 0)
+    if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    }
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
   }
 
