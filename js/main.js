@@ -1,4 +1,3 @@
-// main.js
 const MediaCenter = {
   async init() {
     console.log("MediaCenter v2.0 initializing...");
@@ -24,6 +23,7 @@ const MediaCenter = {
       this.api,
       this.events,
       this.musicApi,
+      this.playerApi,
     );
     this.videoLibrary = null;
     this.albumLibrary = null;

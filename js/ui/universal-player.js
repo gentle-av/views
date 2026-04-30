@@ -1,8 +1,9 @@
 class UniversalPlayer {
-  constructor(apiClient, events, musicApi = null) {
+  constructor(apiClient, events, musicApi = null, playerApi = null) {
     this.api = apiClient;
     this.events = events;
     this.musicApi = musicApi;
+    this.playerApi = playerApi;
     this.mediaType = null;
     this.currentFile = null;
     this.isPlaying = false;
@@ -25,6 +26,7 @@ class UniversalPlayer {
     this._startAutoUpdate();
     this._loadInitialVolume();
     this._loadInitialAudioOutput();
+    this._startProgressPolling();
   }
 
   _createPanel() {
@@ -45,6 +47,7 @@ class UniversalPlayer {
           <div class="universal-bottom-player-track-info">
             <div id="universalBottomTrackName" class="universal-bottom-player-track-name">—</div>
             <div id="universalBottomTrackArtist" class="universal-bottom-player-track-artist"></div>
+            <div id="universalBottomTrackCount" class="universal-bottom-player-track-count"></div>
           </div>
         </div>
         <div class="universal-bottom-player-progress">
@@ -97,6 +100,7 @@ class UniversalPlayer {
     this.progressFill = document.getElementById("universalBottomProgressFill");
     this.trackName = document.getElementById("universalBottomTrackName");
     this.trackArtist = document.getElementById("universalBottomTrackArtist");
+    this.trackCount = document.getElementById("universalBottomTrackCount");
     this.timeCurrent = document.getElementById("universalBottomCurrentTime");
     this.timeTotal = document.getElementById("universalBottomDuration");
     this.previewImg = document.getElementById("universalBottomPreviewImg");
@@ -114,6 +118,13 @@ class UniversalPlayer {
     this.headphonesBtn = document.getElementById(
       "universalBottomHeadphonesBtn",
     );
+    console.log("[UniversalPlayer] Elements initialized:", {
+      element: !!this.element,
+      trackName: !!this.trackName,
+      trackArtist: !!this.trackArtist,
+      trackCount: !!this.trackCount,
+      progressBar: !!this.progressBar,
+    });
   }
 
   _attachEvents() {
@@ -171,6 +182,7 @@ class UniversalPlayer {
   }
 
   _subscribeToEvents() {
+    console.log("[UniversalPlayer] Subscribing to events");
     this.events.on("playback:videoStart", (path) =>
       this.startPlayback(path, "video"),
     );
@@ -179,6 +191,25 @@ class UniversalPlayer {
     );
     this.events.on("playback:videoStopped", () => this.stop());
     this.events.on("playback:audioStopped", () => this.stop());
+    this.events.on("stateChange", (state) => {
+      console.log("[UniversalPlayer] stateChange event received:", state);
+      this._updateFromState(state);
+    });
+    this.events.on("trackChanged", ({ album, trackIndex }) => {
+      console.log("[UniversalPlayer] trackChanged event received:", {
+        album,
+        trackIndex,
+      });
+      if (album && album.tracks && album.tracks[trackIndex]) {
+        const track = album.tracks[trackIndex];
+        console.log("[UniversalPlayer] Track data:", track);
+        this._updateTrackInfo(track.displayName || track.title, album.artist);
+        if (track.path) {
+          this.currentFile = track.path;
+          this._loadAlbumCover(this.currentFile);
+        }
+      }
+    });
     this.events.on("page:changed", (page) => {
       if (page === "video" || page === "audio") {
         this.show();
@@ -188,9 +219,45 @@ class UniversalPlayer {
     });
   }
 
+  _updateFromState(state) {
+    console.log("[UniversalPlayer] _updateFromState:", state);
+    if (!state) return;
+    if (state.currentTrack) {
+      this.currentFile = state.currentTrack;
+      const fileName = this.currentFile.split("/").pop();
+      if (this.trackName) {
+        this.trackName.textContent = this._escape(fileName);
+        console.log("[UniversalPlayer] Track name set to:", fileName);
+      }
+    }
+    this.isPlaying = state.isPlaying || false;
+    this._updatePlayPauseButton(this.isPlaying);
+    if (state.currentIndex !== undefined && state.totalTracks !== undefined) {
+      if (this.trackCount) {
+        this.trackCount.textContent = `${state.currentIndex + 1}/${state.totalTracks}`;
+        console.log(
+          "[UniversalPlayer] Track count set to:",
+          `${state.currentIndex + 1}/${state.totalTracks}`,
+        );
+      }
+    }
+  }
+
+  _updateTrackInfo(title, artist) {
+    console.log("[UniversalPlayer] _updateTrackInfo:", { title, artist });
+    if (this.trackName) this.trackName.textContent = this._escape(title || "—");
+    if (this.trackArtist)
+      this.trackArtist.textContent = this._escape(artist || "");
+  }
+
   setMediaType(type) {
     this.mediaType = type;
     this._updateMediaIcon();
+    if (this._progressInterval) {
+      clearInterval(this._progressInterval);
+      this._progressInterval = null;
+    }
+    this._startProgressPolling();
   }
 
   async checkExistingPlayback(type) {
@@ -246,7 +313,6 @@ class UniversalPlayer {
       if (this.trackArtist) this.trackArtist.textContent = "Видео";
       try {
         const response = await this.api.post("/api/open", { path });
-        console.log("[UniversalPlayer] /api/open response:", response);
         if (!response.success) {
           console.error("Failed to open video:", response.error);
           Utils.showNotification(
@@ -263,21 +329,11 @@ class UniversalPlayer {
         Utils.showNotification("Ошибка запуска видео", "error");
       }
     } else {
+      console.log("[UniversalPlayer] Starting audio playback");
       await this._loadAlbumCover(path);
-      if (window.playerApi) {
-        try {
-          await window.playerApi.stop();
-          await window.playerApi.clearPlaylist();
-          await window.playerApi.setPlaylist([path]);
-          await window.playerApi.play();
-          this.show();
-          this._startProgressPolling();
-          this._updatePlayPauseButton(true);
-        } catch (error) {
-          console.error("Error playing audio:", error);
-          Utils.showNotification("Ошибка воспроизведения аудио", "error");
-        }
-      }
+      this.show();
+      this._startProgressPolling();
+      this._updatePlayPauseButton(true);
     }
   }
 
@@ -293,6 +349,7 @@ class UniversalPlayer {
 
   _updateFileInfo(path) {
     const fileName = path.split("/").pop();
+    console.log("[UniversalPlayer] _updateFileInfo:", fileName);
     if (this.trackName) this.trackName.textContent = this._escape(fileName);
   }
 
@@ -315,13 +372,18 @@ class UniversalPlayer {
   }
 
   async _loadAlbumCover(filePath) {
+    console.log("[UniversalPlayer] _loadAlbumCover:", filePath);
     if (!this.previewImg || !this.previewIcon) return;
     this.previewImg.style.display = "none";
     this.previewIcon.style.display = "flex";
     this.previewIcon.className = "fas fa-music";
-    if (!this.musicApi) return;
+    if (!this.musicApi) {
+      console.log("[UniversalPlayer] No musicApi, skipping album cover");
+      return;
+    }
     try {
       const metadata = await this.musicApi.getFileMetadata(filePath);
+      console.log("[UniversalPlayer] Metadata response:", metadata);
       if (
         metadata &&
         metadata.data &&
@@ -331,6 +393,7 @@ class UniversalPlayer {
         this.previewImg.src = metadata.data.file.cover;
         this.previewImg.style.display = "block";
         this.previewIcon.style.display = "none";
+        console.log("[UniversalPlayer] Album cover loaded from file metadata");
         return;
       }
       let artist = "",
@@ -343,11 +406,16 @@ class UniversalPlayer {
         const fileName = filePath.split("/").pop();
         title = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
       }
+      console.log("[UniversalPlayer] Looking for cover for:", {
+        title,
+        artist,
+      });
       const coverUrl = await this.musicApi.fetchAlbumCover(title, artist);
       if (coverUrl) {
         this.previewImg.src = coverUrl;
         this.previewImg.style.display = "block";
         this.previewIcon.style.display = "none";
+        console.log("[UniversalPlayer] Album cover loaded from API");
       }
     } catch (error) {
       console.error("Failed to load album cover:", error);
@@ -356,6 +424,10 @@ class UniversalPlayer {
 
   _startProgressPolling() {
     if (this._progressInterval) clearInterval(this._progressInterval);
+    console.log(
+      "[UniversalPlayer] Starting progress polling for mediaType:",
+      this.mediaType,
+    );
     this._progressInterval = setInterval(async () => {
       if (this._isDestroyed) return;
       try {
@@ -375,20 +447,39 @@ class UniversalPlayer {
           ) {
             if (response.reason === "process_dead") this.stop();
           }
-        } else if (this.mediaType === "audio" && window.playerApi) {
-          const timeInfo = await window.playerApi.getCurrentTime();
+        }
+        if (this.playerApi) {
+          const timeInfo = await this.playerApi.getCurrentTime();
           if (timeInfo && timeInfo.data) {
             this._currentTime = timeInfo.data.currentTime || 0;
             this._duration = timeInfo.data.duration || 0;
             this._updateProgressBar(this._currentTime, this._duration);
             this._updateTimeDisplay(this._currentTime, this._duration);
           }
-          const state = await window.playerApi.getPlaybackState();
+          const state = await this.playerApi.getPlaybackState();
           if (state && state.success && state.data) {
             const wasPlaying = this.isPlaying;
             this.isPlaying = state.data.isPlaying || false;
             if (wasPlaying !== this.isPlaying) {
               this._updatePlayPauseButton(this.isPlaying);
+            }
+            if (
+              state.data.currentTrack &&
+              state.data.currentTrack !== this.currentFile
+            ) {
+              this.currentFile = state.data.currentTrack;
+              this._updateFileInfo(this.currentFile);
+              await this._loadAlbumCover(this.currentFile);
+            }
+            if (
+              this.trackCount &&
+              state.data.currentIndex !== undefined &&
+              state.data.totalTracks !== undefined
+            ) {
+              this.trackCount.textContent = `${state.data.currentIndex + 1}/${state.data.totalTracks}`;
+            }
+            if (state.data.currentTrackName && this.trackArtist) {
+              this.trackArtist.textContent = state.data.currentTrackName;
             }
           }
         }
@@ -399,17 +490,62 @@ class UniversalPlayer {
   }
 
   _updateProgressBar(currentTime, duration) {
+    console.log(
+      "[UniversalPlayer] _updateProgressBar called - currentTime:",
+      currentTime,
+      "duration:",
+      duration,
+    );
     if (this.progressFill && duration > 0) {
-      this.progressFill.style.width = `${(currentTime / duration) * 100}%`;
+      const percent = (currentTime / duration) * 100;
+      console.log(
+        "[UniversalPlayer] Setting progress width to:",
+        percent + "%",
+      );
+      this.progressFill.style.width = `${percent}%`;
+    } else if (this.progressFill) {
+      console.log(
+        "[UniversalPlayer] Duration is 0, cannot update progress bar",
+      );
+    } else {
+      console.log("[UniversalPlayer] progressFill element not found");
     }
   }
 
   _updateTimeDisplay(currentTime, duration) {
-    if (this.timeCurrent)
-      this.timeCurrent.textContent = this._formatTime(currentTime);
-    if (this.timeTotal && duration > 0)
-      this.timeTotal.textContent = this._formatTime(duration);
-    else if (this.timeTotal) this.timeTotal.textContent = "0:00";
+    console.log(
+      "[UniversalPlayer] _updateTimeDisplay called - currentTime:",
+      currentTime,
+      "duration:",
+      duration,
+    );
+    if (this.timeCurrent) {
+      const formattedCurrent = this._formatTime(currentTime);
+      console.log(
+        "[UniversalPlayer] Setting current time to:",
+        formattedCurrent,
+      );
+      this.timeCurrent.textContent = formattedCurrent;
+    } else {
+      console.log("[UniversalPlayer] timeCurrent element not found");
+    }
+    if (this.timeTotal) {
+      if (duration > 0) {
+        const formattedDuration = this._formatTime(duration);
+        console.log(
+          "[UniversalPlayer] Setting total time to:",
+          formattedDuration,
+        );
+        this.timeTotal.textContent = formattedDuration;
+      } else {
+        console.log(
+          "[UniversalPlayer] Duration is 0, setting total time to 0:00",
+        );
+        this.timeTotal.textContent = "0:00";
+      }
+    } else {
+      console.log("[UniversalPlayer] timeTotal element not found");
+    }
   }
 
   _updatePlayPauseButton(playing) {
@@ -440,8 +576,8 @@ class UniversalPlayer {
       } catch (error) {
         console.error("Seek failed:", error);
       }
-    } else if (window.playerApi) {
-      await window.playerApi.seek(time);
+    } else if (this.playerApi) {
+      await this.playerApi.seek(time);
       this._currentTime = time;
       this._updateProgressBar(this._currentTime, this._duration);
       this._updateTimeDisplay(this._currentTime, this._duration);
@@ -455,11 +591,11 @@ class UniversalPlayer {
       await this.api.post("/api/mpv/control", { command: command });
       this.isPlaying = !this.isPlaying;
       this._updatePlayPauseButton(this.isPlaying);
-    } else if (window.playerApi) {
+    } else if (this.playerApi) {
       if (this.isPlaying) {
-        await window.playerApi.pause();
+        await this.playerApi.pause();
       } else {
-        await window.playerApi.play();
+        await this.playerApi.play();
       }
       this.isPlaying = !this.isPlaying;
       this._updatePlayPauseButton(this.isPlaying);
@@ -467,15 +603,17 @@ class UniversalPlayer {
   }
 
   async _previous() {
-    if (window.playerApi) {
-      await window.playerApi.previous();
+    if (this.playerApi) {
+      await this.playerApi.previous();
     }
+    this.events.emit("playback:previous");
   }
 
   async _next() {
-    if (window.playerApi) {
-      await window.playerApi.next();
+    if (this.playerApi) {
+      await this.playerApi.next();
     }
+    this.events.emit("playback:next");
   }
 
   async stop() {
@@ -489,8 +627,8 @@ class UniversalPlayer {
       } catch (error) {
         console.error("Failed to close video:", error);
       }
-    } else if (window.playerApi) {
-      await window.playerApi.stop();
+    } else if (this.playerApi) {
+      await this.playerApi.stop();
     }
     this.currentFile = null;
     this.isPlaying = false;
@@ -498,6 +636,7 @@ class UniversalPlayer {
     this._currentTime = 0;
     if (this.trackName) this.trackName.textContent = "—";
     if (this.trackArtist) this.trackArtist.textContent = "";
+    if (this.trackCount) this.trackCount.textContent = "";
     if (this.progressFill) this.progressFill.style.width = "0%";
     if (this.timeCurrent) this.timeCurrent.textContent = "0:00";
     if (this.timeTotal) this.timeTotal.textContent = "0:00";
@@ -693,9 +832,13 @@ class UniversalPlayer {
   }
 
   show() {
+    console.log("[UniversalPlayer] show() called");
     if (this.element) {
       this.element.classList.add("active");
       this.element.style.display = "flex";
+      console.log("[UniversalPlayer] Panel shown");
+    } else {
+      console.error("[UniversalPlayer] element is null!");
     }
   }
 
