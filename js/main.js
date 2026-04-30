@@ -1,3 +1,4 @@
+// main.js
 const MediaCenter = {
   async init() {
     console.log("MediaCenter v2.0 initializing...");
@@ -5,8 +6,8 @@ const MediaCenter = {
       if (this.videoLibrary) {
         this.videoLibrary.destroy();
       }
-      if (this.videoPlayer) {
-        this.videoPlayer.destroy();
+      if (this.universalPlayer) {
+        this.universalPlayer.destroy();
       }
     });
     this.events = new EventBus();
@@ -19,20 +20,15 @@ const MediaCenter = {
     await this.playerApi.checkAvailability();
     this.playback = new PlaybackController(this.playerApi, this.events);
     await this.playback.init();
+    this.universalPlayer = new UniversalPlayer(
+      this.api,
+      this.events,
+      this.musicApi,
+    );
     this.videoLibrary = null;
     this.albumLibrary = null;
     this.albumModal = null;
-    if (typeof BottomPlayerPanel !== "undefined") {
-      this.bottomPanel = new BottomPlayerPanel(
-        this.playback,
-        this.events,
-        this.musicApi,
-      );
-    } else {
-      this.bottomPanel = null;
-    }
     this.playlistPopup = null;
-    this.videoPlayer = null;
     this._updateUIForPage("video");
     await NavigationManager.switchTo("video");
     window.MediaCenter = this;
@@ -64,13 +60,10 @@ const MediaCenter = {
   },
 
   _onVideoPageLoaded() {
-    console.log("Video page loaded, initializing VideoLibrary...");
+    console.log(
+      "[MediaCenter] Video page loaded, initializing VideoLibrary...",
+    );
     this._updateUIForPage("video");
-    if (this.videoPlayer) {
-      this.videoPlayer.destroy();
-      this.videoPlayer = null;
-    }
-    this.videoPlayer = new VideoPlayerController(this.api, this.events);
     if (this.videoLibrary) {
       this.videoLibrary.destroy();
       this.videoLibrary = null;
@@ -80,34 +73,22 @@ const MediaCenter = {
       this.events,
       NavigationManager,
     );
-    // Восстанавливаем воспроизведение через videoPlayer, а не через videoLibrary
+    this.universalPlayer.setMediaType("video");
+    this.events.on("video:refresh", () => {
+      if (this.videoLibrary) this.videoLibrary.refresh();
+    });
+    this.events.on("video:play", (path) => {
+      this.universalPlayer.startPlayback(path, "video");
+    });
     setTimeout(async () => {
-      const restored = await this.videoPlayer.checkExistingPlayback();
-      if (!restored) {
-        // Если нет активного воспроизведения, просто показываем библиотеку
-        console.log("No active playback to restore");
-      }
+      await this.universalPlayer.checkExistingPlayback("video");
     }, 500);
-    this.events.on("video:refresh", () => this.videoLibrary.refresh());
-    this.events.on("playTrack", ({ album, trackIndex }) => {
-      this.playback.playTrack(album, trackIndex);
-    });
-    this.events.on("track:play", ({ album, trackIndex }) => {
-      this.playback.playTrack(album, trackIndex);
-    });
-    this.events.on("track:addAfterCurrent", ({ album, trackIndex }) => {
-      this.playback.addTrackAfterCurrent(album, trackIndex);
-    });
-    this.events.on("track:editMetadata", ({ album, track, trackIndex }) => {
-      if (window.TagEditor) {
-        window.TagEditor.showTrackTagEditor(track, album);
-      }
-    });
   },
 
   _onAudioPageLoaded() {
     console.log("Audio page loaded, initializing AlbumLibrary...");
     this._updateUIForPage("audio");
+    this.universalPlayer.setMediaType("audio");
     if (typeof AlbumModal !== "undefined") {
       if (this.albumModal) {
         this.albumModal.hide();
@@ -133,7 +114,6 @@ const MediaCenter = {
             }
           }
         }
-        if (this.bottomPanel) this.bottomPanel.forceUpdate();
       });
     }
     if (typeof PlaylistPopup !== "undefined" && !this.playlistPopup) {
@@ -181,7 +161,12 @@ const MediaCenter = {
         };
       }
     }
-    this.events.on("album:play", (album) => this.playback.playAlbum(album));
+    this.events.on("album:play", (album) => {
+      if (album.tracks && album.tracks.length > 0) {
+        this.universalPlayer.startPlayback(album.tracks[0].path, "audio");
+      }
+      this.playback.playAlbum(album);
+    });
     this.events.on("album:addToPlaylist", async (album) => {
       await this.playback.addAlbumToPlaylist(album);
     });
@@ -194,10 +179,9 @@ const MediaCenter = {
     this.events.on("album:playTrack", ({ album, trackIndex }) => {
       this.playback.playTrack(album, trackIndex);
     });
-    if (this.bottomPanel && this.bottomPanel.element) {
-      this.bottomPanel.element.style.display = "flex";
-      this.bottomPanel.forceUpdate();
-    }
+    setTimeout(async () => {
+      await this.universalPlayer.checkExistingPlayback("audio");
+    }, 500);
   },
 
   _showOverlay() {

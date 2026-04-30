@@ -1,3 +1,4 @@
+// playback-controller.js
 class PlaybackController {
   constructor(playerApi, eventBus) {
     this.api = playerApi;

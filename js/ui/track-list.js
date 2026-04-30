@@ -1,3 +1,4 @@
+// track-list.js
 class TrackList {
   constructor(events) {
     this.events = events;
@@ -6,18 +7,12 @@ class TrackList {
   }
 
   render(container, album) {
-    console.log("[TrackList] Rendering album:", album.title);
-    console.log("[TrackList] Tracks:", album.tracks);
-    console.log("[TrackList] First track:", album.tracks[0]);
-
     this.container = container;
     this.currentAlbum = album;
     if (!this.container) return;
-
     this.container.innerHTML = album.tracks
-      .map((track, idx) => {
-        console.log(`[TrackList] Track ${idx}:`, track);
-        return `
+      .map(
+        (track, idx) => `
       <div class="track-item" data-track-index="${idx}">
         <span class="track-number">${(idx + 1).toString().padStart(2, "0")}</span>
         <span class="track-name" title="${this._escape(track.displayName || track.title || "Unknown")}">${this._escape(track.displayName || track.title || "Unknown")}</span>
@@ -31,8 +26,8 @@ class TrackList {
           </button>
         </div>
       </div>
-    `;
-      })
+    `,
+      )
       .join("");
     this._attachEvents();
   }
@@ -42,6 +37,10 @@ class TrackList {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const index = parseInt(btn.dataset.index);
+        const track = this.currentAlbum.tracks[index];
+        if (window.MediaCenter && window.MediaCenter.universalPlayer) {
+          window.MediaCenter.universalPlayer.startPlayback(track.path, "audio");
+        }
         this.events.emit("track:play", {
           album: this.currentAlbum,
           trackIndex: index,
