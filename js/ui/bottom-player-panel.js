@@ -141,7 +141,8 @@ class BottomPlayerPanel {
     this.timeCurrent = document.getElementById("panelTimeCurrent");
     this.timeTotal = document.getElementById("panelTimeTotal");
     this.trackCount = document.getElementById("panelTrackCount");
-    this.volumeSlider = document.getElementById("panelVolumeSlider");
+    this.volumeDownBtn = document.getElementById("panelVolumeDownBtn");
+    this.volumeUpBtn = document.getElementById("panelVolumeUpBtn");
     this.volumeValue = document.getElementById("panelVolumeValue");
     this.volumeMuteBtn = document.getElementById("panelVolumeMuteBtn");
     this.speakersBtn = document.getElementById("panelSpeakersBtn");
@@ -182,8 +183,9 @@ class BottomPlayerPanel {
       <div id="panelAudioSettings" class="player-panel-audio-settings ${this._audioSettingsCollapsed ? "collapsed" : ""}">
         <div class="player-panel-volume-section">
           <div class="player-panel-volume-controls">
+            <button id="panelVolumeDownBtn" class="player-panel-volume-btn" title="Уменьшить громкость"><i class="fas fa-minus"></i></button>
             <button id="panelVolumeMuteBtn" class="player-panel-volume-mute" title="Мьют"><i class="fas fa-volume-up"></i></button>
-            <input type="range" id="panelVolumeSlider" class="player-panel-volume-slider" min="0" max="100" value="50">
+            <button id="panelVolumeUpBtn" class="player-panel-volume-btn" title="Увеличить громкость"><i class="fas fa-plus"></i></button>
             <span id="panelVolumeValue" class="player-panel-volume-value">50%</span>
           </div>
         </div>
@@ -228,13 +230,13 @@ class BottomPlayerPanel {
         }
       });
     }
-    if (this.volumeSlider) {
-      this.volumeSlider.addEventListener("input", (e) => {
-        const value = parseInt(e.target.value);
-        this._volume = value;
-        this._updateVolumeUI();
-        this._setVolume(value);
-      });
+    if (this.volumeDownBtn) {
+      this.volumeDownBtn.addEventListener("click", () =>
+        this._changeVolume(-5),
+      );
+    }
+    if (this.volumeUpBtn) {
+      this.volumeUpBtn.addEventListener("click", () => this._changeVolume(5));
     }
     if (this.volumeMuteBtn) {
       this.volumeMuteBtn.addEventListener("click", () => this._toggleMute());
@@ -256,16 +258,26 @@ class BottomPlayerPanel {
     }
   }
 
-  async _setVolume(volume) {
+  async _changeVolume(delta) {
+    const newVolume = Math.min(100, Math.max(0, this._volume + delta));
+    if (newVolume === this._volume) return;
+    this._volume = newVolume;
+    this._updateVolumeUI();
     try {
       const response = await fetch("/api/simple/volume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ volume: volume }),
+        body: JSON.stringify({ volume: this._volume }),
       });
       const data = await response.json();
       if (!data.success) {
         console.error("Failed to set volume:", data.message);
+      }
+      if (this._isMuted && newVolume > 0) {
+        this._isMuted = false;
+        if (this.volumeMuteBtn) {
+          this.volumeMuteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+        }
       }
     } catch (error) {
       console.error("Error setting volume:", error);
@@ -280,11 +292,14 @@ class BottomPlayerPanel {
       const data = await response.json();
       if (data.success && data.data) {
         this._isMuted = data.data.muted;
-        this._updateVolumeUI();
-        if (this._isMuted) {
-          this.volumeMuteBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
-        } else {
-          this.volumeMuteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+        if (this.volumeMuteBtn) {
+          if (this._isMuted) {
+            this.volumeMuteBtn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+            this.volumeMuteBtn.classList.add("muted");
+          } else {
+            this.volumeMuteBtn.innerHTML = '<i class="fas fa-volume-up"></i>';
+            this.volumeMuteBtn.classList.remove("muted");
+          }
         }
       }
     } catch (error) {
@@ -325,9 +340,6 @@ class BottomPlayerPanel {
   }
 
   _updateVolumeUI() {
-    if (this.volumeSlider) {
-      this.volumeSlider.value = this._volume;
-    }
     if (this.volumeValue) {
       this.volumeValue.textContent = this._volume + "%";
     }
@@ -401,31 +413,37 @@ class BottomPlayerPanel {
     setInterval(async () => {
       try {
         if (!this._isAudioPage || !this.element) return;
-        const timeRes = await fetch("/api/currentTime");
-        const timeData = await timeRes.json();
-        if (timeData.data && timeData.data.duration > 0) {
-          const percent =
-            (timeData.data.currentTime / timeData.data.duration) * 100;
-          const progressFill = document.getElementById("panelProgressFill");
-          if (progressFill) progressFill.style.width = `${percent}%`;
-          const timeCurrent = document.getElementById("panelTimeCurrent");
-          const timeTotal = document.getElementById("panelTimeTotal");
-          if (timeCurrent) {
-            const mins = Math.floor(timeData.data.currentTime / 60);
-            const secs = Math.floor(timeData.data.currentTime % 60);
-            timeCurrent.textContent = `${mins}:${secs.toString().padStart(2, "0")}`;
+        const state = await this.playback.api.getPlaybackState();
+        if (state?.data) {
+          const currentTrack = state.data.currentTrack;
+          if (
+            this.trackName &&
+            currentTrack &&
+            this._currentDisplayedTrack !== currentTrack
+          ) {
+            this._updateTrackNameWithMetadata(currentTrack);
           }
-          if (timeTotal && timeData.data.duration) {
-            const mins = Math.floor(timeData.data.duration / 60);
-            const secs = Math.floor(timeData.data.duration % 60);
-            timeTotal.textContent = `${mins}:${secs.toString().padStart(2, "0")}`;
+          if (this.trackCount) {
+            this.trackCount.textContent = `${(state.data.currentIndex || 0) + 1}/${state.data.totalTracks || 0}`;
           }
-          const state = await this.playback.api.getPlaybackState();
-          if (state?.data?.currentTrack && this.trackName) {
-            const currentTrack = state.data.currentTrack;
-            if (this._currentDisplayedTrack !== currentTrack) {
-              this._updateTrackNameWithMetadata(currentTrack);
-            }
+          if (this.playPauseBtn) {
+            const isPlaying =
+              state.data.isPlaying && state.data.totalTracks > 0;
+            this.playPauseBtn.innerHTML = isPlaying
+              ? '<i class="fas fa-pause"></i>'
+              : '<i class="fas fa-play"></i>';
+          }
+        }
+        const timeInfo = await this.playback.api.getCurrentTime();
+        if (timeInfo?.data) {
+          const current = timeInfo.data.currentTime || 0;
+          const duration = timeInfo.data.duration || 0;
+          if (this.timeCurrent)
+            this.timeCurrent.textContent = this._formatTime(current);
+          if (this.timeTotal)
+            this.timeTotal.textContent = this._formatTime(duration);
+          if (this.progressFill && duration > 0) {
+            this.progressFill.style.width = `${(current / duration) * 100}%`;
           }
         }
       } catch (e) {
