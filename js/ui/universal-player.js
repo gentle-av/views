@@ -177,14 +177,28 @@ class UniversalPlayer {
   }
 
   _subscribeToEvents() {
-    this.events.on("playback:videoStart", (path) =>
-      this.startPlayback(path, "video"),
-    );
-    this.events.on("playback:audioStart", (path) =>
-      this.startPlayback(path, "audio"),
-    );
-    this.events.on("playback:videoStopped", () => this.stop());
-    this.events.on("playback:audioStopped", () => this.stop());
+    this.events.on("playback:videoStart", (path) => {
+      if (this.mediaType === "audio" && this.currentFile) {
+        this.stop();
+      }
+      this.startPlayback(path, "video");
+    });
+    this.events.on("playback:audioStart", (path) => {
+      if (this.mediaType === "video" && this.currentFile) {
+        this.stop();
+      }
+      this.startPlayback(path, "audio");
+    });
+    this.events.on("playback:videoStopped", () => {
+      if (this.mediaType === "video") {
+        this.stop();
+      }
+    });
+    this.events.on("playback:audioStopped", () => {
+      if (this.mediaType === "audio") {
+        this.stop();
+      }
+    });
     this.events.on("stateChange", (state) => this._updateFromState(state));
     this.events.on("trackChanged", ({ album, trackIndex }) => {
       if (album && album.tracks && album.tracks[trackIndex]) {
@@ -339,11 +353,20 @@ class UniversalPlayer {
       "type:",
       type,
     );
+    if (this.mediaType && this.mediaType !== type && this.currentFile) {
+      console.log(
+        "[UniversalPlayer] Stopping current playback before switching",
+      );
+      await this.stop();
+    }
     this.setMediaType(type);
     this.currentFile = path;
     this._updateFileInfo(path);
     this._updateMediaIcon();
     if (type === "video") {
+      if (this.playerApi && this.playerApi.stop) {
+        await this.playerApi.stop().catch(() => {});
+      }
       await this._loadVideoPreview(path);
       if (this.trackArtist) this.trackArtist.textContent = "Видео";
       try {
@@ -364,6 +387,11 @@ class UniversalPlayer {
       }
     } else {
       console.log("[UniversalPlayer] Starting audio playback");
+      try {
+        await this.api.post("/api/video/close").catch(() => {});
+      } catch (error) {
+        console.error("Failed to close video for audio:", error);
+      }
       await this._loadAlbumCover(path);
       this.show();
       this._updatePlayPauseButton(true);
@@ -692,19 +720,20 @@ class UniversalPlayer {
     this.events.emit("playback:next");
   }
 
-  async stop() {
+  stop() {
     if (this._progressInterval) {
       clearInterval(this._progressInterval);
       this._progressInterval = null;
+      this._isPollingStarted = false;
     }
     if (this.mediaType === "video") {
       try {
-        await this.api.post("/api/video/close");
+        this.api.post("/api/video/close").catch(() => {});
       } catch (error) {
         console.error("Failed to close video:", error);
       }
     } else if (this.playerApi) {
-      await this.playerApi.stop();
+      this.playerApi.stop().catch(() => {});
     }
     this.currentFile = null;
     this.isPlaying = false;
