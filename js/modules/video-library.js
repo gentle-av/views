@@ -104,6 +104,26 @@ class VideoLibrary {
     this._loadVisibleThumbnails();
     this._loadVisibleFolderPreviews();
     this._ensureIconsVisible();
+    this._adjustBottomPadding();
+  }
+
+  _adjustBottomPadding() {
+    setTimeout(() => {
+      const player = document.querySelector(".universal-bottom-player");
+      const contentGrid = this.container;
+      if (player && player.classList.contains("active") && contentGrid) {
+        const playerHeight = player.offsetHeight;
+        contentGrid.style.paddingBottom = playerHeight + 20 + "px";
+      } else if (contentGrid) {
+        if (window.innerWidth <= 768) {
+          contentGrid.style.paddingBottom = "150px";
+        } else if (window.innerWidth <= 480) {
+          contentGrid.style.paddingBottom = "170px";
+        } else {
+          contentGrid.style.paddingBottom = "100px";
+        }
+      }
+    }, 100);
   }
 
   async _loadVisibleThumbnails() {
@@ -267,6 +287,7 @@ class VideoLibrary {
       this.thumbnailCache.clear();
       this.loadDirectory(this.currentPath, false);
       this._ensureIconsVisible();
+      this._adjustBottomPadding();
     }
   }
 

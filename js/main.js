@@ -90,9 +90,15 @@ const MediaCenter = {
       this._lastPlayPath = path;
       this._lastPlayTime = Date.now();
       this.universalPlayer.startPlayback(path, "video");
+      if (this.videoLibrary && this.videoLibrary._adjustBottomPadding) {
+        setTimeout(() => this.videoLibrary._adjustBottomPadding(), 50);
+      }
     });
     setTimeout(async () => {
       await this.universalPlayer.checkExistingPlayback("video");
+      if (this.videoLibrary && this.videoLibrary._adjustBottomPadding) {
+        setTimeout(() => this.videoLibrary._adjustBottomPadding(), 200);
+      }
     }, 500);
   },
 

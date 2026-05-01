@@ -537,16 +537,6 @@ class UniversalPlayer {
               this.currentFile = response.currentFile;
               this._updateFileInfo(this.currentFile);
             }
-          } else if (
-            response.success &&
-            !response.playing &&
-            this.currentFile
-          ) {
-            if (response.reason === "process_dead") {
-              this.currentFile = null;
-              this._updateFileInfo("");
-              this._updatePlayPauseButton(false);
-            }
           }
         }
         if (this.mediaType === "audio" && this.playerApi) {
@@ -1012,6 +1002,16 @@ class UniversalPlayer {
     if (this.element) {
       this.element.classList.add("active");
       this.element.style.display = "flex";
+      if (
+        window.MediaCenter &&
+        window.MediaCenter.videoLibrary &&
+        window.MediaCenter.videoLibrary._adjustBottomPadding
+      ) {
+        setTimeout(
+          () => window.MediaCenter.videoLibrary._adjustBottomPadding(),
+          50,
+        );
+      }
     }
   }
 
@@ -1019,6 +1019,16 @@ class UniversalPlayer {
     if (this.element) {
       this.element.classList.remove("active");
       this.element.style.display = "none";
+      if (
+        window.MediaCenter &&
+        window.MediaCenter.videoLibrary &&
+        window.MediaCenter.videoLibrary._adjustBottomPadding
+      ) {
+        setTimeout(
+          () => window.MediaCenter.videoLibrary._adjustBottomPadding(),
+          50,
+        );
+      }
     }
   }
 

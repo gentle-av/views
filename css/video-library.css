@@ -2,6 +2,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .video-header {
@@ -12,6 +13,14 @@
   flex-shrink: 0;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--bg3);
+}
+
+.video-explorer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .video-header h2 {
@@ -266,6 +275,32 @@
     flex-direction: column;
     gap: 8px;
     padding: 12px;
+    overflow-y: auto;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .content-grid::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .content-grid::-webkit-scrollbar-track {
+    background: var(--bg2);
+    border-radius: 4px;
+  }
+
+  .content-grid::-webkit-scrollbar-thumb {
+    background: var(--yellow);
+    border-radius: 4px;
+  }
+
+  .content-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--orange);
+  }
+
+  .content-grid {
+    scrollbar-width: thin;
+    scrollbar-color: var(--yellow) var(--bg2);
   }
 
   .item-card {
@@ -282,6 +317,7 @@
     min-height: auto !important;
     height: auto !important;
     overflow: visible !important;
+    flex-shrink: 0;
   }
 
   .item-card:hover {
@@ -423,4 +459,50 @@
 
 .thumbnail-placeholder.video-placeholder i {
   color: #3498db !important;
+}
+
+@media (max-width: 768px) {
+  .content-grid {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .content-grid::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .content-grid::-webkit-scrollbar-track {
+    background: var(--bg2);
+    border-radius: 4px;
+    overflow-y: scroll !important;
+  }
+
+  .content-grid::-webkit-scrollbar-thumb {
+    background: var(--yellow);
+    border-radius: 4px;
+  }
+
+  .content-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--orange);
+  }
+
+  .content-grid::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+.content-grid {
+  padding-bottom: 100px;
+}
+
+@media (max-width: 768px) {
+  .content-grid {
+    padding-bottom: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-grid {
+    padding-bottom: 170px;
+  }
 }
