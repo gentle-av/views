@@ -1081,3 +1081,7 @@ class UniversalPlayer {
     }
   }
 }
+
+if (typeof window !== "undefined") {
+  window.universalPlayerInstance = null;
+}

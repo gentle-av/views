@@ -18,6 +18,7 @@ const MediaCenter = {
     NavigationManager.init(this.events);
     this.events.on("page:videoLoaded", () => this._onVideoPageLoaded());
     this.events.on("page:audioLoaded", () => this._onAudioPageLoaded());
+    this.events.on("page:powerLoaded", () => this._onPowerPageLoaded());
     await this.playerApi.checkAvailability();
     this.playback = new PlaybackController(this.playerApi, this.events);
     await this.playback.init();
@@ -27,6 +28,7 @@ const MediaCenter = {
       this.musicApi,
       this.playerApi,
     );
+    window.universalPlayerInstance = this.universalPlayer;
     this.videoLibrary = null;
     this.albumLibrary = null;
     this.albumModal = null;
@@ -35,6 +37,29 @@ const MediaCenter = {
     await NavigationManager.switchTo("video");
     window.MediaCenter = this;
     console.log("MediaCenter v2.0 ready");
+  },
+
+  _onPowerPageLoaded() {
+    console.log("Power page loaded, initializing PowerManagement...");
+    this._updateUIForPage("power");
+    if (this.powerManagement) {
+      this.powerManagement.destroy();
+      this.powerManagement = null;
+    }
+    if (typeof PowerManagement !== "undefined") {
+      this.powerManagement = new PowerManagement(this.api, this.events, {
+        container: document.getElementById("pageContainer"),
+      });
+    }
+    const universalPlayer = document.getElementById("universalBottomPlayer");
+    if (
+      universalPlayer &&
+      this.universalPlayer &&
+      this.universalPlayer.currentFile
+    ) {
+      universalPlayer.style.display = "flex";
+      universalPlayer.classList.add("active");
+    }
   },
 
   _updateUIForPage(page) {
@@ -47,13 +72,23 @@ const MediaCenter = {
     if (page === "audio") {
       mainContent.classList.add("audio-page");
       mainContent.classList.remove("video-page");
+      mainContent.classList.remove("power-page");
       if (headerPlaylistBtn) headerPlaylistBtn.style.display = "flex";
       if (headerRefreshMetadataBtn)
         headerRefreshMetadataBtn.style.display = "flex";
       if (globalSearchBox) globalSearchBox.style.display = "flex";
+    } else if (page === "power") {
+      mainContent.classList.add("power-page");
+      mainContent.classList.remove("video-page");
+      mainContent.classList.remove("audio-page");
+      if (headerPlaylistBtn) headerPlaylistBtn.style.display = "none";
+      if (headerRefreshMetadataBtn)
+        headerRefreshMetadataBtn.style.display = "none";
+      if (globalSearchBox) globalSearchBox.style.display = "none";
     } else {
       mainContent.classList.add("video-page");
       mainContent.classList.remove("audio-page");
+      mainContent.classList.remove("power-page");
       if (headerPlaylistBtn) headerPlaylistBtn.style.display = "none";
       if (headerRefreshMetadataBtn)
         headerRefreshMetadataBtn.style.display = "none";

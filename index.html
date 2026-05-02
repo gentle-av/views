@@ -37,6 +37,10 @@
             <i class="fas fa-music"></i>
             <span>Аудио</span>
           </button>
+          <button class="sidebar-btn" data-page="power" id="navPower">
+            <i class="fas fa-plug"></i>
+            <span>Питание</span>
+          </button>
         </nav>
       </aside>
       <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -51,6 +55,7 @@
             </h1>
           </div>
           <div class="header-controls-section">
+            <!-- Замените существующий mobile-nav-buttons на этот: -->
             <div class="mobile-nav-buttons" id="mobileNavButtons">
               <button class="header-btn nav-video-btn active" id="navVideoBtn">
                 <i class="fas fa-video"></i>
@@ -59,6 +64,10 @@
               <button class="header-btn nav-audio-btn" id="navAudioBtn">
                 <i class="fas fa-music"></i>
                 <span>Аудио</span>
+              </button>
+              <button class="header-btn nav-power-btn" id="navPowerBtn">
+                <i class="fas fa-plug"></i>
+                <span>Питание</span>
               </button>
             </div>
             <div
@@ -317,6 +326,7 @@
     <script src="js/modules/confirm-dialog.js"></script>
     <script src="js/modules/delete-dialog.js"></script>
     <script src="js/modules/tag-editor.js"></script>
+    <script src="js/modules/power-management.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>

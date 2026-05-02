@@ -10,13 +10,22 @@ const NavigationManager = {
   },
 
   _attachButtons() {
-    const buttons = ["navVideo", "navAudio", "navVideoBtn", "navAudioBtn"];
+    const buttons = [
+      "navVideo",
+      "navAudio",
+      "navPower",
+      "navVideoBtn",
+      "navAudioBtn",
+      "navPowerBtn",
+    ];
     buttons.forEach((id) => {
       const btn = document.getElementById(id);
       if (btn) {
         const handler = (e) => {
           e.preventDefault();
-          const page = id.includes("Video") ? "video" : "audio";
+          let page = "video";
+          if (id.includes("Audio")) page = "audio";
+          if (id.includes("Power")) page = "power";
           this.switchTo(page);
         };
         btn.removeEventListener("click", handler);
@@ -36,6 +45,7 @@ const NavigationManager = {
     this.events.emit("page:changed", page);
     this._updatePageTitle(page);
     this._updateActiveButtons(page);
+
     const searchBox = document.getElementById("globalSearchBox");
     if (searchBox) {
       searchBox.style.display = page === "audio" ? "flex" : "none";
@@ -44,6 +54,17 @@ const NavigationManager = {
     if (headerPlaylistBtn) {
       headerPlaylistBtn.style.display = page === "audio" ? "flex" : "none";
     }
+    const refreshBtn = document.getElementById("headerRefreshBtn");
+    if (refreshBtn) {
+      refreshBtn.style.display = page === "video" ? "flex" : "none";
+    }
+    const refreshMetadataBtn = document.getElementById(
+      "headerRefreshMetadataBtn",
+    );
+    if (refreshMetadataBtn) {
+      refreshMetadataBtn.style.display = page === "audio" ? "flex" : "none";
+    }
+
     const container = document.getElementById("pageContainer");
     if (!container) {
       console.error("[NavigationManager] pageContainer not found");
@@ -61,6 +82,19 @@ const NavigationManager = {
       container.innerHTML = html;
       console.log("[NavigationManager] Page loaded:", page);
       this.events.emit(`page:${page}Loaded`);
+
+      const universalPlayer = document.getElementById("universalBottomPlayer");
+      if (universalPlayer && window.universalPlayerInstance) {
+        const hasActivePlayback =
+          window.universalPlayerInstance.currentFile !== null;
+        if (hasActivePlayback) {
+          universalPlayer.style.display = "flex";
+          universalPlayer.classList.add("active");
+        } else {
+          universalPlayer.style.display = "none";
+          universalPlayer.classList.remove("active");
+        }
+      }
     } catch (error) {
       console.error("[NavigationManager] Failed to load page:", page, error);
       container.innerHTML = `<div class="empty"><i class="fas fa-exclamation-triangle"></i> Ошибка загрузки: ${error.message}</div>`;
@@ -70,8 +104,15 @@ const NavigationManager = {
   _updatePageTitle(page) {
     const titleEl = document.getElementById("pageTitle");
     if (titleEl) {
-      const icon = page === "video" ? "fa-video" : "fa-music";
-      const text = page === "video" ? "Видео" : "Аудиотека";
+      let icon = "fa-video";
+      let text = "Видео";
+      if (page === "audio") {
+        icon = "fa-music";
+        text = "Аудиотека";
+      } else if (page === "power") {
+        icon = "fa-plug";
+        text = "Управление питанием";
+      }
       titleEl.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
     }
   },
@@ -86,7 +127,9 @@ const NavigationManager = {
             ? "video"
             : btn.id?.includes("Audio")
               ? "audio"
-              : null);
+              : btn.id?.includes("Power")
+                ? "power"
+                : null);
         if (btnPage === page) {
           btn.classList.add("active");
         } else {
