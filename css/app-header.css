@@ -1,3 +1,4 @@
+/* app-header.css - полный файл */
 .app-header {
   position: sticky;
   top: 0;
@@ -67,6 +68,8 @@
   overflow-y: auto;
   overflow-x: hidden;
   height: calc(100vh - 60px);
+  padding-bottom: 0;
+  transition: padding-bottom 0.3s ease;
 }
 
 @media (max-width: 768px) {
@@ -97,6 +100,7 @@
 
   .scrollable-content {
     height: calc(100vh - 50px);
+    padding-bottom: 0;
   }
 
   .header-controls-section {
@@ -297,6 +301,7 @@
   .refresh-metadata-btn span {
     display: none;
   }
+
   .refresh-metadata-btn {
     padding: 10px;
     min-width: 44px;

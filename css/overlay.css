@@ -1,5 +1,5 @@
 .modal {
-  z-index: 10010;
+  z-index: 1001;
 }
 
 .modal.active {
