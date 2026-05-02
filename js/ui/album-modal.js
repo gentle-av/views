@@ -127,17 +127,17 @@ class AlbumModal {
       <button class="modal-play-btn" style="flex: 1; padding: 10px; background: var(--yellow); color: var(--bg0); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
         <i class="fas fa-play"></i> Воспроизвести альбом
       </button>
+      <button class="modal-musium-btn" style="flex: 1; padding: 10px; background: var(--blue); color: var(--bg0); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+        <i class="fas fa-music"></i> Открыть в Musium
+      </button>
       <button class="modal-add-btn" style="flex: 1; padding: 10px; background: var(--bg2); color: var(--fg1); border: 1px solid var(--bg3); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
         <i class="fas fa-plus"></i> Добавить в плейлист
-      </button>
-      <button class="modal-edit-btn" style="flex: 1; padding: 10px; background: var(--bg2); color: var(--fg1); border: 1px solid var(--bg3); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
-        <i class="fas fa-edit"></i> Редактировать теги
       </button>
     `;
     modalBody?.insertBefore(actionsDiv, modalBody.firstChild);
     const playBtn = actionsDiv.querySelector(".modal-play-btn");
+    const musiumBtn = actionsDiv.querySelector(".modal-musium-btn");
     const addBtn = actionsDiv.querySelector(".modal-add-btn");
-    const editBtn = actionsDiv.querySelector(".modal-edit-btn");
     if (playBtn) {
       playBtn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -145,18 +145,76 @@ class AlbumModal {
         this.hide();
       });
     }
-    if (addBtn) {
-      addBtn.addEventListener("click", (e) => {
+    if (musiumBtn) {
+      musiumBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        this.events.emit("album:addToPlaylist", album);
+        console.log(
+          "[AlbumModal] Musium button clicked for album:",
+          album.title,
+        );
+        const tracks = album.tracks || [];
+        let trackPaths = [];
+        if (tracks.length === 0 && this.musicApi) {
+          try {
+            const tracksData = await this.musicApi.getTracks(
+              album.title,
+              album.artist,
+              true,
+            );
+            trackPaths = tracksData.map((track) => track.path);
+          } catch (error) {
+            console.error("Failed to load tracks for Musium:", error);
+          }
+        } else {
+          trackPaths = tracks.map((track) => track.path);
+        }
+        console.log(
+          "[AlbumModal] Sending to Musium:",
+          trackPaths.length,
+          "tracks",
+        );
+        if (this.musicApi && this.musicApi.openMusium) {
+          await this.musicApi.openMusium(trackPaths);
+        }
         this.hide();
       });
     }
-    if (editBtn) {
-      editBtn.addEventListener("click", (e) => {
+    if (addBtn) {
+      addBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        if (window.TagEditor) {
-          window.TagEditor.showAlbumTagEditor(album);
+        console.log(
+          "[AlbumModal] Add to playlist clicked for album:",
+          album.title,
+        );
+        const tracks = album.tracks || [];
+        if (tracks.length === 0 && this.musicApi) {
+          try {
+            const tracksData = await this.musicApi.getTracks(
+              album.title,
+              album.artist,
+              true,
+            );
+            tracks.push(...tracksData);
+          } catch (error) {
+            console.error("Failed to load tracks for playlist:", error);
+          }
+        }
+        for (const track of tracks) {
+          this.events.emit("playlist:addTrack", {
+            path: track.path,
+            title:
+              track.title ||
+              track.name ||
+              this._extractNameFromPath(track.path),
+            artist: track.artist || album.artist,
+            duration: track.duration || 0,
+          });
+        }
+        if (window.showNotification) {
+          window.showNotification(
+            `Добавлено ${tracks.length} треков в плейлист`,
+            "success",
+          );
         }
         this.hide();
       });

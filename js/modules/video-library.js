@@ -13,6 +13,76 @@ class VideoLibrary {
     this.loadDirectory(this.currentPath, false);
   }
 
+  _debugLog(message, data = null) {
+    const timestamp = new Date().toISOString().split("T")[1].slice(0, 12);
+    console.log(`[VIDEO-DEBUG ${timestamp}] ${message}`, data || "");
+  }
+
+  _debugError(message, error = null) {
+    const timestamp = new Date().toISOString().split("T")[1].slice(0, 12);
+    console.error(`[VIDEO-DEBUG ${timestamp}] ERROR: ${message}`, error || "");
+  }
+
+  async playVideo(videoPath) {
+    console.log("[VIDEO] playVideo START", videoPath);
+    this._showPlayingIndicator(true);
+    try {
+      console.log("[VIDEO] Sending /api/open request");
+      const response = await this.api.post("/api/open", { path: videoPath });
+      console.log("[VIDEO] /api/open response", response);
+      if (!response.success) {
+        Utils.showNotification(
+          response.error || "Ошибка запуска видео",
+          "error",
+        );
+        this._showPlayingIndicator(false);
+        return false;
+      }
+      console.log("[VIDEO] Emitting video:play event");
+      this.events.emit("video:play", videoPath);
+      setTimeout(() => {
+        this._showPlayingIndicator(false);
+      }, 500);
+      return true;
+    } catch (error) {
+      console.error("[VIDEO] playVideo error:", error);
+      Utils.showNotification("Ошибка запуска видео: " + error.message, "error");
+      this._showPlayingIndicator(false);
+      return false;
+    }
+  }
+
+  _showPlayingIndicator(show) {
+    let indicator = document.getElementById("videoPlayingIndicator");
+    if (!indicator) {
+      indicator = document.createElement("div");
+      indicator.id = "videoPlayingIndicator";
+      indicator.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.9);
+        color: white;
+        padding: 20px 30px;
+        border-radius: 12px;
+        z-index: 10000;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        font-size: 16px;
+        font-family: monospace;
+      `;
+      indicator.innerHTML = `
+        <i class="fas fa-spinner fa-spin" style="font-size: 32px;"></i>
+        <span>Запуск видео...</span>
+      `;
+      document.body.appendChild(indicator);
+    }
+    indicator.style.display = show ? "flex" : "none";
+  }
+
   destroy() {
     if (this.container) {
       this.container.innerHTML = "";
@@ -39,13 +109,11 @@ class VideoLibrary {
   }
 
   async loadDirectory(path, addToHistory = true) {
-    console.log("[VideoLibrary] loadDirectory:", path);
     this.currentPath = path;
     if (addToHistory) this.history.push(path);
     this._updateBreadcrumbs();
     this._showLoading();
     const data = await this.api.post("/api/list", { path });
-    console.log("[VideoLibrary] list response:", data);
     if (data.success) {
       this._renderContent(data.items);
     } else {
@@ -72,7 +140,6 @@ class VideoLibrary {
   }
 
   _renderContent(items) {
-    console.log("[VideoLibrary] _renderContent, items count:", items.length);
     const visibleItems = items.filter((item) => !item.name.startsWith("."));
     if (visibleItems.length === 0) {
       this.container.innerHTML =
@@ -167,7 +234,6 @@ class VideoLibrary {
   }
 
   _attachItemEvents() {
-    console.log("[VideoLibrary] _attachItemEvents");
     this.container.querySelectorAll(".item-card").forEach((card) => {
       if (card._eventsAttached) return;
       card._eventsAttached = true;
@@ -177,7 +243,6 @@ class VideoLibrary {
       let clickTimeout = null;
       const clickHandler = async (e) => {
         if (e.target.closest(".swipe-delete-btn")) {
-          console.log("[VideoLibrary] Delete button clicked, ignoring");
           return;
         }
         if (clickTimeout) {
@@ -188,11 +253,9 @@ class VideoLibrary {
         clickTimeout = setTimeout(async () => {
           clickTimeout = null;
           if (isDir) {
-            console.log("[VideoLibrary] Loading directory:", path);
             await this.loadDirectory(path, true);
           } else {
-            console.log("[VideoLibrary] Emitting video:play event for:", path);
-            this.events.emit("video:play", path);
+            await this.playVideo(path);
           }
         }, 200);
       };
@@ -203,7 +266,6 @@ class VideoLibrary {
         deleteBtn._handlerAdded = true;
         const deleteHandler = async (e) => {
           e.stopPropagation();
-          console.log("[VideoLibrary] Delete button clicked for:", name);
           const confirmed = await CustomDeleteDialogInstance.showConfirm(
             name,
             isDir,

@@ -180,10 +180,21 @@ class UniversalPlayer {
 
   _subscribeToEvents() {
     this.events.on("video:play", (path) => {
+      console.log("[UNIVERSAL] video:play received", {
+        path,
+        currentFile: this.currentFile,
+        mediaType: this.mediaType,
+      });
       if (this.currentFile === path && this.mediaType === "video") {
+        console.log("[UNIVERSAL] Same video, showing player");
+        this.show();
+        if (!this.isPlaying) {
+          this._togglePlayPause();
+        }
         return;
       }
       if (this.mediaType === "audio" && this.currentFile) {
+        console.log("[UNIVERSAL] Stopping audio before video");
         this.stop();
       }
       this.startPlayback(path, "video");
@@ -411,10 +422,26 @@ class UniversalPlayer {
   }
 
   async startPlayback(path, type) {
-    if (this._isStartingVideo) return;
-    if (this.currentFile === path && this.mediaType === type && this.isPlaying)
+    console.log("[UNIVERSAL] startPlayback called", {
+      path,
+      type,
+      isStartingVideo: this._isStartingVideo,
+    });
+    if (this._isStartingVideo) {
+      console.log("[UNIVERSAL] Already starting video, returning");
       return;
+    }
+    if (
+      this.currentFile === path &&
+      this.mediaType === type &&
+      this.isPlaying
+    ) {
+      console.log("[UNIVERSAL] Same file already playing, just showing");
+      this.show();
+      return;
+    }
     if (this.mediaType && this.mediaType !== type && this.currentFile) {
+      console.log("[UNIVERSAL] Switching media type, stopping current");
       await this.stop();
     }
     if (type === "video") {
@@ -425,35 +452,36 @@ class UniversalPlayer {
     this._updateFileInfo(path);
     this._updateMediaIcon();
     if (type === "video") {
-      if (this.playerApi && this.playerApi.stop) {
-        await this.playerApi.stop().catch(() => {});
-      }
       await this._loadVideoPreview(path);
       if (this.trackArtist) this.trackArtist.textContent = "Видео";
       try {
+        console.log("[UNIVERSAL] Calling /api/open");
         const response = await this.api.post("/api/open", { path });
+        console.log("[UNIVERSAL] /api/open response", response);
         if (!response.success) {
           Utils.showNotification(
             response.error || "Ошибка воспроизведения",
             "error",
           );
-        } else {
-          this.show();
-          this._updatePlayPauseButton(true);
-          this.isPlaying = true;
-          setTimeout(async () => {
-            const status = await this.api.get("/api/video/status");
-            if (status.success) {
-              const isActuallyPlaying = !status.paused;
-              if (this.isPlaying !== isActuallyPlaying) {
-                this.isPlaying = isActuallyPlaying;
-                this._updatePlayPauseButton(this.isPlaying);
-              }
-            }
-            this._isStartingVideo = false;
-          }, 500);
+          this._isStartingVideo = false;
+          return;
         }
+        console.log("[UNIVERSAL] Calling show()");
+        this.show();
+        this._updatePlayPauseButton(true);
+        this.isPlaying = true;
+        setTimeout(async () => {
+          const status = await this.api.get("/api/video/status");
+          console.log("[UNIVERSAL] Video status after delay", status);
+          const isActuallyPlaying = !status.paused;
+          if (this.isPlaying !== isActuallyPlaying) {
+            this.isPlaying = isActuallyPlaying;
+            this._updatePlayPauseButton(this.isPlaying);
+          }
+          this._isStartingVideo = false;
+        }, 500);
       } catch (error) {
+        console.error("[UNIVERSAL] Error starting video:", error);
         Utils.showNotification("Ошибка запуска видео", "error");
         this._isStartingVideo = false;
       }
@@ -1054,9 +1082,14 @@ class UniversalPlayer {
   }
 
   show() {
+    console.log("[UNIVERSAL] show() called", {
+      elementExists: !!this.element,
+      currentFile: this.currentFile,
+    });
     if (this.element) {
       this.element.classList.add("active");
       this.element.style.display = "flex";
+      console.log("[UNIVERSAL] Player shown, display: flex");
       if (this._adjustBottomPadding) {
         this._adjustBottomPadding();
       }
@@ -1070,6 +1103,8 @@ class UniversalPlayer {
           50,
         );
       }
+    } else {
+      console.error("[UNIVERSAL] show() failed - element is null");
     }
   }
 

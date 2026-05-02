@@ -22,6 +22,27 @@ class MusicApiClient extends ApiClient {
     }
   }
 
+  async openMusium(tracks) {
+    console.log(
+      "[MusicApiClient] openMusium called with",
+      tracks.length,
+      "tracks",
+    );
+    try {
+      const response = await fetch("/api/music/open", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tracks }),
+      });
+      const data = await response.json();
+      console.log("[MusicApiClient] openMusium response:", data);
+      return data;
+    } catch (error) {
+      console.error("[MusicApiClient] openMusium error:", error);
+      return { status: "error", message: error.message };
+    }
+  }
+
   _isCacheValid(key) {
     const timestamp = this._cacheTimestamps.get(key);
     if (!timestamp) return false;
