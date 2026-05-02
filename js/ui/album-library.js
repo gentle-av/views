@@ -1,3 +1,4 @@
+// album-library.js
 class AlbumLibrary {
   constructor(musicApi, events) {
     this.api = musicApi;
@@ -14,6 +15,8 @@ class AlbumLibrary {
     this._artistsList = [];
     this._currentArtistIndex = 0;
     this._isLoadingMore = false;
+    this._lastClickedAlbum = null;
+    this._lastClickTime = 0;
   }
 
   destroy() {
@@ -35,6 +38,14 @@ class AlbumLibrary {
       this._showContextMenu(x, y, album),
     );
     this.events.on("albumClick", (album) => {
+      if (
+        this._lastClickedAlbum === album.title &&
+        Date.now() - this._lastClickTime < 500
+      ) {
+        return;
+      }
+      this._lastClickedAlbum = album.title;
+      this._lastClickTime = Date.now();
       this.events.emit("album:open", album);
     });
     window.addEventListener("albumTagsUpdated", () => this.refresh());

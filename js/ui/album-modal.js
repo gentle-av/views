@@ -127,31 +127,16 @@ class AlbumModal {
       <button class="modal-play-btn" style="flex: 1; padding: 10px; background: var(--yellow); color: var(--bg0); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
         <i class="fas fa-play"></i> Воспроизвести альбом
       </button>
-      <button class="modal-musium-btn" style="flex: 1; padding: 10px; background: var(--blue); color: var(--bg0); border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
-        <i class="fas fa-music"></i> Открыть в Musium
-      </button>
       <button class="modal-add-btn" style="flex: 1; padding: 10px; background: var(--bg2); color: var(--fg1); border: 1px solid var(--bg3); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
         <i class="fas fa-plus"></i> Добавить в плейлист
       </button>
     `;
     modalBody?.insertBefore(actionsDiv, modalBody.firstChild);
     const playBtn = actionsDiv.querySelector(".modal-play-btn");
-    const musiumBtn = actionsDiv.querySelector(".modal-musium-btn");
     const addBtn = actionsDiv.querySelector(".modal-add-btn");
     if (playBtn) {
-      playBtn.addEventListener("click", (e) => {
+      playBtn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        this.events.emit("album:play", album);
-        this.hide();
-      });
-    }
-    if (musiumBtn) {
-      musiumBtn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        console.log(
-          "[AlbumModal] Musium button clicked for album:",
-          album.title,
-        );
         const tracks = album.tracks || [];
         let trackPaths = [];
         if (tracks.length === 0 && this.musicApi) {
@@ -163,18 +148,17 @@ class AlbumModal {
             );
             trackPaths = tracksData.map((track) => track.path);
           } catch (error) {
-            console.error("Failed to load tracks for Musium:", error);
+            console.error("Failed to load tracks:", error);
           }
         } else {
           trackPaths = tracks.map((track) => track.path);
         }
-        console.log(
-          "[AlbumModal] Sending to Musium:",
-          trackPaths.length,
-          "tracks",
-        );
-        if (this.musicApi && this.musicApi.openMusium) {
-          await this.musicApi.openMusium(trackPaths);
+        if (trackPaths.length > 0) {
+          if (this.musicApi && this.musicApi.playTracks) {
+            await this.musicApi.playTracks(trackPaths);
+          } else {
+            this.events.emit("album:play", album);
+          }
         }
         this.hide();
       });

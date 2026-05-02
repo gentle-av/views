@@ -490,8 +490,10 @@ class UniversalPlayer {
         await this.api.post("/api/video/close").catch(() => {});
       } catch (error) {}
       await this._loadAlbumCover(path);
+      console.log("[UNIVERSAL] Audio playback starting, showing player");
       this.show();
       this._updatePlayPauseButton(true);
+      this.isPlaying = true;
       setTimeout(async () => {
         if (this.playerApi) {
           const timeInfo = await this.playerApi.getCurrentTime();
@@ -499,8 +501,27 @@ class UniversalPlayer {
             this._duration = timeInfo.data.duration;
             this._updateTimeDisplay(this._currentTime, this._duration);
           }
+          const state = await this.playerApi.getPlaybackState();
+          if (state && state.data && state.data.currentTrack) {
+            this.currentFile = state.data.currentTrack;
+            this._updateFileInfo(this.currentFile);
+          }
         }
       }, 500);
+    }
+  }
+
+  setMediaType(type) {
+    this.mediaType = type;
+    this._updateMediaIcon();
+    if (this._progressInterval) {
+      clearInterval(this._progressInterval);
+      this._progressInterval = null;
+      this._isPollingStarted = false;
+    }
+    this._startProgressPolling();
+    if (this.currentFile) {
+      this.show();
     }
   }
 

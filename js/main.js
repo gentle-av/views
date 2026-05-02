@@ -235,9 +235,20 @@ const MediaCenter = {
     this.events.on("album:play", (album) => {
       console.log("[MediaCenter] album:play event received", album.title);
       if (album.tracks && album.tracks.length > 0) {
-        this.universalPlayer.startPlayback(album.tracks[0].path, "audio");
+        const trackPaths = album.tracks.map((track) => track.path);
+        if (this.musicApi && this.musicApi.playTracks) {
+          this.musicApi.playTracks(trackPaths).then(() => {
+            setTimeout(() => {
+              if (this.universalPlayer) {
+                this.universalPlayer.show();
+                this.universalPlayer.setMediaType("audio");
+              }
+            }, 500);
+          });
+        } else {
+          this.universalPlayer.startPlayback(album.tracks[0].path, "audio");
+        }
       }
-      this.playback.playAlbum(album);
     });
     this.events.on("album:addToPlaylist", async (album) => {
       console.log(
