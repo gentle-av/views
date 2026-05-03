@@ -1,3 +1,5 @@
+import { UniversalPlayer } from "./ui/universal-player.js";
+
 const MediaCenter = {
   async init() {
     console.log("MediaCenter v2.0 initializing...");
