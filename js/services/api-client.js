@@ -25,9 +25,14 @@ class ApiClient {
     const startTime = Date.now();
     this._debugLog(`REQUEST ${options.method || "GET"} ${endpoint}`);
     try {
+      const headers = { ...options.headers };
+      if (options.method === "POST" && options.body) {
+        headers["Content-Type"] = "application/json";
+      }
       const response = await fetch(endpoint, {
-        headers: { "Content-Type": "application/json" },
-        ...options,
+        method: options.method || "GET",
+        headers: headers,
+        body: options.body || undefined,
       });
       const duration = Date.now() - startTime;
       let data;

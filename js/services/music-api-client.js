@@ -15,11 +15,16 @@ class MusicApiClient {
     return response.json();
   }
 
-  async post(endpoint, data) {
-    return this.request(endpoint, {
+  async post(url, data) {
+    console.log(`[API POST] ${url}`, data);
+    const response = await fetch(url, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+    const result = await response.json();
+    console.log(`[API POST] Response for ${url}:`, result);
+    return result;
   }
 
   async get(endpoint) {
