@@ -85,37 +85,75 @@ export class Album {
     return `${this.artist.getValue()} - ${this.title}`;
   }
 
-  // Setters (return new instance)
   withTitle(title: string): Album {
-    return new Album({ ...this.toJSON(), title });
+    return new Album({
+      title,
+      artist: this.artist.getValue(),
+      year: this.year,
+      tracks: this.tracks,
+      coverUrl: this.coverUrl || undefined,
+    });
   }
 
   withArtist(artist: string): Album {
-    return new Album({ ...this.toJSON(), artist });
+    return new Album({
+      title: this.title,
+      artist,
+      year: this.year,
+      tracks: this.tracks,
+      coverUrl: this.coverUrl || undefined,
+    });
   }
 
   withYear(year: string): Album {
-    return new Album({ ...this.toJSON(), year });
+    return new Album({
+      title: this.title,
+      artist: this.artist.getValue(),
+      year,
+      tracks: this.tracks,
+      coverUrl: this.coverUrl || undefined,
+    });
   }
 
   withCoverUrl(coverUrl: string): Album {
-    return new Album({ ...this.toJSON(), coverUrl });
+    return new Album({
+      title: this.title,
+      artist: this.artist.getValue(),
+      year: this.year,
+      tracks: this.tracks,
+      coverUrl,
+    });
   }
 
   withTracks(tracks: Track[]): Album {
-    return new Album({ ...this.toJSON(), tracks });
+    return new Album({
+      title: this.title,
+      artist: this.artist.getValue(),
+      year: this.year,
+      tracks,
+      coverUrl: this.coverUrl || undefined,
+    });
   }
 
   addTrack(track: Track): Album {
-    return new Album({ ...this.toJSON(), tracks: [...this.tracks, track] });
+    return new Album({
+      title: this.title,
+      artist: this.artist.getValue(),
+      year: this.year,
+      tracks: [...this.tracks, track],
+      coverUrl: this.coverUrl || undefined,
+    });
   }
 
   removeTrack(trackNumber: number): Album {
     return new Album({
-      ...this.toJSON(),
+      title: this.title,
+      artist: this.artist.getValue(),
+      year: this.year,
       tracks: this.tracks.filter(
         (t) => t.getTrackNumberValue() !== trackNumber,
       ),
+      coverUrl: this.coverUrl || undefined,
     });
   }
 
@@ -123,7 +161,13 @@ export class Album {
     const sorted = [...this.tracks].sort(
       (a, b) => a.getTrackNumberValue() - b.getTrackNumberValue(),
     );
-    return new Album({ ...this.toJSON(), tracks: sorted });
+    return new Album({
+      title: this.title,
+      artist: this.artist.getValue(),
+      year: this.year,
+      tracks: sorted,
+      coverUrl: this.coverUrl || undefined,
+    });
   }
 
   isValid(): boolean {
@@ -138,7 +182,7 @@ export class Album {
         track.getArtistString().toLowerCase().includes(lowerQuery),
     );
   }
-  // Serialization
+
   toJSON() {
     return {
       title: this.title,

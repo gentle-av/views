@@ -1,4 +1,4 @@
-import { ApiResponse, RequestOptions } from "../types/api.js";
+import { ApiResponse, RequestOptions } from "../types/api";
 
 export class ApiClient {
   protected baseUrl: string;

@@ -1,3 +1,5 @@
+import { expect } from "vitest";
+
 export const cleanup = (): void => {
   // Cleanup function
 };
@@ -7,7 +9,9 @@ export const createTempFile = (name: string): string => {
 };
 
 export const randomString = (length: number = 10): string => {
-  return Math.random().toString(36).substring(2, length + 2);
+  return Math.random()
+    .toString(36)
+    .substring(2, length + 2);
 };
 
 export const expectThrow = (fn: () => void, errorMessage: string): void => {
@@ -24,5 +28,5 @@ export const expectThrow = (fn: () => void, errorMessage: string): void => {
 };
 
 export const wait = (ms: number): Promise<void> => {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 };

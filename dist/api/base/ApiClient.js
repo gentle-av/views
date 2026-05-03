@@ -1,5 +1,3 @@
-// Временно закомментировать или удалить эту строку:
-// import { ApiResponse, RequestOptions } from '../types/api';
 export class ApiClient {
     constructor(baseUrl, timeout = 30000) {
         this.baseUrl = baseUrl || this.getDefaultBaseUrl();
@@ -10,7 +8,10 @@ export class ApiClient {
         };
     }
     getDefaultBaseUrl() {
-        return `http://${window.location.hostname}:${window.location.port}`;
+        if (typeof window !== "undefined" && window.location) {
+            return `http://${window.location.hostname}:${window.location.port}`;
+        }
+        return "http://192.168.50.11:9093";
     }
     setAuthToken(token) {
         this.defaultHeaders = {
