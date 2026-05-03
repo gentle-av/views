@@ -1,237 +1,300 @@
 #!/bin/zsh
 
-# TypeScript Project Structure Creator
-# Usage: zsh create-ts-structure.zsh [project-name]
+# Create test structure for Media Center TypeScript project
 
 set -e
 
-# Colors
 autoload colors
 colors
 
-PROJECT_NAME=${1:-"media-center"}
-PROJECT_ROOT="$PWD/$PROJECT_NAME"
+PROJECT_ROOT="${1:-.}"
 
-echo "${fg[cyan]}🚀 Creating TypeScript project structure...${reset_color}"
-echo "${fg[blue]}📁 Project: $PROJECT_NAME${reset_color}"
+echo "${fg[cyan]}🧪 Creating test structure...${reset_color}"
 echo ""
 
-# Function to create file
-create_file() {
-    local file_path="$1"
-    mkdir -p "$(dirname "$file_path")"
-    touch "$file_path"
-    echo "  ✓ ${file_path#$PROJECT_ROOT/}"
-}
+# Create test directories
+dirs=(
+    "$PROJECT_ROOT/ts/__tests__"
+    "$PROJECT_ROOT/ts/__tests__/helpers"
+    "$PROJECT_ROOT/ts/__tests__/unit"
+    "$PROJECT_ROOT/ts/__tests__/unit/value-objects"
+    "$PROJECT_ROOT/ts/__tests__/unit/models"
+    "$PROJECT_ROOT/ts/__tests__/unit/services"
+    "$PROJECT_ROOT/ts/__tests__/unit/api"
+    "$PROJECT_ROOT/ts/__tests__/unit/utils"
+    "$PROJECT_ROOT/ts/__tests__/integration"
+    "$PROJECT_ROOT/ts/__tests__/e2e"
+    "$PROJECT_ROOT/ts/__tests__/mocks"
+)
 
-# Create root config files
-create_root_configs() {
-    echo "${fg[yellow]}📝 Creating root configuration files...${reset_color}"
+for dir in $dirs; do
+    mkdir -p "$dir"
+    echo "  ✓ Created: ${dir#$PROJECT_ROOT/}"
+done
 
-    create_file "$PROJECT_ROOT/package.json"
-    create_file "$PROJECT_ROOT/tsconfig.json"
-    create_file "$PROJECT_ROOT/vite.config.ts"
-    create_file "$PROJECT_ROOT/.eslintrc.json"
-    create_file "$PROJECT_ROOT/.prettierrc"
-    create_file "$PROJECT_ROOT/.gitignore"
-    create_file "$PROJECT_ROOT/index.html"
-}
+# Create test files
+echo ""
+echo "${fg[yellow]}📝 Creating test files...${reset_color}"
 
-# Create TypeScript source structure
-create_ts_structure() {
-    echo ""
-    echo "${fg[yellow]}📂 Creating TypeScript source structure...${reset_color}"
+# setup.ts
+cat > "$PROJECT_ROOT/ts/__tests__/setup.ts" << 'EOF'
+import { afterEach, beforeEach } from 'vitest';
 
-    # Types
-    create_file "$PROJECT_ROOT/src/types/common.ts"
-    create_file "$PROJECT_ROOT/src/types/media.ts"
-    create_file "$PROJECT_ROOT/src/types/api.ts"
-    create_file "$PROJECT_ROOT/src/types/events.ts"
+// Global test setup
+beforeEach(() => {
+  console.log('🧪 Test started');
+});
 
-    # Core
-    create_file "$PROJECT_ROOT/src/core/events/EventBus.ts"
-    create_file "$PROJECT_ROOT/src/core/events/EventListener.ts"
-    create_file "$PROJECT_ROOT/src/core/state/AppState.ts"
-    create_file "$PROJECT_ROOT/src/core/state/MediaState.ts"
-    create_file "$PROJECT_ROOT/src/core/state/PlaybackState.ts"
-    create_file "$PROJECT_ROOT/src/core/di/Container.ts"
-    create_file "$PROJECT_ROOT/src/core/di/ServiceRegistry.ts"
+afterEach(() => {
+  // Cleanup after each test
+});
+EOF
+echo "  ✓ Created: __tests__/setup.ts"
 
-    # API
-    create_file "$PROJECT_ROOT/src/api/base/ApiClient.ts"
-    create_file "$PROJECT_ROOT/src/api/base/RequestBuilder.ts"
-    create_file "$PROJECT_ROOT/src/api/base/ResponseParser.ts"
-    create_file "$PROJECT_ROOT/src/api/base/ErrorHandler.ts"
-    create_file "$PROJECT_ROOT/src/api/services/VideoApiService.ts"
-    create_file "$PROJECT_ROOT/src/api/services/AudioApiService.ts"
-    create_file "$PROJECT_ROOT/src/api/services/MusicApiService.ts"
-    create_file "$PROJECT_ROOT/src/api/services/PowerApiService.ts"
-    create_file "$PROJECT_ROOT/src/api/endpoints/OpenEndpoint.ts"
-    create_file "$PROJECT_ROOT/src/api/endpoints/ListEndpoint.ts"
-    create_file "$PROJECT_ROOT/src/api/endpoints/ThumbnailEndpoint.ts"
-    create_file "$PROJECT_ROOT/src/api/endpoints/TrashEndpoint.ts"
+# helpers/test-utils.ts
+cat > "$PROJECT_ROOT/ts/__tests__/helpers/test-utils.ts" << 'EOF'
+export const cleanup = (): void => {
+  // Cleanup function
+};
 
-    # Models
-    create_file "$PROJECT_ROOT/src/models/entities/Track.ts"
-    create_file "$PROJECT_ROOT/src/models/entities/Album.ts"
-    create_file "$PROJECT_ROOT/src/models/entities/VideoItem.ts"
-    create_file "$PROJECT_ROOT/src/models/entities/FolderItem.ts"
-    create_file "$PROJECT_ROOT/src/models/entities/Playlist.ts"
-    create_file "$PROJECT_ROOT/src/models/value-objects/FilePath.ts"
-    create_file "$PROJECT_ROOT/src/models/value-objects/Duration.ts"
-    create_file "$PROJECT_ROOT/src/models/value-objects/Volume.ts"
-    create_file "$PROJECT_ROOT/src/models/value-objects/TrackNumber.ts"
-    create_file "$PROJECT_ROOT/src/models/value-objects/ArtistName.ts"
-    create_file "$PROJECT_ROOT/src/models/factories/AlbumFactory.ts"
-    create_file "$PROJECT_ROOT/src/models/factories/TrackFactory.ts"
+export const createTempFile = (name: string): string => {
+  return `/tmp/test-${Date.now()}-${name}`;
+};
 
-    # Services
-    create_file "$PROJECT_ROOT/src/services/playback/PlaybackController.ts"
-    create_file "$PROJECT_ROOT/src/services/playback/PlaybackStateManager.ts"
-    create_file "$PROJECT_ROOT/src/services/playback/PlaylistManager.ts"
-    create_file "$PROJECT_ROOT/src/services/playback/TrackNavigator.ts"
-    create_file "$PROJECT_ROOT/src/services/playback/VolumeController.ts"
-    create_file "$PROJECT_ROOT/src/services/video/DirectoryNavigator.ts"
-    create_file "$PROJECT_ROOT/src/services/video/VideoScanner.ts"
-    create_file "$PROJECT_ROOT/src/services/video/VideoDeleter.ts"
-    create_file "$PROJECT_ROOT/src/services/video/VideoItemFilter.ts"
-    create_file "$PROJECT_ROOT/src/services/audio/AlbumService.ts"
-    create_file "$PROJECT_ROOT/src/services/audio/TrackService.ts"
-    create_file "$PROJECT_ROOT/src/services/audio/MetadataService.ts"
-    create_file "$PROJECT_ROOT/src/services/thumbnail/ThumbnailCache.ts"
-    create_file "$PROJECT_ROOT/src/services/thumbnail/ThumbnailFetcher.ts"
-    create_file "$PROJECT_ROOT/src/services/thumbnail/ThumbnailLoader.ts"
-    create_file "$PROJECT_ROOT/src/services/power/TVPowerService.ts"
-    create_file "$PROJECT_ROOT/src/services/power/ComputerPowerService.ts"
+export const randomString = (length: number = 10): string => {
+  return Math.random().toString(36).substring(2, length + 2);
+};
 
-    # UI Components
-    create_file "$PROJECT_ROOT/src/ui/components/Button.ts"
-    create_file "$PROJECT_ROOT/src/ui/components/Icon.ts"
-    create_file "$PROJECT_ROOT/src/ui/components/Modal.ts"
-    create_file "$PROJECT_ROOT/src/ui/components/Notification.ts"
-    create_file "$PROJECT_ROOT/src/ui/components/Spinner.ts"
-    create_file "$PROJECT_ROOT/src/ui/components/LoadingIndicator.ts"
-    create_file "$PROJECT_ROOT/src/ui/components/EmptyStateRenderer.ts"
-    create_file "$PROJECT_ROOT/src/ui/components/DeleteSwipeHandler.ts"
-    create_file "$PROJECT_ROOT/src/ui/components/CustomDeleteDialog.ts"
+export const expectThrow = (fn: () => void, errorMessage: string): void => {
+  let threw = false;
+  try {
+    fn();
+  } catch (e) {
+    threw = true;
+    if (e instanceof Error) {
+      expect(e.message).toContain(errorMessage);
+    }
+  }
+  expect(threw).toBe(true);
+};
 
-    # UI Pages
-    create_file "$PROJECT_ROOT/src/ui/pages/BasePage.ts"
-    create_file "$PROJECT_ROOT/src/ui/pages/VideoPage.ts"
-    create_file "$PROJECT_ROOT/src/ui/pages/AudioPage.ts"
-    create_file "$PROJECT_ROOT/src/ui/pages/PowerPage.ts"
+export const wait = (ms: number): Promise<void> => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+EOF
+echo "  ✓ Created: __tests__/helpers/test-utils.ts"
 
-    # UI Widgets - Album
-    create_file "$PROJECT_ROOT/src/ui/widgets/album/AlbumCard.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/album/AlbumGrid.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/album/AlbumModal.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/album/TrackList.ts"
+# mocks/api-mock.ts
+cat > "$PROJECT_ROOT/ts/__tests__/mocks/api-mock.ts" << 'EOF'
+import { ApiResponse } from '../../types/api';
 
-    # UI Widgets - Player
-    create_file "$PROJECT_ROOT/src/ui/widgets/player/UniversalPlayer.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/player/VideoPlayer.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/player/AudioPlayer.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/player/PlayerControls.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/player/PlayerProgress.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/player/VolumeControl.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/player/AudioOutputSelector.ts"
+export const mockApiResponse = <T = any>(data: T, success: boolean = true): ApiResponse<T> => ({
+  success,
+  data,
+});
 
-    # UI Widgets - Navigation
-    create_file "$PROJECT_ROOT/src/ui/widgets/navigation/Sidebar.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/navigation/Breadcrumb.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/navigation/MobileNav.ts"
-    create_file "$PROJECT_ROOT/src/ui/widgets/navigation/SearchBar.ts"
+export const mockErrorResponse = (error: string = 'Network error'): ApiResponse => ({
+  success: false,
+  error,
+});
 
-    # UI Renderers
-    create_file "$PROJECT_ROOT/src/ui/renderers/VideoItemRenderer.ts"
-    create_file "$PROJECT_ROOT/src/ui/renderers/FolderItemRenderer.ts"
-    create_file "$PROJECT_ROOT/src/ui/renderers/TrackItemRenderer.ts"
-    create_file "$PROJECT_ROOT/src/ui/renderers/AlbumCoverRenderer.ts"
+export const mockFetch = (response: any, ok: boolean = true): void => {
+  global.fetch = vi.fn().mockResolvedValue({
+    ok,
+    json: async () => response,
+    text: async () => JSON.stringify(response),
+  });
+};
+EOF
+echo "  ✓ Created: __tests__/mocks/api-mock.ts"
 
-    # Handlers
-    create_file "$PROJECT_ROOT/src/handlers/video/VideoLoadHandler.ts"
-    create_file "$PROJECT_ROOT/src/handlers/video/VideoPlayHandler.ts"
-    create_file "$PROJECT_ROOT/src/handlers/video/VideoDeleteHandler.ts"
-    create_file "$PROJECT_ROOT/src/handlers/video/VideoRefreshHandler.ts"
-    create_file "$PROJECT_ROOT/src/handlers/audio/AlbumPlayHandler.ts"
-    create_file "$PROJECT_ROOT/src/handlers/audio/AlbumClickHandler.ts"
-    create_file "$PROJECT_ROOT/src/handlers/audio/TrackEditHandler.ts"
-    create_file "$PROJECT_ROOT/src/handlers/audio/PlaylistHandler.ts"
-    create_file "$PROJECT_ROOT/src/handlers/power/TVPowerHandler.ts"
-    create_file "$PROJECT_ROOT/src/handlers/power/SleepHandler.ts"
+# Value objects tests
+cat > "$PROJECT_ROOT/ts/__tests__/unit/value-objects/FilePath.test.ts" << 'EOF'
+import { describe, it, expect } from 'vitest';
+import { FilePath } from '../../../models/value-objects/FilePath.js';
 
-    # Utils - Formatters
-    create_file "$PROJECT_ROOT/src/utils/formatters/TimeFormatter.ts"
-    create_file "$PROJECT_ROOT/src/utils/formatters/SizeFormatter.ts"
-    create_file "$PROJECT_ROOT/src/utils/formatters/TrackNameFormatter.ts"
-    create_file "$PROJECT_ROOT/src/utils/formatters/ArtistNameFormatter.ts"
+describe('FilePath', () => {
+  it('should create valid file path', () => {
+    const path = new FilePath('/mnt/video/movie.mp4');
+    expect(path.getValue()).toBe('/mnt/video/movie.mp4');
+  });
 
-    # Utils - Validators
-    create_file "$PROJECT_ROOT/src/utils/validators/PathValidator.ts"
-    create_file "$PROJECT_ROOT/src/utils/validators/FileNameValidator.ts"
-    create_file "$PROJECT_ROOT/src/utils/validators/VolumeValidator.ts"
+  it('should throw error on empty path', () => {
+    expect(() => new FilePath('')).toThrow('File path cannot be empty');
+  });
 
-    # Utils - Cache
-    create_file "$PROJECT_ROOT/src/utils/cache/MemoryCache.ts"
-    create_file "$PROJECT_ROOT/src/utils/cache/ThumbnailCache.ts"
-    create_file "$PROJECT_ROOT/src/utils/cache/MetadataCache.ts"
+  it('should extract file name', () => {
+    const path = new FilePath('/mnt/video/test.mp4');
+    expect(path.getFileName()).toBe('test.mp4');
+  });
 
-    # Utils - DOM
-    create_file "$PROJECT_ROOT/src/utils/dom/DomSelector.ts"
-    create_file "$PROJECT_ROOT/src/utils/dom/DomModifier.ts"
-    create_file "$PROJECT_ROOT/src/utils/dom/TouchHandler.ts"
-    create_file "$PROJECT_ROOT/src/utils/dom/SwipeDetector.ts"
+  it('should extract extension', () => {
+    const path = new FilePath('/mnt/video/video.mkv');
+    expect(path.getExtension()).toBe('mkv');
+  });
 
-    # Config
-    create_file "$PROJECT_ROOT/src/config/AppConfig.ts"
-    create_file "$PROJECT_ROOT/src/config/Routes.ts"
-    create_file "$PROJECT_ROOT/src/config/Endpoints.ts"
-    create_file "$PROJECT_ROOT/src/config/Constants.ts"
+  it('should detect video files', () => {
+    expect(new FilePath('/test.mp4').isVideo()).toBe(true);
+    expect(new FilePath('/test.txt').isVideo()).toBe(false);
+  });
+});
+EOF
+echo "  ✓ Created: __tests__/unit/value-objects/FilePath.test.ts"
 
-    # Entry point
-    create_file "$PROJECT_ROOT/src/index.ts"
-}
+cat > "$PROJECT_ROOT/ts/__tests__/unit/value-objects/Duration.test.ts" << 'EOF'
+import { describe, it, expect } from 'vitest';
+import { Duration } from '../../../models/value-objects/Duration.js';
 
-# Create public directory structure
-create_public_structure() {
-    echo ""
-    echo "${fg[yellow]}🌐 Creating public directory structure...${reset_color}"
+describe('Duration', () => {
+  it('should create duration from seconds', () => {
+    const duration = new Duration(125);
+    expect(duration.getSeconds()).toBe(125);
+  });
 
-    create_file "$PROJECT_ROOT/public/css/styles.css"
-    create_file "$PROJECT_ROOT/public/css/universal-player.css"
-    create_file "$PROJECT_ROOT/public/pages/video.html"
-    create_file "$PROJECT_ROOT/public/pages/audio.html"
-    create_file "$PROJECT_ROOT/public/pages/power.html"
-}
+  it('should throw error on negative duration', () => {
+    expect(() => new Duration(-5)).toThrow('Duration cannot be negative');
+  });
 
-# Print summary
-print_summary() {
-    echo ""
-    echo "${fg[green]}✅ Project structure created successfully!${reset_color}"
-    echo ""
-    echo "${fg[cyan]}📊 Statistics:${reset_color}"
+  it('should format duration', () => {
+    const duration = new Duration(125);
+    expect(duration.format()).toBe('2:05');
+  });
 
-    local file_count=$(find "$PROJECT_ROOT/src" -type f -name "*.ts" 2>/dev/null | wc -l | xargs)
-    local config_count=$(find "$PROJECT_ROOT" -maxdepth 1 -type f \( -name "*.json" -o -name "*.ts" -o -name "*.html" \) 2>/dev/null | wc -l | xargs)
-    local public_count=$(find "$PROJECT_ROOT/public" -type f 2>/dev/null | wc -l | xargs)
+  it('should format duration with hours', () => {
+    const duration = new Duration(3665);
+    expect(duration.format()).toBe('1:01:05');
+  });
 
-    echo "  📁 TypeScript files: $file_count"
-    echo "  ⚙️  Config files: $config_count"
-    echo "  🎨 Public files: $public_count"
-    echo ""
-    echo "${fg[yellow]}Next steps:${reset_color}"
-    echo "  cd $PROJECT_NAME"
-    echo "  npm install"
-    echo "  npm run dev"
-    echo ""
-}
+  it('should create zero duration', () => {
+    const zero = Duration.zero();
+    expect(zero.getSeconds()).toBe(0);
+  });
+});
+EOF
+echo "  ✓ Created: __tests__/unit/value-objects/Duration.test.ts"
 
-# Main execution
-main() {
-    create_root_configs
-    create_ts_structure
-    create_public_structure
-    print_summary
-}
+cat > "$PROJECT_ROOT/ts/__tests__/unit/value-objects/TrackNumber.test.ts" << 'EOF'
+import { describe, it, expect } from 'vitest';
+import { TrackNumber } from '../../../models/value-objects/TrackNumber.js';
 
-main
+describe('TrackNumber', () => {
+  it('should create track number', () => {
+    const track = new TrackNumber(5);
+    expect(track.getValue()).toBe(5);
+  });
+
+  it('should throw error on invalid number', () => {
+    expect(() => new TrackNumber(0)).toThrow('Track number must be at least 1');
+    expect(() => new TrackNumber(1000)).toThrow('Track number cannot exceed 999');
+  });
+
+  it('should format with padding', () => {
+    expect(new TrackNumber(5).format()).toBe('05');
+    expect(new TrackNumber(12).format()).toBe('12');
+  });
+});
+EOF
+echo "  ✓ Created: __tests__/unit/value-objects/TrackNumber.test.ts"
+
+cat > "$PROJECT_ROOT/ts/__tests__/unit/value-objects/Volume.test.ts" << 'EOF'
+import { describe, it, expect } from 'vitest';
+import { Volume } from '../../../models/value-objects/Volume.js';
+
+describe('Volume', () => {
+  it('should create volume', () => {
+    const vol = new Volume(75);
+    expect(vol.getValue()).toBe(75);
+  });
+
+  it('should throw error on invalid volume', () => {
+    expect(() => new Volume(-1)).toThrow('Volume must be between 0 and 100');
+    expect(() => new Volume(101)).toThrow('Volume must be between 0 and 100');
+  });
+
+  it('should increase volume', () => {
+    const vol = new Volume(50);
+    expect(vol.increase(10).getValue()).toBe(60);
+  });
+
+  it('should decrease volume', () => {
+    const vol = new Volume(50);
+    expect(vol.decrease(10).getValue()).toBe(40);
+  });
+
+  it('should not exceed 100', () => {
+    const vol = new Volume(95);
+    expect(vol.increase(10).getValue()).toBe(100);
+  });
+
+  it('should not go below 0', () => {
+    const vol = new Volume(5);
+    expect(vol.decrease(10).getValue()).toBe(0);
+  });
+
+  it('should create default volume', () => {
+    expect(Volume.default().getValue()).toBe(50);
+  });
+});
+EOF
+echo "  ✓ Created: __tests__/unit/value-objects/Volume.test.ts"
+
+cat > "$PROJECT_ROOT/ts/__tests__/unit/value-objects/ArtistName.test.ts" << 'EOF'
+import { describe, it, expect } from 'vitest';
+import { ArtistName } from '../../../models/value-objects/ArtistName.js';
+
+describe('ArtistName', () => {
+  it('should create artist name', () => {
+    const artist = new ArtistName('The Beatles');
+    expect(artist.getValue()).toBe('The Beatles');
+  });
+
+  it('should normalize whitespace', () => {
+    const artist = new ArtistName('  The  Beatles  ');
+    expect(artist.getValue()).toBe('The Beatles');
+  });
+
+  it('should throw error on empty name', () => {
+    expect(() => new ArtistName('')).toThrow('Artist name cannot be empty');
+  });
+
+  it('should get first letter', () => {
+    expect(new ArtistName('The Beatles').getFirstLetter()).toBe('T');
+  });
+
+  it('should match search term', () => {
+    const artist = new ArtistName('The Beatles');
+    expect(artist.matches('beatles')).toBe(true);
+    expect(artist.matches('queen')).toBe(false);
+  });
+
+  it('should create unknown artist', () => {
+    expect(ArtistName.unknown().getValue()).toBe('Unknown Artist');
+  });
+});
+EOF
+echo "  ✓ Created: __tests__/unit/value-objects/ArtistName.test.ts"
+
+# Simple test to verify setup works
+cat > "$PROJECT_ROOT/ts/__tests__/simple.test.ts" << 'EOF'
+import { describe, it, expect } from 'vitest';
+
+describe('Test setup', () => {
+  it('should pass basic test', () => {
+    expect(1 + 1).toBe(2);
+  });
+});
+EOF
+echo "  ✓ Created: __tests__/simple.test.ts"
+
+echo ""
+echo "${fg[green]}✅ Test structure created!${reset_color}"
+echo ""
+echo "${fg[cyan]}📊 Statistics:${reset_color}"
+file_count=$(find "$PROJECT_ROOT/ts/__tests__" -type f -name "*.ts" 2>/dev/null | wc -l | xargs)
+echo "  📁 Test files: $file_count"
+echo ""
+echo "${fg[yellow]}🚀 Run tests:${reset_color}"
+echo "  npm run test        # Watch mode"
+echo "  npm run test:run    # Single run"
+echo "  npm run test:ui     # UI mode"
+echo ""
