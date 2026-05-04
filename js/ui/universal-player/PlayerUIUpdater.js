@@ -4,6 +4,18 @@ export class PlayerUIUpdater {
     this.progress = progress;
   }
 
+  updateTrackInfo(title, artist) {
+    const trackName = this.dom.get("universalBottomTrackName");
+    const trackArtist = this.dom.get("universalBottomTrackArtist");
+    if (trackName && title) {
+      trackName.textContent = this._escape(title);
+    }
+    if (trackArtist) {
+      trackArtist.textContent = artist ? this._escape(artist) : "";
+      trackArtist.style.display = artist ? "block" : "none";
+    }
+  }
+
   updateFileInfo(path) {
     const trackName = this.dom.get("universalBottomTrackName");
     if (!trackName) return;
