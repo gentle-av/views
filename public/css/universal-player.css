@@ -1,0 +1,428 @@
+.universal-bottom-player {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  background: var(--bg1);
+  border-top: 1px solid var(--bg3);
+  padding: 12px 20px;
+  z-index: 1000;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease;
+  display: none;
+  width: calc(100% - var(--sidebar-width));
+  box-sizing: border-box;
+}
+
+.universal-bottom-player.active {
+  display: flex !important;
+  flex-direction: column;
+}
+
+.universal-bottom-player.minimized {
+  transform: translateY(calc(100% - 60px));
+}
+
+.universal-bottom-player.minimized .universal-bottom-player-content {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.universal-bottom-player.minimized .universal-bottom-player-minimize-bar {
+  opacity: 1;
+}
+
+.universal-bottom-player-minimize-bar {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 30px;
+  background: var(--bg2);
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid var(--bg3);
+  border-bottom: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  color: var(--fg3);
+  z-index: 1001;
+}
+
+.universal-bottom-player-minimize-bar:hover {
+  color: var(--yellow);
+  background: var(--bg3);
+}
+
+.universal-bottom-player-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 15px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease;
+}
+
+.universal-bottom-player-info {
+  flex: 2;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.universal-bottom-player-preview {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg2);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.universal-bottom-player-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.universal-bottom-player-preview i {
+  font-size: 24px;
+  color: var(--yellow);
+  opacity: 0.7;
+}
+
+.universal-bottom-player-track-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.universal-bottom-player-track-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--fg1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.universal-bottom-player-track-artist {
+  font-size: 0.8rem;
+  color: var(--yellow);
+}
+
+.universal-bottom-player-progress {
+  flex: 3;
+  min-width: 200px;
+}
+
+.universal-bottom-player-progress-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.universal-bottom-player-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--bg3);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+}
+
+.universal-bottom-player-progress-fill {
+  height: 100%;
+  background: var(--yellow);
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.universal-bottom-player-time-current,
+.universal-bottom-player-time-total {
+  font-size: 0.75rem;
+  color: var(--fg3);
+  font-family: monospace;
+  min-width: 40px;
+}
+
+.universal-bottom-player-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.universal-bottom-player-btn {
+  background: var(--bg2);
+  border: 1px solid var(--bg3);
+  color: var(--fg1);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.universal-bottom-player-btn:hover {
+  background: var(--yellow);
+  color: var(--bg0);
+  transform: scale(1.05);
+}
+
+.universal-bottom-player-play {
+  background: var(--yellow);
+  color: var(--bg0);
+  width: 48px;
+  height: 48px;
+}
+
+.universal-bottom-player-play:hover {
+  transform: scale(1.1);
+}
+
+.universal-bottom-player-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bg3);
+  overflow: hidden;
+  transition:
+    max-height 0.3s ease,
+    margin-top 0.3s ease,
+    padding-top 0.3s ease,
+    opacity 0.3s ease;
+  max-height: 200px;
+  opacity: 1;
+}
+
+.universal-bottom-player-settings.collapsed {
+  max-height: 0;
+  margin-top: 0;
+  padding-top: 0;
+  opacity: 0;
+  border-top: none;
+}
+
+.universal-bottom-player-volume-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.universal-bottom-player-volume-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg2);
+  padding: 8px 16px;
+  border-radius: 40px;
+  border: 1px solid var(--bg3);
+}
+
+.universal-bottom-player-volume-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg1);
+  border: 1px solid var(--bg3);
+  color: var(--fg1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.universal-bottom-player-volume-btn:hover {
+  background: var(--bg3);
+  border-color: var(--yellow);
+  color: var(--yellow);
+  transform: scale(1.05);
+}
+
+.universal-bottom-player-volume-mute {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg1);
+  border: 1px solid var(--bg3);
+  color: var(--fg1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.universal-bottom-player-volume-mute:hover {
+  background: var(--bg3);
+  border-color: var(--yellow);
+  color: var(--yellow);
+  transform: scale(1.05);
+}
+
+.universal-bottom-player-volume-mute.muted {
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--bg0);
+}
+
+.universal-bottom-player-volume-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--yellow);
+  min-width: 50px;
+  text-align: center;
+  font-family: monospace;
+  background: var(--bg1);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.universal-bottom-player-output-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--bg2);
+  padding: 8px 16px;
+  border-radius: 40px;
+  border: 1px solid var(--bg3);
+}
+
+.universal-bottom-player-output-label {
+  font-size: 0.75rem;
+  color: var(--fg3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.universal-bottom-player-output-btn {
+  padding: 6px 14px;
+  border-radius: 32px;
+  background: var(--bg1);
+  border: 1px solid var(--bg3);
+  color: var(--fg2);
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.universal-bottom-player-output-btn i {
+  font-size: 0.85rem;
+}
+
+.universal-bottom-player-output-btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+
+.universal-bottom-player-output-btn.active {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--bg0);
+}
+
+.universal-bottom-player-settings-toggle {
+  background: var(--bg2);
+  transition: all 0.2s ease;
+}
+
+.universal-bottom-player-settings-toggle:hover {
+  background: var(--bg3);
+  border-color: var(--yellow);
+  color: var(--yellow);
+  transform: scale(1.05);
+}
+
+.universal-bottom-player-settings-toggle i {
+  transition: transform 0.3s ease;
+}
+
+.universal-bottom-player-settings-toggle.collapsed i {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 768px) {
+  .universal-bottom-player {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    padding: 10px 12px;
+  }
+
+  .universal-bottom-player-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .universal-bottom-player-info {
+    width: 100%;
+  }
+
+  .universal-bottom-player-controls {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .universal-bottom-player-progress {
+    width: 100%;
+  }
+
+  .universal-bottom-player-preview {
+    width: 40px;
+    height: 40px;
+  }
+
+  .universal-bottom-player-preview i {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .universal-bottom-player-volume-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+
+  .universal-bottom-player-volume-mute {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+
+  .universal-bottom-player-volume-value {
+    font-size: 0.7rem;
+    min-width: 40px;
+    padding: 2px 6px;
+  }
+}

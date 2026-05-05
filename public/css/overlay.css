@@ -1,0 +1,62 @@
+.modal {
+  z-index: 1001;
+}
+
+.modal.active {
+  display: flex;
+  z-index: 10010;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: none;
+  animation: overlayFadeIn 0.2s ease;
+}
+
+.overlay.active {
+  display: block;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.tag-editor-modal {
+  z-index: 10002;
+}
+
+.album-tag-editor-modal {
+  z-index: 10002;
+}
+
+.confirm-modal {
+  z-index: 10003;
+}
+
+.custom-delete-modal {
+  z-index: 10003;
+}
+
+.album-context-menu {
+  z-index: 10004;
+}
+
+.refresh-time-popup {
+  z-index: 10002;
+}
+
+.playlist-popup {
+  z-index: 10001;
+}
