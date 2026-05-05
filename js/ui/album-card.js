@@ -41,9 +41,24 @@ export class AlbumCard {
     `;
     this.container.appendChild(this.element);
     this.container.appendChild(deleteBtn);
+    this._initClickHandler();
     this._initSwipe();
     this._initTitleScroll();
     return this.container;
+  }
+
+  _initClickHandler() {
+    this.element.addEventListener("click", (e) => {
+      if (e.target.closest(".album-swipe-delete-btn")) {
+        return;
+      }
+      if (this.events && this.events.emit) {
+        console.log("[AlbumCard] Clicked on album:", this.album.title);
+        this.events.emit("albumClick", this.album);
+      } else if (window.MediaCenter && window.MediaCenter.events) {
+        window.MediaCenter.events.emit("albumClick", this.album);
+      }
+    });
   }
 
   _initTitleScroll() {
