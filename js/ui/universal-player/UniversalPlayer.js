@@ -94,14 +94,27 @@ export class UniversalPlayer {
         "[DEBUG] Found audio in _checkExistingPlayback:",
         audioState.currentTrack,
       );
+      const timeInfo = await this.api.getAudioCurrentTime();
+      console.log("[DEBUG] Time info:", timeInfo);
       this.core.setMediaType("audio");
       this.core.setCurrentFile(audioState.currentTrack);
       this.core.setPlaying(audioState.isPlaying || false);
       this.uiUpdater.updateFileInfo(this.core.currentFile);
       this.uiUpdater.updateMediaIcon("audio");
       this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
+      if (timeInfo?.success) {
+        this.progress.update(timeInfo.currentTime || 0, timeInfo.duration || 0);
+      }
+      if (
+        audioState.currentIndex !== undefined &&
+        audioState.totalTracks !== undefined
+      ) {
+        this.uiUpdater.updateTrackCount(
+          audioState.currentIndex,
+          audioState.totalTracks,
+        );
+      }
       const metadata = await this.api.getFileMetadata(audioState.currentTrack);
-      console.log("[DEBUG] _checkExistingPlayback metadata:", metadata);
       let artist = "";
       let title = "";
       let coverUrl = null;
@@ -110,17 +123,10 @@ export class UniversalPlayer {
           artist = metadata.data.file.artist || "";
           title = metadata.data.file.title || "";
           coverUrl = metadata.data.file.cover || null;
-          console.log("[DEBUG] from file - title:", title, "artist:", artist);
         }
         if (!title && metadata.data.database) {
           title = metadata.data.database.title || "";
           artist = metadata.data.database.artist || "";
-          console.log(
-            "[DEBUG] from database - title:",
-            title,
-            "artist:",
-            artist,
-          );
         }
         if (!coverUrl && title) {
           coverUrl = await this.api.getAlbumCover(
@@ -135,13 +141,7 @@ export class UniversalPlayer {
         fileName = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
         const match = fileName.match(/^\d+\s*[-.]?\s*(.+)$/);
         title = match ? match[1] : fileName;
-        console.log("[DEBUG] title from filename:", title);
       }
-      console.log("[DEBUG] calling updateTrackFullInfo with:", {
-        title,
-        artist,
-        hasCover: !!coverUrl,
-      });
       this.uiUpdater.updateTrackFullInfo(title, artist, coverUrl);
       this.show();
       this.polling.start();

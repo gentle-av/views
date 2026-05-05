@@ -163,11 +163,18 @@ export class PlayerMediaHandler {
     this.uiUpdater.reset();
   }
 
-  async togglePlayPause() {
-    if (this.core.isVideo()) {
-      return this._toggleVideoPlayPause();
-    } else if (this.core.isAudio() && this.api.playerApi) {
-      return this._toggleAudioPlayPause();
+  async _toggleAudioPlayPause() {
+    const state = await this.api.getAudioPlaybackState();
+    if (state?.success && state.totalTracks > 0) {
+      if (this.core.isPlaying) {
+        await this.api.audioPause();
+      } else {
+        await this.api.audioPlay();
+      }
+      this.core.setPlaying(!this.core.isPlaying);
+      this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
+    } else {
+      Utils.showNotification("Плейлист пуст", "info");
     }
   }
 
