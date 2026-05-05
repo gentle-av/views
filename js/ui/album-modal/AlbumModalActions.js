@@ -52,6 +52,13 @@ export class AlbumModalActions {
       if (trackPaths.length > 0) {
         if (this.musicApi && this.musicApi.playTracks) {
           await this.musicApi.playTracks(trackPaths);
+          setTimeout(() => {
+            if (window.MediaCenter && window.MediaCenter.universalPlayer) {
+              window.MediaCenter.universalPlayer.startPlaybackExternal();
+            } else if (window.universalPlayerInstance) {
+              window.universalPlayerInstance.startPlaybackExternal();
+            }
+          }, 500);
         } else {
           this.events.emit("album:play", album);
         }

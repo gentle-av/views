@@ -26,21 +26,36 @@ export class PlayerPolling {
   }
 
   async _pollAudio() {
+    console.log(
+      "[DEBUG] _pollAudio called, core.isAudio():",
+      this.core.isAudio(),
+      "playerApi exists:",
+      !!this.api.playerApi,
+    );
     const timeInfo = await this.api.getAudioCurrentTime();
+    console.log("[DEBUG] timeInfo:", timeInfo);
     if (timeInfo && timeInfo.success) {
       this.progress.update(timeInfo.currentTime || 0, timeInfo.duration || 0);
     }
     const state = await this.api.getAudioPlaybackState();
+    console.log("[DEBUG] playback state:", state);
     if (state && state.success) {
+      console.log(
+        "[DEBUG] state.currentTrack:",
+        state.currentTrack,
+        "core.currentFile:",
+        this.core.currentFile,
+      );
       const trackChanged =
         state.currentTrack && state.currentTrack !== this.core.currentFile;
       if (trackChanged) {
+        console.log("[DEBUG] track changed detected");
         this.core.currentFile = state.currentTrack;
         this.uiUpdater.updateFileInfo(this.core.currentFile);
         const metadata = await this.api.getFileMetadata(this.core.currentFile);
-        let artist = "",
-          title = "",
-          coverUrl = null;
+        let artist = "";
+        let title = "";
+        let coverUrl = null;
         if (metadata?.data) {
           if (metadata.data.file) {
             artist = metadata.data.file.artist || "";
@@ -70,6 +85,12 @@ export class PlayerPolling {
       }
       const wasPlaying = this.core.isPlaying;
       this.core.isPlaying = state.isPlaying || false;
+      console.log(
+        "[DEBUG] wasPlaying:",
+        wasPlaying,
+        "isPlaying:",
+        this.core.isPlaying,
+      );
       if (wasPlaying !== this.core.isPlaying) {
         this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
       }

@@ -48,6 +48,17 @@ export class UniversalPlayer {
     this._init();
   }
 
+  async startPlaybackExternal() {
+    console.log("[UniversalPlayer] startPlaybackExternal STARTED");
+    if (this.polling) {
+      this.polling.start();
+      console.log("[DEBUG] polling.start() called");
+    }
+    this.show();
+    await this.syncWithPlayback();
+    console.log("[DEBUG] startPlaybackExternal FINISHED");
+  }
+
   async _init() {
     console.log("[UniversalPlayer] _init started");
     this.dom.init();

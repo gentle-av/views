@@ -182,23 +182,38 @@ const MediaCenter = {
       }
     }
     this.events.on("album:play", (album) => {
+      console.log("[DEBUG] album:play event received, album:", album?.title);
       if (album.tracks && album.tracks.length > 0) {
         const trackPaths = album.tracks.map((track) => track.path);
+        console.log("[DEBUG] trackPaths count:", trackPaths.length);
         if (this.musicApi && this.musicApi.playTracks) {
-          this.musicApi.playTracks(trackPaths).then(() => {
-            setTimeout(() => {
-              if (this.universalPlayer) {
-                this.universalPlayer.show();
-                this.universalPlayer.syncWithPlayback();
-              }
-            }, 500);
-          });
+          console.log("[DEBUG] calling musicApi.playTracks");
+          this.musicApi
+            .playTracks(trackPaths)
+            .then(() => {
+              console.log("[DEBUG] playTracks completed");
+              console.log(
+                "[DEBUG] universalPlayer exists:",
+                !!this.universalPlayer,
+              );
+              setTimeout(() => {
+                if (this.universalPlayer) {
+                  console.log("[DEBUG] calling startPlaybackExternal");
+                  this.universalPlayer.startPlaybackExternal();
+                } else {
+                  console.log("[DEBUG] universalPlayer is null!");
+                }
+              }, 500);
+            })
+            .catch((err) => {
+              console.error("[DEBUG] playTracks error:", err);
+            });
         } else {
+          console.log("[DEBUG] using fallback startPlayback");
           this.universalPlayer.startPlayback(album.tracks[0].path, "audio");
-          setTimeout(() => {
-            this.universalPlayer.syncWithPlayback();
-          }, 500);
         }
+      } else {
+        console.log("[DEBUG] album has no tracks");
       }
     });
     this.events.on("album:addToPlaylist", async (album) => {
