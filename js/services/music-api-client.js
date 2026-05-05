@@ -1,10 +1,12 @@
 class MusicApiClient {
-  constructor(baseUrl = "") {
-    this.baseUrl = baseUrl;
+  constructor() {
+    this.baseUrl = "/api/music";
   }
 
   async request(endpoint, options = {}) {
-    const url = this.baseUrl + endpoint;
+    const url = endpoint.startsWith("/")
+      ? endpoint
+      : `${this.baseUrl}${endpoint}`;
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -28,9 +30,11 @@ class MusicApiClient {
   }
 
   async get(endpoint) {
-    return this.request(endpoint, {
-      method: "GET",
-    });
+    const url = endpoint.startsWith("/api/")
+      ? endpoint
+      : `${this.baseUrl}${endpoint}`;
+    const response = await fetch(url);
+    return response.json();
   }
 
   async playTracks(tracks) {
@@ -43,12 +47,21 @@ class MusicApiClient {
     if (!playlistData.success) {
       throw new Error(playlistData.message || "Failed to set playlist");
     }
-    const playResponse = await fetch("/api/audio/play", {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const playIndexResponse = await fetch("/api/audio/playIndex", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ index: 0 }),
     });
-    const playData = await playResponse.json();
-    return { success: true, data: playData };
+    const playIndexData = await playIndexResponse.json();
+    if (!playIndexData.success) {
+      const playResponse = await fetch("/api/audio/play", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      await playResponse.json();
+    }
+    return { success: true };
   }
 
   async getArtists() {
@@ -106,13 +119,8 @@ class MusicApiClient {
     }
   }
 
-  async openMusium(trackPaths) {
-    try {
-      return await this.post("/api/music/open", { tracks: trackPaths });
-    } catch (error) {
-      console.error("Failed to open Musium:", error);
-      throw error;
-    }
+  async openMusium(tracks) {
+    return this.playTracks(tracks);
   }
 }
 
