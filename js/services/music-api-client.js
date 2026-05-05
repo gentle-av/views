@@ -33,22 +33,22 @@ class MusicApiClient {
     });
   }
 
-  async playTracks(trackPaths) {
-    try {
-      const response = await this.post("/api/audio/setPlaylist", {
-        tracks: trackPaths,
-      });
-      if (response && response.success) {
-        await this.post("/api/audio/play");
-        if (window.universalPlayer) {
-          await window.universalPlayer.syncWithPlayback();
-        }
-      }
-      return response;
-    } catch (error) {
-      console.error("Failed to play tracks:", error);
-      throw error;
+  async playTracks(tracks) {
+    const setPlaylistResponse = await fetch("/api/audio/setPlaylist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tracks }),
+    });
+    const playlistData = await setPlaylistResponse.json();
+    if (!playlistData.success) {
+      throw new Error(playlistData.message || "Failed to set playlist");
     }
+    const playResponse = await fetch("/api/audio/play", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const playData = await playResponse.json();
+    return { success: true, data: playData };
   }
 
   async getArtists() {
