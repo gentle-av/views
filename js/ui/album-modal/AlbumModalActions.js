@@ -1,4 +1,3 @@
-// js/ui/album-modal/AlbumModalActions.js
 export class AlbumModalActions {
   constructor(modal, events, musicApi, onHide) {
     this.modal = modal;
@@ -22,10 +21,14 @@ export class AlbumModalActions {
       <button class="modal-add-btn" style="flex: 1; padding: 10px; background: var(--bg2); color: var(--fg1); border: 1px solid var(--bg3); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
         <i class="fas fa-plus"></i> Добавить в плейлист
       </button>
+      <button class="modal-edit-album-btn" style="flex: 0.5; padding: 10px; background: var(--bg2); color: var(--fg1); border: 1px solid var(--bg3); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s ease;">
+        <i class="fas fa-pen"></i> Редактировать
+      </button>
     `;
     modalBody?.insertBefore(actionsDiv, modalBody.firstChild);
     this._attachPlayButton(actionsDiv, album);
     this._attachAddButton(actionsDiv, album);
+    this._attachEditAlbumButton(actionsDiv, album);
   }
 
   async _attachPlayButton(container, album) {
@@ -101,6 +104,37 @@ export class AlbumModalActions {
         );
       }
       this.onHide();
+    });
+  }
+
+  _attachEditAlbumButton(container, album) {
+    const editBtn = container.querySelector(".modal-edit-album-btn");
+    if (!editBtn) return;
+    editBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      let tracks = album.tracks || [];
+      if (tracks.length === 0 && this.musicApi) {
+        try {
+          const tracksData = await this.musicApi.getTracks(
+            album.title,
+            album.artist,
+            true,
+          );
+          tracks = tracksData;
+          album.tracks = tracksData;
+        } catch (error) {
+          console.error("Failed to load tracks for editing:", error);
+        }
+      }
+      if (window.TagEditor && window.TagEditor.showAlbumTagEditor) {
+        this.onHide();
+        window.TagEditor.showAlbumTagEditor(album);
+      } else {
+        console.error("TagEditor not available");
+        if (window.showNotification) {
+          window.showNotification("Редактор тегов недоступен", "error");
+        }
+      }
     });
   }
 

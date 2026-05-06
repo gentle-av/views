@@ -34,7 +34,11 @@ export class AlbumModalTracks {
     if (!this.container) return;
     if (album.tracks && album.tracks.length > 0) {
       if (this.trackList) {
-        this.trackList.render(this.container, album);
+        this.trackList.render(
+          this.container,
+          album,
+          this._onEditTrack.bind(this),
+        );
       }
       return;
     }
@@ -61,7 +65,11 @@ export class AlbumModalTracks {
         album.tracks = normalizedTracks;
         album.coverUrl = coverUrl;
         if (this.trackList) {
-          this.trackList.render(this.container, album);
+          this.trackList.render(
+            this.container,
+            album,
+            this._onEditTrack.bind(this),
+          );
         }
       } catch (error) {
         console.error("Failed to load tracks:", error);
@@ -69,6 +77,17 @@ export class AlbumModalTracks {
       }
     } else {
       this.showEmpty();
+    }
+  }
+
+  _onEditTrack(track, album) {
+    if (window.TagEditor && window.TagEditor.showTrackTagEditor) {
+      window.TagEditor.showTrackTagEditor(track, album);
+    } else {
+      console.error("TagEditor not available");
+      if (window.showNotification) {
+        window.showNotification("Редактор тегов недоступен", "error");
+      }
     }
   }
 
