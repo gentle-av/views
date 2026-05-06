@@ -201,7 +201,8 @@ export class VideoLibraryEvents {
   }
 
   async onDeleteItem({ path, name, isDir }) {
-    const response = await this.api.post("/api/trash", { path });
+    const endpoint = isDir ? "/api/delete-directory" : "/api/trash";
+    const response = await this.api.post(endpoint, { path });
     if (response.success) {
       Utils.showNotification(
         `${isDir ? "Папка" : "Файл"} "${name}" ${isDir ? "удалена" : "удален"}`,
