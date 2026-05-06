@@ -121,3 +121,43 @@
     font-size: 16px;
   }
 }
+
+@media (max-width: 768px) {
+  .power-page {
+    padding: 0;
+  }
+  .power-management-container {
+    padding: 12px;
+  }
+  .power-cards-grid {
+    gap: 12px;
+  }
+  .power-card {
+    padding: 16px 12px;
+  }
+  .power-card-icon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+  .power-card-title {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  .power-card-status {
+    margin-bottom: 16px;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .power-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    gap: 8px;
+  }
+  .power-btn i {
+    font-size: 14px;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+  }
+}
