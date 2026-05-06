@@ -11,9 +11,7 @@ export class PlayerPolling {
   }
 
   start() {
-    console.log("[Polling] start called, core.mediaType:", this.core.mediaType);
     if (this._progressInterval) {
-      console.log("[Polling] Clearing existing interval");
       clearInterval(this._progressInterval);
       this._progressInterval = null;
     }
@@ -23,45 +21,28 @@ export class PlayerPolling {
       if (this.core.shouldIgnorePolling()) return;
       try {
         if (this.core.isAudio() && this.api.playerApi) {
-          console.log("[Polling] Polling audio...");
           await this._pollAudio();
         } else if (this.core.isVideo()) {
-          console.log("[Polling] Polling video...");
           await this._pollVideo();
         } else {
-          console.log("[Polling] No active media type:", this.core.mediaType);
         }
       } catch (error) {
         console.error("[Polling] error:", error);
       }
     }, 500);
-    console.log("[Polling] Interval started, id:", this._progressInterval);
   }
 
   async _pollAudio() {
-    console.log(
-      "[Polling] _pollAudio called, core.isAudio:",
-      this.core.isAudio(),
-    );
     const timeInfo = await this.api.getAudioCurrentTime();
-    console.log("[Polling] timeInfo:", timeInfo);
     if (timeInfo && timeInfo.success) {
-      console.log(
-        "[Polling] Updating progress:",
-        timeInfo.currentTime,
-        timeInfo.duration,
-      );
       this.progress.update(timeInfo.currentTime || 0, timeInfo.duration || 0);
     } else {
-      console.log("[Polling] No valid timeInfo");
     }
     const state = await this.api.getAudioPlaybackState();
-    console.log("[Polling] audio state:", state);
     if (state && state.success) {
       const trackChanged =
         state.currentTrack && state.currentTrack !== this.core.currentFile;
       if (trackChanged) {
-        console.log("[Polling] Track changed to:", state.currentTrack);
         this.core.currentFile = state.currentTrack;
         this.uiUpdater.updateFileInfo(this.core.currentFile);
         const metadata = await this.api.getFileMetadata(this.core.currentFile);
@@ -98,7 +79,6 @@ export class PlayerPolling {
       const wasPlaying = this.core.isPlaying;
       this.core.isPlaying = state.isPlaying || false;
       if (wasPlaying !== this.core.isPlaying) {
-        console.log("[Polling] Playing state changed to:", this.core.isPlaying);
         this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
       }
       if (state.currentIndex !== undefined && state.totalTracks !== undefined) {

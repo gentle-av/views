@@ -59,18 +59,10 @@ export class AlbumLibrary {
   }
 
   searchAlbums(term) {
-    console.log(
-      "[AlbumLibrary] searchAlbums called, term:",
-      term,
-      "isReady:",
-      this.isReady,
-    );
     if (!this.isReady) return;
     if (term === "" || term === null || term === undefined) {
-      console.log("[AlbumLibrary] calling search.reset()");
       this.search.reset();
     } else {
-      console.log("[AlbumLibrary] calling search.search()");
       this.search.search(term);
     }
   }

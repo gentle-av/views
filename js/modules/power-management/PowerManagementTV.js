@@ -19,7 +19,6 @@ export class PowerManagementTV {
     const timestamp = new Date().toLocaleTimeString();
     const logEntry = { timestamp, message, data };
     this.debugLogs.push(logEntry);
-    console.log(`[TV DEBUG ${timestamp}] ${message}`, data || "");
     if (this.events) {
       this.events.emit("tv:debug", { message, timestamp, data });
     }

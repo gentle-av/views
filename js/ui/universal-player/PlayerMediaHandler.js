@@ -237,7 +237,6 @@ export class PlayerMediaHandler {
       return;
     }
     const status = await this.api.getVideoStatus();
-    console.log(`[Seek] Current status:`, status);
     let currentTime = 0;
     let duration = 0;
     if (status?.data) {
@@ -249,13 +248,10 @@ export class PlayerMediaHandler {
     }
     let newTime = currentTime + seconds;
     newTime = Math.max(0, Math.min(newTime, duration));
-    console.log(`[Seek] Seeking from ${currentTime} to ${newTime}`);
     const response = await this.api.seekVideo(newTime);
     if (response.success) {
       this.progress.update(newTime, duration);
-      console.log(`[Seek] Seek success`);
     } else {
-      console.log(`[Seek] Seek failed:`, response);
       Utils.showNotification("Ошибка перемотки", "error");
     }
   }

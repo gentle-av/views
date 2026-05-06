@@ -15,7 +15,6 @@ export class PowerManagement {
   }
 
   init() {
-    console.log("[PowerManagement] init started");
     this.render();
     this.bindEvents();
     this.tvHandler.setUI(this.ui);
@@ -24,25 +23,18 @@ export class PowerManagement {
   }
 
   render() {
-    console.log("[PowerManagement] render started");
     this.ui.render();
     this.sleepBtn = document.getElementById("sleepBtn");
-    console.log("[PowerManagement] sleepBtn found:", !!this.sleepBtn);
   }
 
   bindEvents() {
-    console.log("[PowerManagement] bindEvents started");
     const tvPowerBtn = this.ui.getTVPowerBtn();
-    console.log("[PowerManagement] tvPowerBtn found:", !!tvPowerBtn);
     if (tvPowerBtn) {
-      console.log("[PowerManagement] adding click listener to tvPowerBtn");
       tvPowerBtn.addEventListener("click", (e) => {
-        console.log("[PowerManagement] TV button CLICKED", e);
         this.tvHandler.toggleTV();
       });
     }
     if (this.sleepBtn) {
-      console.log("[PowerManagement] adding click listener to sleepBtn");
       this.sleepBtn.addEventListener("click", () => this.sleepComputer());
     }
   }
