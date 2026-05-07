@@ -1,4 +1,3 @@
-// js/ui/album-library/AlbumLibraryState.js
 export class AlbumLibraryState {
   constructor() {
     this.albums = [];
@@ -88,6 +87,8 @@ export class AlbumLibraryState {
     this._currentArtistIndex = 0;
     this._artistsList = [];
     this._trackPathToMetadata.clear();
+    this._loading = false;
+    this._isLoadingMore = false;
   }
 
   destroy() {

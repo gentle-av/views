@@ -1,14 +1,37 @@
+class Album {
+  constructor(data) {
+    this.title = data.title || "";
+    this.artist = data.artist || "";
+    this.year = data.year || "";
+    this.tracks = data.tracks || [];
+    this.coverUrl = data.coverUrl || null;
+    this.trackCount = this.tracks.length;
+  }
+}
+
 export class AlbumLibraryLoader {
   constructor(api, state) {
     this.api = api;
     this.state = state;
     this.PARALLEL_LIMIT = 5;
+    this.cancelRequested = false;
   }
 
-  async loadArtistsAndFirstAlbums() {
-    if (this.state.loading || this.state.isDestroyed) return;
+  cancel() {
+    this.cancelRequested = true;
+  }
+
+  async loadArtistsAndFirstAlbums(onProgress) {
+    if (this.state.loading || this.state.isDestroyed) return false;
     this.state.loading = true;
+    this.cancelRequested = false;
+    if (onProgress)
+      onProgress({ percent: 5, message: "Загрузка списка исполнителей..." });
     this.state.artistsList = await this.api.getArtists();
+    if (this.cancelRequested) {
+      this.state.loading = false;
+      return false;
+    }
     if (
       !this.state.artistsList ||
       this.state.artistsList.length === 0 ||
@@ -20,16 +43,27 @@ export class AlbumLibraryLoader {
     this.state.albums = [];
     this.state.filteredAlbums = [];
     this.state.currentArtistIndex = 0;
-    this.state.currentArtist = this.state.artistsList[0];
-    await this.loadMoreAlbums();
+    this.state.currentPage = 1;
+    if (onProgress) {
+      onProgress({
+        percent: 10,
+        message: `Загружено исполнителей: ${this.state.artistsList.length}`,
+      });
+    }
+    await this.loadMoreAlbums(onProgress);
     this.state.loading = false;
     return true;
   }
 
-  async loadMoreAlbums() {
-    if (this.state.isLoadingMore || this.state.isDestroyed) return;
+  async loadMoreAlbums(onProgress) {
+    if (this.state.isLoadingMore || this.state.isDestroyed) return false;
     this.state.isLoadingMore = true;
-    while (this.state.currentArtistIndex < this.state.artistsList.length) {
+    const totalArtists = this.state.artistsList.length;
+    const totalAlbumsEstimate = totalArtists * 5;
+    while (
+      this.state.currentArtistIndex < totalArtists &&
+      !this.cancelRequested
+    ) {
       const batchArtists = this.state.artistsList.slice(
         this.state.currentArtistIndex,
         this.state.currentArtistIndex + this.PARALLEL_LIMIT,
@@ -43,6 +77,7 @@ export class AlbumLibraryLoader {
           ),
         ),
       );
+      if (this.cancelRequested) break;
       const allAlbums = [];
       for (const result of batchResults) {
         if (result.albums) allAlbums.push(...result.albums);
@@ -72,6 +107,24 @@ export class AlbumLibraryLoader {
         if (album) this.state.albums.push(album);
       }
       this.state.filteredAlbums = [...this.state.albums];
+      if (onProgress) {
+        const artistProgress =
+          ((this.state.currentArtistIndex + batchArtists.length) /
+            totalArtists) *
+          80;
+        const percent = Math.min(80, Math.max(10, artistProgress));
+        const processed = this.state.albums.length;
+        const total = totalAlbumsEstimate;
+        const remaining = Math.max(0, total - processed);
+        onProgress({
+          percent: percent,
+          message: `Загрузка альбомов...`,
+          processedFiles: processed,
+          totalFiles: total,
+          remainingFiles: remaining,
+          addedFiles: this.state.albums.length,
+        });
+      }
       let hasNext = false;
       for (const result of batchResults) {
         if (result.pagination && result.pagination.hasNext) {
@@ -91,8 +144,14 @@ export class AlbumLibraryLoader {
     return false;
   }
 
-  async refresh() {
+  async refresh(onProgress) {
     this.state.reset();
-    return this.loadArtistsAndFirstAlbums();
+    this.cancelRequested = false;
+    if (onProgress) onProgress({ percent: 0, message: "Начало обновления..." });
+    const result = await this.loadArtistsAndFirstAlbums(onProgress);
+    if (onProgress && !this.cancelRequested) {
+      onProgress({ percent: 100, message: "Завершено", inProgress: false });
+    }
+    return result;
   }
 }

@@ -1,4 +1,4 @@
-class Album {
+export class Album {
   constructor(data) {
     this.title = data.title || "";
     this.artist = data.artist || "";

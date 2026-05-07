@@ -132,6 +132,14 @@ const MediaCenter = {
       this.playlistPopup.tracksCache.clear();
       this.playlistPopup.refresh();
     }
+    const refreshBtn = document.getElementById("headerRefreshBtn");
+    if (refreshBtn) {
+      refreshBtn.onclick = () => {
+        if (this.albumLibrary) {
+          this.albumLibrary.refresh();
+        }
+      };
+    }
     const searchInput = document.getElementById("globalSearchInput");
     const searchClearBtn = document.getElementById("searchClearBtn");
     if (searchInput) {
@@ -254,6 +262,7 @@ const MediaCenter = {
       "headerRefreshMetadataBtn",
     );
     const globalSearchBox = document.getElementById("globalSearchBox");
+    const refreshBtn = document.getElementById("headerRefreshBtn");
     if (page === "audio") {
       if (mainContent) {
         mainContent.classList.add("audio-page");
@@ -262,8 +271,9 @@ const MediaCenter = {
       }
       if (headerPlaylistBtn) headerPlaylistBtn.style.display = "flex";
       if (headerRefreshMetadataBtn)
-        headerRefreshMetadataBtn.style.display = "flex";
+        headerRefreshMetadataBtn.style.display = "none"; // СКРЫТЬ
       if (globalSearchBox) globalSearchBox.style.display = "flex";
+      if (refreshBtn) refreshBtn.style.display = "flex";
     } else if (page === "power") {
       if (mainContent) {
         mainContent.classList.add("power-page");
@@ -274,6 +284,7 @@ const MediaCenter = {
       if (headerRefreshMetadataBtn)
         headerRefreshMetadataBtn.style.display = "none";
       if (globalSearchBox) globalSearchBox.style.display = "none";
+      if (refreshBtn) refreshBtn.style.display = "none";
     } else {
       if (mainContent) {
         mainContent.classList.add("video-page");
@@ -284,6 +295,7 @@ const MediaCenter = {
       if (headerRefreshMetadataBtn)
         headerRefreshMetadataBtn.style.display = "none";
       if (globalSearchBox) globalSearchBox.style.display = "none";
+      if (refreshBtn) refreshBtn.style.display = "none";
     }
   },
 
