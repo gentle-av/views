@@ -13,12 +13,31 @@ export class AlbumLibraryEvents {
 
   bind() {
     this.events.on("albumDelete", () => this.onRefresh());
-    this.events.on("albumEdit", () => this.onRefresh());
+    this.events.on("albumEdit", (album) => this._handleAlbumEdit(album));
     this.events.on("albumContextMenu", ({ x, y, album }) =>
       this._showContextMenu(x, y, album),
     );
     this.events.on("albumClick", (album) => this._handleAlbumClick(album));
-    window.addEventListener("albumTagsUpdated", () => this.onRefresh());
+    window.addEventListener("albumTagsUpdated", () => this._refreshAlbumData());
+  }
+
+  async _handleAlbumEdit(album) {
+    if (window.TagEditor && window.TagEditor.showAlbumTagEditor) {
+      window.TagEditor.showAlbumTagEditor(album);
+    } else {
+      console.error("TagEditor not available");
+    }
+  }
+
+  async _refreshAlbumData() {
+    this.state.albums = [];
+    this.state.filteredAlbums = [];
+    this.state.currentArtistIndex = 0;
+    this.state.currentPage = 1;
+    await this.loader.loadMoreAlbums();
+    this.state.indexTracks();
+    this.renderer.clear();
+    this.renderer.renderAlbums();
   }
 
   _handleAlbumClick(album) {
@@ -79,9 +98,9 @@ export class AlbumLibraryEvents {
 
   unbind() {
     this.events.off("albumDelete", this.onRefresh);
-    this.events.off("albumEdit", this.onRefresh);
+    this.events.off("albumEdit", this._handleAlbumEdit);
     this.events.off("albumContextMenu");
     this.events.off("albumClick");
-    window.removeEventListener("albumTagsUpdated", this.onRefresh);
+    window.removeEventListener("albumTagsUpdated", this._refreshAlbumData);
   }
 }

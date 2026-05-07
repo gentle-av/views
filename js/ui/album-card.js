@@ -44,7 +44,29 @@ export class AlbumCard {
     this._initClickHandler();
     this._initSwipe();
     this._initTitleScroll();
+    this._initContextMenu();
     return this.container;
+  }
+
+  _initContextMenu() {
+    this.element.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (this.events && this.events.emit) {
+        this.events.emit("albumContextMenu", {
+          x: e.clientX,
+          y: e.clientY,
+          album: this.album,
+        });
+      } else if (window.MediaCenter && window.MediaCenter.events) {
+        window.MediaCenter.events.emit("albumContextMenu", {
+          x: e.clientX,
+          y: e.clientY,
+          album: this.album,
+        });
+      }
+      return false;
+    });
   }
 
   _initClickHandler() {
