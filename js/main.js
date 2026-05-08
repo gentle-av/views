@@ -1,10 +1,10 @@
-// main.js
 import { UniversalPlayer } from "./ui/universal-player.js";
 import { PlaybackController } from "./core/playback-controller/PlaybackController.js";
 import { VideoLibrary } from "./modules/video-library/VideoLibrary.js";
 import { AlbumLibrary } from "./ui/album-library/AlbumLibrary.js";
 import { AlbumModal } from "./ui/album-modal.js";
 import { initPowerManagement } from "./modules/power-management/index.js";
+import { PlayerAPI } from "./ui/universal-player/PlayerApi.js";
 
 const MediaCenter = {
   async init() {
@@ -44,11 +44,13 @@ const MediaCenter = {
     await this.playerApi.checkAvailability();
     this.playback = new PlaybackController(this.playerApi, this.events);
     await this.playback.init();
+    const playerAPI = new PlayerAPI(this.api, this.musicApi, this.playerApi);
     this.universalPlayer = new UniversalPlayer(
-      this.api,
+      playerAPI,
       this.events,
       this.musicApi,
       this.playerApi,
+      this.api,
     );
     this.events.on("player:show", () => {
       if (this.universalPlayer) {
@@ -90,7 +92,12 @@ const MediaCenter = {
         }
       });
       setTimeout(async () => {
-        await this.universalPlayer.checkExistingPlayback("video");
+        if (
+          this.universalPlayer &&
+          this.universalPlayer.checkExistingPlayback
+        ) {
+          await this.universalPlayer.checkExistingPlayback("video");
+        }
         if (this.videoLibrary && this.videoLibrary._adjustBottomPadding) {
           setTimeout(() => this.videoLibrary._adjustBottomPadding(), 200);
         }
@@ -245,8 +252,14 @@ const MediaCenter = {
       this.playback.playTrack(album, trackIndex);
     });
     setTimeout(async () => {
-      await this.universalPlayer.checkExistingPlayback("audio");
-      if (this.universalPlayer && this.universalPlayer.core.currentFile) {
+      if (this.universalPlayer && this.universalPlayer.checkExistingPlayback) {
+        await this.universalPlayer.checkExistingPlayback("audio");
+      }
+      if (
+        this.universalPlayer &&
+        this.universalPlayer.core &&
+        this.universalPlayer.core.currentFile
+      ) {
         this.universalPlayer.show();
       }
     }, 500);

@@ -1,4 +1,3 @@
-// track-list.js
 class TrackList {
   constructor(events) {
     this.events = events;

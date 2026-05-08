@@ -1,386 +1,277 @@
-import { PlayerDOM } from "./PlayerDOM.js";
 import { PlayerCore } from "./PlayerCore.js";
-import { PlayerEvents } from "./PlayerEvents.js";
-import { PlayerVolume } from "./PlayerVolume.js";
-import { PlayerOutput } from "./PlayerOutput.js";
 import { PlayerProgress } from "./PlayerProgress.js";
 import { PlayerUIUpdater } from "./PlayerUIUpdater.js";
-import { PlayerMediaHandler } from "./PlayerMediaHandler.js";
 import { PlayerPolling } from "./PlayerPolling.js";
+import { PlayerDOM } from "./PlayerDOM.js";
+import { PlayerEvents } from "./PlayerEvents.js";
+import { PlayerMediaHandler } from "./PlayerMediaHandler.js";
+import { PlayerVolume } from "./PlayerVolume.js";
+import { PlayerOutput } from "./PlayerOutput.js";
 import { PlayerEventSubscriber } from "./PlayerEventSubscriber.js";
-import { PlayerAPI } from "./PlayerApi.js";
 import { PreviewTooltip } from "./PreviewTooltip.js";
 
 export class UniversalPlayer {
-  constructor(apiClient, events, musicApi = null, playerApi = null) {
-    this.api = new PlayerAPI(apiClient, musicApi, playerApi);
+  constructor(api, events, musicApi, playerApi, apiClient) {
+    this.api = api;
     this.events = events;
+    this.musicApi = musicApi;
+    this.playerApi = playerApi;
+    this.apiClient = apiClient;
+    this.dom = null;
+    this.core = null;
+    this.progress = null;
+    this.uiUpdater = null;
+    this.polling = null;
+    this.mediaHandler = null;
+    this.volume = null;
+    this.output = null;
+    this.eventSubscriber = null;
+    this.previewTooltip = null;
+    this.isVisible = false;
+    this.initialize();
+  }
+
+  initialize() {
     this.dom = new PlayerDOM();
+    const domReady = this.dom.init();
+    if (!domReady) {
+      setTimeout(() => this.initialize(), 100);
+      return;
+    }
     this.core = new PlayerCore();
     this.progress = new PlayerProgress(this.dom);
     this.uiUpdater = new PlayerUIUpdater(this.dom, this.progress);
-    this.volume = new PlayerVolume(apiClient, this.dom, this.core);
-    this.output = new PlayerOutput(apiClient, this.dom, this.core);
+    this.polling = new PlayerPolling(
+      this,
+      this.core,
+      this.progress,
+      this.uiUpdater,
+      (state) => {
+        this.events.emit("playbackStateChange", state);
+      },
+    );
+    this.volume = new PlayerVolume(this.apiClient, this.dom, this.core);
+    this.output = new PlayerOutput(this.apiClient, this.dom, this.core);
     this.mediaHandler = new PlayerMediaHandler(
-      this.api,
+      this,
       this.core,
       this.uiUpdater,
       this.progress,
       () => this.show(),
     );
-    this.mediaHandler.setForceRefreshVideo(() => this.forceRefresh());
-    this.polling = new PlayerPolling(
-      this.api,
-      this.core,
-      this.progress,
-      this.uiUpdater,
-      (state) => this._onStateChange(state),
-    );
+    this.mediaHandler.setForceRefreshVideo(() => this.refreshVideo());
+    const playerEvents = new PlayerEvents({
+      onTogglePlayPause: () => this.mediaHandler.togglePlayPause(),
+      onPrev: () => this.mediaHandler.previous(),
+      onNext: () => this.mediaHandler.next(),
+      onStop: () => this.mediaHandler.stop(),
+      onFullscreen: () => this.mediaHandler.fullscreen(),
+      onToggleMinimize: () => this.toggleMinimize(),
+      onToggleSettings: () => this.toggleSettings(),
+      onVolumeDown: () => this.volume.changeVolume(-10),
+      onVolumeUp: () => this.volume.changeVolume(10),
+      onToggleMute: () => this.volume.toggleMute(),
+      onSpeakers: () => this.output.switchToSpeakers(),
+      onHeadphones: () => this.output.switchToHeadphones(),
+      onProgressClick: (e) => {
+        const seekTime = this.progress.getSeekTimeFromClick(e);
+        if (seekTime !== null) this.mediaHandler.seek(seekTime);
+      },
+    });
+    playerEvents.attach(this.dom);
     this.eventSubscriber = new PlayerEventSubscriber(
-      events,
-      this.api,
+      this.events,
+      this,
       this.mediaHandler,
       this.core,
       this.uiUpdater,
       () => this.show(),
-      () => this.stop(),
+      () => this.hide(),
     );
-    this._isMinimized = false;
-    this._settingsCollapsed = true;
-    this.previewTooltip = null;
-    this._init();
-  }
-
-  async startPlaybackExternal() {
-    if (this.polling) {
-      this.polling.start();
-    }
-    this.show();
-    await this.syncWithPlayback();
-  }
-
-  async _init() {
-    this.dom.init();
-    this._attachEvents();
     this.eventSubscriber.subscribe();
-    await this.volume.loadInitial();
-    await this.output.loadInitial();
+    this.previewTooltip = new PreviewTooltip(this.dom, this.api);
+    this.volume.loadInitial();
+    this.output.loadInitial();
     this.volume.startPolling();
     this.output.startPolling();
-    await this._checkExistingPlayback();
-    this.previewTooltip = new PreviewTooltip(this.dom, this.api);
+    this.bindEvents();
+    this.hide();
+    this.checkExistingPlayback();
+  }
+
+  bindEvents() {
+    this.events.on("video:play", (path) => {
+      this.mediaHandler.startPlayback(path, "video");
+    });
+    this.events.on("track:play", (data) => {
+      if (data.track && data.track.path) {
+        this.mediaHandler.startPlayback(data.track.path, "audio");
+      }
+    });
     this.events.on("player:clearState", () => {
-      this.clearState();
+      this.hide();
     });
   }
 
-  _attachEvents() {
-    const handlers = {
-      onTogglePlayPause: () => this.mediaHandler.togglePlayPause(),
-      onPrev: () => this.mediaHandler.previous(),
-      onNext: () => this.mediaHandler.next(),
-      onStop: () => this.stop(),
-      onFullscreen: () => this.mediaHandler.fullscreen(),
-      onToggleMinimize: () => this._toggleMinimize(),
-      onToggleSettings: () => this._toggleSettings(),
-      onVolumeDown: () => this.volume.changeVolume(-5),
-      onVolumeUp: () => this.volume.changeVolume(5),
-      onToggleMute: () => this.volume.toggleMute(),
-      onSpeakers: () => this.output.switchToSpeakers(),
-      onHeadphones: () => this.output.switchToHeadphones(),
-      onProgressClick: (e) => this._handleProgressClick(e),
-    };
-    const events = new PlayerEvents(handlers);
-    events.attach(this.dom);
-    this._eventHandlers = events;
-  }
-
-  async _checkExistingPlayback() {
-    const audioState = await this.api.getAudioPlaybackState();
-    if (
-      audioState?.success &&
-      audioState.currentTrack &&
-      audioState.currentTrack !== ""
-    ) {
-      const timeInfo = await this.api.getAudioCurrentTime();
-      this.core.setMediaType("audio");
-      this.core.setCurrentFile(audioState.currentTrack);
-      this.core.setPlaying(audioState.isPlaying || false);
-      this.uiUpdater.updateFileInfo(this.core.currentFile);
-      this.uiUpdater.updateMediaIcon("audio");
-      this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
-      if (timeInfo?.success) {
-        this.progress.update(timeInfo.currentTime || 0, timeInfo.duration || 0);
-      }
-      if (
-        audioState.currentIndex !== undefined &&
-        audioState.totalTracks !== undefined
-      ) {
-        this.uiUpdater.updateTrackCount(
-          audioState.currentIndex,
-          audioState.totalTracks,
-        );
-      }
-      const metadata = await this.api.getFileMetadata(audioState.currentTrack);
-      let artist = "";
-      let title = "";
-      let coverUrl = null;
-      if (metadata?.data) {
-        if (metadata.data.file) {
-          artist = metadata.data.file.artist || "";
-          title = metadata.data.file.title || "";
-          coverUrl = metadata.data.file.cover || null;
-        }
-        if (!title && metadata.data.database) {
-          title = metadata.data.database.title || "";
-          artist = metadata.data.database.artist || "";
-        }
-        if (!coverUrl && title) {
-          coverUrl = await this.api.getAlbumCover(
-            audioState.currentTrack,
-            title,
-            artist,
-          );
-        }
-      }
-      if (!title) {
-        let fileName = audioState.currentTrack.split("/").pop();
-        fileName = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
-        const match = fileName.match(/^\d+\s*[-.]?\s*(.+)$/);
-        title = match ? match[1] : fileName;
-      }
-      this.uiUpdater.updateTrackFullInfo(title, artist, coverUrl);
-      this.show();
-      if (this.polling) {
-        this.polling.stop();
-        this.polling.start();
-      }
-      return true;
-    }
-    const videoStatus = await this.api.getVideoStatus();
-    if (videoStatus?.success && videoStatus.currentFile) {
-      this.core.setMediaType("video");
-      this.core.setCurrentFile(videoStatus.currentFile);
-      const isPlaying = videoStatus.playing && !videoStatus.paused;
-      this.core.setPlaying(isPlaying);
-      let currentTime = videoStatus.currentTime || 0;
-      let duration = videoStatus.duration || 0;
-      if (videoStatus.data) {
-        currentTime = videoStatus.data.currentTime || 0;
-        duration = videoStatus.data.duration || 0;
-      }
-      this.progress.update(currentTime, duration);
-      this.uiUpdater.updateFileInfo(this.core.currentFile);
-      this.uiUpdater.updateMediaIcon("video");
-      this.uiUpdater.updatePlayPauseButton(isPlaying);
-      this.show();
-      this.polling.start();
-      return true;
-    }
-    return false;
-  }
-
-  async _handleProgressClick(e) {
-    const seekTime = this.progress.getSeekTimeFromClick(e);
-    if (seekTime !== null) {
-      await this.mediaHandler.seek(seekTime);
-    }
-  }
-
-  _toggleMinimize() {
-    this._isMinimized = !this._isMinimized;
-    this.uiUpdater.toggleMinimize(this._isMinimized);
-  }
-
-  _toggleSettings() {
-    this._settingsCollapsed = !this._settingsCollapsed;
-    this.uiUpdater.toggleSettings(this._settingsCollapsed);
-  }
-
-  _onStateChange(state) {}
-
-  async startPlayback(path, type) {
-    await this.mediaHandler.startPlayback(path, type);
-    this.core.setMediaType(type);
-    if (this.polling) {
-      this.polling.stop();
-      this.polling.start();
-    }
-  }
-
-  async forceRefresh() {
-    if (this.polling) {
-      this.polling.stop();
-    }
-    this.core.reset();
-    this.progress.reset();
-    if (this.polling) {
-      this.polling.start();
-    }
-    await this._checkExistingPlayback();
-  }
-
-  async stop() {
-    if (this.core.isVideo() && this.core.currentFile) {
-      this.events.emit("player:closeVideo", this.core.currentFile);
-      return;
-    }
-    this.mediaHandler.stop();
-    this.polling.stop();
-    this.core.reset();
-  }
-
-  async forceStop() {
-    this.mediaHandler.stop();
-    this.polling.stop();
-    this.core.reset();
-  }
-
-  clearState() {
-    this.core.reset();
-    this.progress.reset();
-    this.uiUpdater.reset();
-    this.polling.stop();
-    this.hide();
-  }
-
   show() {
-    if (!this.dom.element) {
-      this.dom.init();
+    if (this.dom) {
+      this.dom.show();
+      this.isVisible = true;
     }
-    this.dom.show();
-    this._adjustBottomPadding();
   }
 
   hide() {
-    this.dom.hide();
+    if (this.dom) {
+      this.dom.hide();
+      this.isVisible = false;
+    }
   }
 
-  setMediaType(type) {
-    this.core.setMediaType(type);
-    this.uiUpdater.updateMediaIcon(type);
+  toggleMinimize() {
+    const isMinimized = this.dom.hasClass("minimized");
+    this.uiUpdater.toggleMinimize(!isMinimized);
+  }
+
+  toggleSettings() {
+    const settings = this.dom.get("universalBottomSettings");
+    const isCollapsed = settings.classList.contains("collapsed");
+    this.uiUpdater.toggleSettings(!isCollapsed);
+  }
+
+  refreshVideo() {
     if (this.polling) {
       this.polling.stop();
       this.polling.start();
-    }
-    if (this.core.currentFile) {
-      this.show();
     }
   }
 
   async checkExistingPlayback(type) {
-    if (type === "audio") {
-      const audioState = await this.api.getAudioPlaybackState();
-      if (audioState?.success && audioState.currentTrack) {
-        this.core.setMediaType("audio");
-        this.core.setCurrentFile(audioState.currentTrack);
-        this.core.setPlaying(audioState.isPlaying || false);
-        this.uiUpdater.updateFileInfo(this.core.currentFile);
-        this.uiUpdater.updateMediaIcon("audio");
-        this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
-        this.show();
-        this.polling.start();
-        return true;
+    try {
+      if (type === "video") {
+        const status = await this.api.getVideoStatus();
+        if (status && status.success && status.currentFile) {
+          this.core.setCurrentFile(status.currentFile);
+          this.core.setMediaType("video");
+          this.core.setPlaying(!status.paused);
+          this.uiUpdater.updateFileInfo(status.currentFile);
+          this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
+          this.show();
+          if (this.polling) this.polling.start();
+          return;
+        }
+      } else {
+        const state = await this.api.getAudioPlaybackState();
+        if (state && state.success && state.currentTrack) {
+          this.core.setCurrentFile(state.currentTrack);
+          this.core.setMediaType("audio");
+          this.core.setPlaying(state.isPlaying || false);
+          this.uiUpdater.updateFileInfo(state.currentTrack);
+          this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
+          this.show();
+          if (this.polling) this.polling.start();
+          return;
+        }
       }
-    } else if (type === "video") {
-      const videoStatus = await this.api.getVideoStatus();
-      if (videoStatus?.success && videoStatus.currentFile) {
-        this.core.setMediaType("video");
-        this.core.setCurrentFile(videoStatus.currentFile);
-        this.core.setPlaying(videoStatus.playing && !videoStatus.paused);
-        this.progress.update(
-          videoStatus.currentTime || 0,
-          videoStatus.duration || 0,
-        );
-        this.uiUpdater.updateFileInfo(this.core.currentFile);
-        this.uiUpdater.updateMediaIcon("video");
-        this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
-        this.show();
-        this.polling.start();
-        return true;
-      }
+      this.hide();
+    } catch (error) {
+      console.error("[UniversalPlayer] checkExistingPlayback error:", error);
+      this.hide();
     }
-    return false;
   }
 
-  async syncWithPlayback() {
-    if (!this.api.playerApi) {
-      return;
-    }
-    if (this.core.isVideo() && this.core.hasActiveFile()) {
-      return;
-    }
-    const state = await this.api.getAudioPlaybackState();
-    if (
-      state &&
-      state.success &&
-      state.currentTrack &&
-      state.currentTrack !== ""
-    ) {
-      const currentTrack = state.currentTrack;
-      this.core.setCurrentFile(currentTrack);
-      this.core.setMediaType("audio");
-      this.core.setPlaying(state.isPlaying || false);
-      this.uiUpdater.updateFileInfo(this.core.currentFile);
-      this.uiUpdater.updateMediaIcon("audio");
-      this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
-      const metadata = await this.api.getFileMetadata(currentTrack);
-      let artist = "";
-      let title = "";
-      let coverUrl = null;
-      if (metadata?.data) {
-        if (metadata.data.file) {
-          artist = metadata.data.file.artist || "";
-          title = metadata.data.file.title || "";
-          coverUrl = metadata.data.file.cover || null;
-        }
-        if (!title && metadata.data.database) {
-          title = metadata.data.database.title || "";
-          artist = metadata.data.database.artist || "";
-        }
-        if (!coverUrl && title) {
-          coverUrl = await this.api.getAlbumCover(currentTrack, title, artist);
-        }
-      }
-      if (!title) {
-        let fileName = currentTrack.split("/").pop();
-        fileName = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
-        const match = fileName.match(/^\d+\s*[-.]?\s*(.+)$/);
-        title = match ? match[1] : fileName;
-      }
-      this.uiUpdater.updateTrackFullInfo(title, artist, coverUrl);
-      this.show();
+  clearState() {
+    this.core.reset();
+    this.uiUpdater.reset();
+    this.progress.reset();
+    if (this.polling) this.polling.stop();
+    this.hide();
+  }
+
+  startPlaybackExternal() {
+    if (this.polling) {
+      this.polling.stop();
       this.polling.start();
-    } else {
-      if (this.core.isAudio() && !this.core.isVideo()) {
-        this.stop();
-      }
     }
+    this.show();
   }
 
-  _adjustBottomPadding() {
-    const scrollable = document.querySelector(".scrollable-content");
-    if (scrollable) {
-      scrollable.style.paddingBottom = "80px";
-    }
-    if (window.innerWidth <= 768 && scrollable) {
-      scrollable.style.paddingBottom = "100px";
+  syncWithPlayback() {
+    if (this.polling) {
+      this.polling.stop();
+      this.polling.start();
     }
   }
 
   destroy() {
-    this.core.destroy();
-    this.polling.stop();
-    this.volume.stopPolling();
-    this.output.stopPolling();
-    this._eventHandlers?.detach(this.dom);
-    this.eventSubscriber.unsubscribe();
-    this.dom.hide();
-    if (this.previewTooltip) {
-      this.previewTooltip.destroy();
-      this.previewTooltip = null;
-    }
+    if (this.polling) this.polling.stop();
+    if (this.volume) this.volume.stopPolling();
+    if (this.output) this.output.stopPolling();
+    if (this.eventSubscriber) this.eventSubscriber.unsubscribe();
+    if (this.previewTooltip) this.previewTooltip.destroy();
+    if (this.core) this.core.destroy();
+  }
+
+  getVideoStatus() {
+    return this.api.getVideoStatus();
+  }
+
+  getAudioPlaybackState() {
+    return this.api.getAudioPlaybackState();
+  }
+
+  getAudioCurrentTime() {
+    return this.api.getAudioCurrentTime();
+  }
+
+  getFileMetadata(path) {
+    return this.api.getFileMetadata(path);
+  }
+
+  getAlbumCover(path, title, artist) {
+    return this.api.getAlbumCover(path, title, artist);
+  }
+
+  closeVideo() {
+    return this.api.closeVideo();
+  }
+
+  openFile(path) {
+    return this.api.openFile(path);
+  }
+
+  controlVideo(command) {
+    return this.api.controlVideo(command);
+  }
+
+  seekVideo(time) {
+    return this.api.seekVideo(time);
+  }
+
+  audioPlay() {
+    return this.api.audioPlay();
+  }
+
+  audioPause() {
+    return this.api.audioPause();
+  }
+
+  audioStop() {
+    return this.api.audioStop();
+  }
+
+  audioNext() {
+    return this.api.audioNext();
+  }
+
+  audioPrevious() {
+    return this.api.audioPrevious();
+  }
+
+  audioSeek(time) {
+    return this.api.audioSeek(time);
+  }
+
+  getVideoThumbnail(path) {
+    return this.api.getVideoThumbnail(path);
   }
 }
-
-export default UniversalPlayer;
