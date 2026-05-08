@@ -64,7 +64,10 @@ export class UniversalPlayer {
       onTogglePlayPause: () => this.mediaHandler.togglePlayPause(),
       onPrev: () => this.mediaHandler.previous(),
       onNext: () => this.mediaHandler.next(),
-      onStop: () => this.mediaHandler.stop(),
+      onStop: () => {
+        this.mediaHandler.stop();
+        this.hide();
+      },
       onFullscreen: () => this.mediaHandler.fullscreen(),
       onToggleMinimize: () => this.toggleMinimize(),
       onToggleSettings: () => this.toggleSettings(),
