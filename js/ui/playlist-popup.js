@@ -301,6 +301,9 @@ class PlaylistPopup {
         this.tracksCache.clear();
         await this.refresh();
         this.events.emit("playlistCleared");
+        this.popup?.classList.remove("open");
+        this._hideOverlay();
+        this.events.emit("playlistHidden");
       });
     }
     if (headerBtn) {
