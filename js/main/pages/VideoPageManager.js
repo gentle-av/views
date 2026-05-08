@@ -10,7 +10,6 @@ export class VideoPageManager {
   }
 
   async onPageLoaded() {
-    console.log("[VideoPageManager] onPageLoaded");
     this._showVideoContainer();
     this._updateUI();
     this._destroyExistingLibrary();

@@ -17,7 +17,6 @@ export class PlayerOutput {
       if (response.success) {
         this._currentOutput = "speakers";
         this._updateUI();
-        console.log("Switched to speakers");
       }
     } catch (error) {
       console.error("Failed to switch to speakers:", error);
@@ -30,7 +29,6 @@ export class PlayerOutput {
       if (response.success) {
         this._currentOutput = "headphones";
         this._updateUI();
-        console.log("Switched to headphones");
       }
     } catch (error) {
       console.error("Failed to switch to headphones:", error);
@@ -40,7 +38,6 @@ export class PlayerOutput {
   _updateUI() {
     const speakersBtn = this.dom.get("universalBottomSpeakersBtn");
     const headphonesBtn = this.dom.get("universalBottomHeadphonesBtn");
-    console.log("Updating UI, current output:", this._currentOutput);
     if (speakersBtn) {
       if (this._currentOutput === "speakers") {
         speakersBtn.classList.add("active");
@@ -64,7 +61,6 @@ export class PlayerOutput {
   async loadInitial() {
     try {
       const response = await this.api.get("/api/audio/output");
-      console.log("Load initial response:", response);
       if (response.success && response.data) {
         const current =
           response.data.current ||
@@ -72,7 +68,6 @@ export class PlayerOutput {
           response.data.output;
         if (current) {
           this._currentOutput = current;
-          console.log("Initial output set to:", this._currentOutput);
           this._updateUI();
         } else {
           console.warn("No current output in response:", response.data);
@@ -95,7 +90,6 @@ export class PlayerOutput {
           response.data &&
           response.data.current !== this._currentOutput
         ) {
-          console.log("Polling detected output change:", response.data.current);
           this._currentOutput = response.data.current;
           this._updateUI();
         }

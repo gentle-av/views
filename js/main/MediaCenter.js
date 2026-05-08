@@ -21,7 +21,6 @@ export class MediaCenter {
   }
 
   async init() {
-    console.log("[MediaCenter] Initializing...");
     this.core = new MediaCenterCore();
     await this.core.init();
     this.playbackManager = new PlaybackManager(this.core);
@@ -50,7 +49,6 @@ export class MediaCenter {
     this._setupEventHandlers();
     this._exposeGlobal();
     await NavigationManager.switchTo("video");
-    console.log("[MediaCenter] Initialized successfully");
   }
 
   _injectUIMethods() {
@@ -63,15 +61,12 @@ export class MediaCenter {
 
   _setupEventHandlers() {
     this.core.events.on("page:videoLoaded", () => {
-      console.log("[MediaCenter] Video page loaded");
       this.videoPageManager.onPageLoaded();
     });
     this.core.events.on("page:audioLoaded", () => {
-      console.log("[MediaCenter] Audio page loaded");
       this.audioPageManager.onPageLoaded();
     });
     this.core.events.on("page:powerLoaded", () => {
-      console.log("[MediaCenter] Power page loaded");
       this.powerPageManager.onPageLoaded();
     });
     this.core.events.on("player:show", () => {

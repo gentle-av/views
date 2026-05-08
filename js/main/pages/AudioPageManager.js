@@ -14,7 +14,6 @@ export class AudioPageManager {
   }
 
   async onPageLoaded() {
-    console.log("[AudioPageManager] onPageLoaded");
     this._showPageContainer();
     this._updateUI();
     await this.playbackManager.checkExistingPlaybacks("audio");

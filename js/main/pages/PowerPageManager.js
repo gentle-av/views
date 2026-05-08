@@ -8,7 +8,6 @@ export class PowerPageManager {
   }
 
   onPageLoaded() {
-    console.log("[PowerPageManager] onPageLoaded");
     this._showPageContainer();
     this._updateUI();
     if (!this.powerManagement) {

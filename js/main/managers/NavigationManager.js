@@ -25,7 +25,6 @@ export class NavigationManager {
   }
 
   static async switchTo(page) {
-    console.log(`[NavigationManager] Switching to: ${page}`);
     const sidebarBtns = document.querySelectorAll(".sidebar-btn");
     sidebarBtns.forEach((btn) => {
       if (btn.dataset.page === page) {
