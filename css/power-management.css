@@ -208,99 +208,6 @@
   color: #61afef;
 }
 
-@media (max-width: 768px) {
-  .power-management-container {
-    padding: 16px;
-  }
-
-  .power-page-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .power-widget-btn {
-    justify-content: center;
-  }
-
-  .power-cards-grid {
-    gap: 16px;
-  }
-
-  .power-card {
-    padding: 24px 16px;
-  }
-
-  .power-card-icon {
-    font-size: 48px;
-  }
-
-  .power-card-title {
-    font-size: 22px;
-  }
-
-  .power-btn {
-    padding: 10px 20px;
-    font-size: 16px;
-  }
-
-  .audio-output-section {
-    padding: 16px;
-  }
-
-  .audio-output-controls {
-    flex-direction: column;
-  }
-
-  .audio-output-btn {
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .power-management-container {
-    padding: 12px;
-  }
-
-  .power-cards-grid {
-    gap: 12px;
-  }
-
-  .power-card {
-    padding: 16px 12px;
-  }
-
-  .power-card-icon {
-    font-size: 36px;
-    margin-bottom: 12px;
-  }
-
-  .power-card-title {
-    font-size: 18px;
-    margin-bottom: 8px;
-  }
-
-  .power-card-status {
-    margin-bottom: 16px;
-    gap: 6px;
-    font-size: 13px;
-  }
-
-  .power-btn {
-    padding: 8px 16px;
-    font-size: 14px;
-    gap: 8px;
-  }
-
-  .power-btn i {
-    font-size: 14px;
-  }
-
-  .status-dot {
-    width: 8px;
-    height: 8px;
-  }
-}
-
 .volume-section {
   margin-top: 24px;
   padding: 20px;
@@ -370,4 +277,200 @@
   text-align: center;
   font-family: monospace;
   color: var(--yellow);
+}
+
+@media (max-width: 768px) {
+  .power-management-container {
+    padding: 12px;
+  }
+
+  .power-page-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .power-page-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .power-widget-btn {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  .power-widget-btn span {
+    display: none;
+  }
+
+  .power-widget-btn i {
+    margin: 0;
+  }
+
+  .power-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .power-card {
+    padding: 16px 12px;
+    border-radius: 16px;
+  }
+
+  .power-card-icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+  }
+
+  .power-card-title {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  .power-card-status {
+    margin-bottom: 12px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .power-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .power-btn i {
+    font-size: 12px;
+  }
+
+  .power-btn span {
+    display: inline;
+  }
+
+  .volume-section {
+    margin-top: 16px;
+    padding: 12px;
+  }
+
+  .section-title {
+    font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+
+  .volume-controls {
+    gap: 8px;
+  }
+
+  .volume-down,
+  .volume-up,
+  .volume-mute {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+
+  .volume-value {
+    min-width: 38px;
+    font-size: 0.75rem;
+  }
+
+  .audio-output-section {
+    margin-top: 16px;
+    padding: 12px;
+  }
+
+  .audio-output-controls {
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .audio-output-btn {
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    gap: 6px;
+  }
+
+  .audio-output-btn i {
+    font-size: 0.85rem;
+  }
+
+  .audio-output-btn span {
+    display: inline;
+  }
+}
+
+@media (max-width: 480px) {
+  .power-management-container {
+    padding: 10px;
+  }
+
+  .power-page-header h2 {
+    font-size: 1rem;
+  }
+
+  .power-cards-grid {
+    gap: 10px;
+  }
+
+  .power-card {
+    padding: 12px 8px;
+  }
+
+  .power-card-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+
+  .power-card-title {
+    font-size: 14px;
+  }
+
+  .power-card-status {
+    font-size: 10px;
+    margin-bottom: 10px;
+  }
+
+  .power-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .power-btn i {
+    font-size: 11px;
+  }
+
+  .volume-down,
+  .volume-up,
+  .volume-mute {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+
+  .volume-value {
+    min-width: 32px;
+    font-size: 0.7rem;
+  }
+
+  .audio-output-btn {
+    padding: 6px 10px;
+    font-size: 0.7rem;
+    gap: 4px;
+  }
+
+  .audio-output-btn i {
+    font-size: 0.75rem;
+  }
+
+  .audio-output-btn span {
+    display: none;
+  }
 }
