@@ -60,6 +60,7 @@ export class UniversalPlayer {
     );
     this.volume = new PlayerVolume(this.apiClient, this.dom, this.core);
     this.output = new PlayerOutput(this.apiClient, this.dom, this.core);
+
     const onStopHandler = async () => {
       if (
         this.core.isVideo() &&
@@ -79,6 +80,7 @@ export class UniversalPlayer {
         this.hide();
       }
     };
+
     this.mediaHandler = new PlayerMediaHandler(
       this,
       this.core,
@@ -87,10 +89,12 @@ export class UniversalPlayer {
       () => this.show(),
       onStopHandler,
     );
+
     this.mediaHandler.setForceRefreshVideo(() => this.refreshVideo());
     if (this.videoCloseModal) {
       this.mediaHandler.setVideoCloseModal(this.videoCloseModal);
     }
+
     const playerEvents = new PlayerEvents({
       onTogglePlayPause: () => this.mediaHandler.togglePlayPause(),
       onPrev: () => this.mediaHandler.previous(),
@@ -139,23 +143,18 @@ export class UniversalPlayer {
       const response = await this.apiClient.post("/api/trash", {
         path: filePath,
       });
-      if (response && response.success) {
+      if (response.success) {
         Utils.showNotification(`Видео "${fileName}" удалено`, "success");
         this.core.reset();
         this.uiUpdater.reset();
         this.progress.reset();
-        this.hide();
         this.events.emit("video:refresh");
       } else {
-        const errorMsg = response?.error || "Ошибка удаления";
-        Utils.showNotification(errorMsg, "error");
+        Utils.showNotification(response.error || "Ошибка удаления", "error");
       }
     } catch (error) {
       console.error("Error deleting video:", error);
-      Utils.showNotification(
-        "Ошибка удаления видео: " + error.message,
-        "error",
-      );
+      Utils.showNotification("Ошибка удаления видео", "error");
     }
   }
 

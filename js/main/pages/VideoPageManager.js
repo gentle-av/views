@@ -40,6 +40,14 @@ export class VideoPageManager {
       this.playbackManager.universalPlayer,
     );
     this.core.videoLibrary = this.videoLibrary;
+    if (
+      this.playbackManager.universalPlayer &&
+      this.videoLibrary.videoCloseModal
+    ) {
+      this.playbackManager.universalPlayer.setVideoCloseModal(
+        this.videoLibrary.videoCloseModal,
+      );
+    }
   }
 
   _setupVideoEvents() {

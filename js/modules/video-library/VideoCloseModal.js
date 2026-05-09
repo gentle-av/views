@@ -111,7 +111,10 @@ export class VideoCloseModal {
     try {
       await this.api.post("/api/video/close");
       this.clearPlayerState();
-      if (deleteResponse.success) {
+      const deleteResponse = await this.api.post("/api/trash", {
+        path: videoPath,
+      });
+      if (deleteResponse && deleteResponse.success) {
         if (typeof Utils !== "undefined" && Utils.showNotification) {
           Utils.showNotification(
             `Видео "${this.getFileName(videoPath)}" удалено`,
@@ -120,10 +123,13 @@ export class VideoCloseModal {
         }
         this.events.emit("video:refresh");
       } else {
-        console.error("[VideoCloseModal] Delete failed:", deleteResponse.error);
+        console.error(
+          "[VideoCloseModal] Delete failed:",
+          deleteResponse?.error,
+        );
         if (typeof Utils !== "undefined" && Utils.showNotification) {
           Utils.showNotification(
-            deleteResponse.error || "Ошибка удаления видео",
+            deleteResponse?.error || "Ошибка удаления видео",
             "error",
           );
         }

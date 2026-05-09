@@ -268,6 +268,10 @@ export class PlayerMediaHandler {
     }
   }
 
+  setVideoCloseModal(modal) {
+    this.videoCloseModal = modal;
+  }
+
   forceRefreshPlayback(path) {
     this.core.setCurrentFile(path);
     this.core.setMediaType("audio");
