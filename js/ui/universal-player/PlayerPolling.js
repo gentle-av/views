@@ -1,4 +1,3 @@
-// js/ui/universal-player/PlayerPolling.js
 export class PlayerPolling {
   constructor(api, core, progress, uiUpdater, onStateChange) {
     this.api = api;

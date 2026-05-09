@@ -1,4 +1,3 @@
-// PlayerEventHandler.js
 export class PlayerEventHandler {
   constructor(
     mediaHandler,
@@ -15,6 +14,10 @@ export class PlayerEventHandler {
     this.channelManager = channelManager;
     this._videoCloseModal = videoCloseModal;
     this._clearAudioPlaylist = this._clearAudioPlaylist.bind(this);
+    console.log(
+      "[PlayerEventHandler] Constructor, videoCloseModal:",
+      !!videoCloseModal,
+    );
   }
 
   _clearAudioPlaylist() {
@@ -42,14 +45,20 @@ export class PlayerEventHandler {
           this.mediaHandler.core.isVideo(),
           "hasActiveFile:",
           this.mediaHandler.core.hasActiveFile(),
+          "videoCloseModal:",
+          !!this._videoCloseModal,
         );
         if (
           this.mediaHandler.core.isVideo() &&
           this.mediaHandler.core.hasActiveFile()
         ) {
           if (this._videoCloseModal) {
+            console.log("[PlayerEventHandler] Calling showWithCurrentVideo");
             this._videoCloseModal.showWithCurrentVideo();
           } else {
+            console.log(
+              "[PlayerEventHandler] videoCloseModal is null, calling stop",
+            );
             this.mediaHandler.stop();
           }
         } else {

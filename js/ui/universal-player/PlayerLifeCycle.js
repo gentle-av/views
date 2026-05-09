@@ -19,7 +19,6 @@ export class PlayerLifecycle {
     this.mediaHandler = mediaHandler;
   }
 
-  // PlayerLifecycle.js - исправленный метод checkExistingPlayback
   async checkExistingPlayback(type) {
     try {
       let hasActivePlayback = false;

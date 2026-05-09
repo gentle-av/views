@@ -112,6 +112,10 @@ export class UniversalPlayer {
       }
     }
     this.dom.ensureOutputButtons();
+    console.log(
+      "[UniversalPlayer] Creating eventHandler, videoCloseModal:",
+      !!this.videoCloseModal,
+    );
     this.eventHandler = new PlayerEventHandler(
       this.mediaHandler,
       this.volume,
@@ -142,6 +146,7 @@ export class UniversalPlayer {
   }
 
   setVideoCloseModal(modal) {
+    console.log("[UniversalPlayer] setVideoCloseModal called, modal:", !!modal);
     this.videoCloseModal = modal;
     if (this.mediaHandler) {
       this.mediaHandler.setVideoCloseModal(modal);
@@ -150,7 +155,8 @@ export class UniversalPlayer {
       this.channelManager.videoCloseModal = modal;
     }
     if (this.eventHandler) {
-      this.eventHandler.videoCloseModal = modal;
+      console.log("[UniversalPlayer] Updating eventHandler.videoCloseModal");
+      this.eventHandler._videoCloseModal = modal;
     }
   }
 

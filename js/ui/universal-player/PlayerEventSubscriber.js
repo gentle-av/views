@@ -1,4 +1,3 @@
-// js/ui/universal-player/PlayerEventSubscriber.js
 export class PlayerEventSubscriber {
   constructor(events, api, mediaHandler, core, uiUpdater, onShow, onStop) {
     this.events = events;
@@ -19,7 +18,6 @@ export class PlayerEventSubscriber {
     this.events.on("stateChange", (state) => this._onStateChange(state));
     this.events.on("trackChanged", (data) => this._onTrackChanged(data));
     this.events.on("playlistChanged", () => this._onPlaylistChanged());
-    // this.events.on("page:changed", (page) => this._onPageChanged(page)); // Закомментировать
   }
 
   _onVideoPlay(path) {
