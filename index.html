@@ -137,6 +137,175 @@
       id="universalBottomPlayer"
       class="universal-bottom-player"
       style="display: none"
+    >
+      <!-- Кнопка сворачивания -->
+      <div
+        class="universal-bottom-player-minimize-bar"
+        id="universalMinimizeBar"
+      >
+        <i class="fas fa-chevron-up"></i>
+      </div>
+
+      <!-- Основной контент -->
+      <div class="universal-bottom-player-content">
+        <!-- Информация о треке -->
+        <div class="universal-bottom-player-info">
+          <div
+            class="universal-bottom-player-preview"
+            id="universalBottomPreview"
+          >
+            <i id="universalBottomPreviewIcon" class="fas fa-play-circle"></i>
+            <img
+              id="universalBottomPreviewImg"
+              style="display: none"
+              alt="Preview"
+            />
+          </div>
+          <div class="universal-bottom-player-track-info">
+            <div
+              id="universalBottomTrackName"
+              class="universal-bottom-player-track-name"
+            >
+              —
+            </div>
+            <div
+              id="universalBottomTrackArtist"
+              class="universal-bottom-player-track-artist"
+            ></div>
+            <div
+              id="universalBottomTrackCount"
+              class="universal-bottom-player-track-count"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Прогресс бар -->
+        <div class="universal-bottom-player-progress">
+          <div class="universal-bottom-player-progress-bar-container">
+            <span
+              id="universalBottomCurrentTime"
+              class="universal-bottom-player-time-current"
+              >0:00</span
+            >
+            <div
+              id="universalBottomProgressBar"
+              class="universal-bottom-player-progress-bar"
+            >
+              <div
+                id="universalBottomProgressFill"
+                class="universal-bottom-player-progress-fill"
+              ></div>
+            </div>
+            <span
+              id="universalBottomDuration"
+              class="universal-bottom-player-time-total"
+              >0:00</span
+            >
+          </div>
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="universal-bottom-player-controls">
+          <button
+            id="universalBottomPrevBtn"
+            class="universal-bottom-player-btn"
+            title="Предыдущий"
+          >
+            <i class="fas fa-backward-step"></i>
+          </button>
+          <button
+            id="universalBottomPlayPauseBtn"
+            class="universal-bottom-player-btn universal-bottom-player-play"
+            title="Play/Pause"
+          >
+            <i class="fas fa-play"></i>
+          </button>
+          <button
+            id="universalBottomStopBtn"
+            class="universal-bottom-player-btn"
+            title="Стоп"
+          >
+            <i class="fas fa-stop"></i>
+          </button>
+          <button
+            id="universalBottomNextBtn"
+            class="universal-bottom-player-btn"
+            title="Следующий"
+          >
+            <i class="fas fa-forward-step"></i>
+          </button>
+          <button
+            id="universalBottomFullscreenBtn"
+            class="universal-bottom-player-btn"
+            title="Полный экран"
+          >
+            <i class="fas fa-expand"></i>
+          </button>
+          <button
+            id="universalBottomSettingsToggle"
+            class="universal-bottom-player-btn universal-bottom-player-settings-toggle"
+            title="Настройки"
+          >
+            <i class="fas fa-sliders-h"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Блок настроек (громкость, аудиовыход) -->
+      <div
+        id="universalBottomSettings"
+        class="universal-bottom-player-settings collapsed"
+      >
+        <div class="universal-bottom-player-volume-section">
+          <div class="universal-bottom-player-volume-controls">
+            <button
+              id="universalBottomVolumeDown"
+              class="universal-bottom-player-volume-btn"
+              title="Уменьшить громкость"
+            >
+              <i class="fas fa-minus"></i>
+            </button>
+            <button
+              id="universalBottomVolumeMute"
+              class="universal-bottom-player-volume-mute"
+              title="Мьют"
+            >
+              <i class="fas fa-volume-up"></i>
+            </button>
+            <button
+              id="universalBottomVolumeUp"
+              class="universal-bottom-player-volume-btn"
+              title="Увеличить громкость"
+            >
+              <i class="fas fa-plus"></i>
+            </button>
+            <span
+              id="universalBottomVolumeValue"
+              class="universal-bottom-player-volume-value"
+              >50%</span
+            >
+          </div>
+        </div>
+        <div class="universal-bottom-player-output-section">
+          <span class="universal-bottom-player-output-label">
+            <i class="fas fa-exchange-alt"></i> Аудиовыход:
+          </span>
+          <button
+            id="universalBottomSpeakersBtn"
+            class="universal-bottom-player-output-btn speakers-btn"
+            title="Колонки"
+          >
+            <i class="fas fa-volume-up"></i><span>Колонки</span>
+          </button>
+          <button
+            id="universalBottomHeadphonesBtn"
+            class="universal-bottom-player-output-btn headphones-btn"
+            title="Наушники"
+          >
+            <i class="fas fa-headphones"></i><span>Наушники</span>
+          </button>
+        </div>
+      </div>
     </div>
     <script type="module" src="js/core/event-bus.js"></script>
     <script type="module" src="js/services/api-client.js"></script>
