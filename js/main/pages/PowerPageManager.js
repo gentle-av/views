@@ -8,6 +8,7 @@ export class PowerPageManager {
     this._currentOutput = "speakers";
     this._currentVolume = 50;
     this._isMuted = false;
+    this._tvStatusInterval = null;
   }
 
   async onPageLoaded() {
@@ -26,7 +27,18 @@ export class PowerPageManager {
     this._bindAudioOutputEvents();
     this._loadVolume();
     this._updateUI();
+    await this._updateTVStatus();
+    this._startTVStatusPolling();
     this._isInitialized = true;
+  }
+
+  _startTVStatusPolling() {
+    if (this._tvStatusInterval) {
+      clearInterval(this._tvStatusInterval);
+    }
+    this._tvStatusInterval = setInterval(() => {
+      this._updateTVStatus();
+    }, 10000);
   }
 
   async _showPageContainer() {
@@ -45,16 +57,20 @@ export class PowerPageManager {
     const tvPowerBtn = document.getElementById("tvPowerBtn");
     tvPowerBtn?.addEventListener("click", async () => {
       try {
+        const statusText = document.querySelector("#tvStatus .status-text");
+        if (statusText) statusText.textContent = "Переключение...";
         await this.core.api.post("/api/adb/connect", {
           address: "192.168.50.13",
         });
         await this.core.api.post("/api/adb/keyevent", { keycode: 26 });
-        this._updateTVStatus();
+        setTimeout(() => this._updateTVStatus(), 1000);
       } catch (error) {
         console.error("Failed to toggle TV:", error);
+        const statusText = document.querySelector("#tvStatus .status-text");
+        if (statusText) statusText.textContent = "Ошибка";
+        setTimeout(() => this._updateTVStatus(), 2000);
       }
     });
-
     const sleepBtn = document.getElementById("sleepBtn");
     sleepBtn?.addEventListener("click", async () => {
       await this.core.api.post("/api/system/sleep");
@@ -66,7 +82,6 @@ export class PowerPageManager {
     const volumeUp = document.getElementById("systemVolumeUp");
     const volumeMute = document.getElementById("systemVolumeMute");
     const volumeRange = document.getElementById("systemVolumeRange");
-
     volumeDown?.addEventListener("click", () => this._changeVolume(-10));
     volumeUp?.addEventListener("click", () => this._changeVolume(10));
     volumeMute?.addEventListener("click", () => this._toggleMute());
@@ -139,7 +154,6 @@ export class PowerPageManager {
   _bindAudioOutputEvents() {
     const speakersBtn = document.getElementById("audioSpeakersBtn");
     const headphonesBtn = document.getElementById("audioHeadphonesBtn");
-
     speakersBtn?.addEventListener("click", async () => {
       const res = await this.core.api.post("/api/audio/output/speakers");
       if (res.success) {
@@ -147,7 +161,6 @@ export class PowerPageManager {
         this._updateAudioOutputUI();
       }
     });
-
     headphonesBtn?.addEventListener("click", async () => {
       const res = await this.core.api.post("/api/audio/output/headphones");
       if (res.success) {
@@ -155,7 +168,6 @@ export class PowerPageManager {
         this._updateAudioOutputUI();
       }
     });
-
     this._loadCurrentOutput();
   }
 
@@ -202,6 +214,8 @@ export class PowerPageManager {
       }
     } catch (error) {
       console.error("Failed to get TV status:", error);
+      const statusText = document.querySelector("#tvStatus .status-text");
+      if (statusText) statusText.textContent = "Ошибка";
     }
   }
 
@@ -212,6 +226,10 @@ export class PowerPageManager {
   }
 
   destroy() {
+    if (this._tvStatusInterval) {
+      clearInterval(this._tvStatusInterval);
+      this._tvStatusInterval = null;
+    }
     if (this.powerManagement?.destroy) {
       this.powerManagement.destroy();
     }
