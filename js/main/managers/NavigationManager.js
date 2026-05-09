@@ -55,6 +55,15 @@ export class NavigationManager {
       else if (page === "power")
         pageTitle.innerHTML = '<i class="fas fa-plug"></i> Питание';
     }
+    const videoContainer = document.getElementById("videoPageContainer");
+    const audioContainer = document.getElementById("audioPageContainer");
+    const powerContainer = document.getElementById("powerPageContainer");
+    if (videoContainer)
+      videoContainer.style.display = page === "video" ? "flex" : "none";
+    if (audioContainer)
+      audioContainer.style.display = page === "audio" ? "block" : "none";
+    if (powerContainer)
+      powerContainer.style.display = page === "power" ? "block" : "none";
     this.events.emit(`page:${page}Loaded`);
   }
 

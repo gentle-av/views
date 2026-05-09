@@ -9,11 +9,29 @@ export class PowerPageManager {
     this._currentVolume = 50;
     this._isMuted = false;
     this._tvStatusInterval = null;
+    this._htmlLoaded = false;
   }
 
   async onPageLoaded() {
-    this._showPageContainer();
-    this._updateUI();
+    await this._showPageContainer();
+    await this._loadInitialData();
+    this._bindAllEvents();
+    this._startTVStatusPolling();
+    this._isInitialized = true;
+  }
+
+  async _showPageContainer() {
+    const powerContainer = document.getElementById("powerPageContainer");
+    if (!powerContainer) return;
+    if (!this._htmlLoaded) {
+      const response = await fetch("/pages/power.html");
+      const html = await response.text();
+      powerContainer.innerHTML = html;
+      this._htmlLoaded = true;
+    }
+  }
+
+  async _loadInitialData() {
     if (!this.powerManagement) {
       this.powerManagement = initPowerManagement(
         this.core.api,
@@ -22,14 +40,18 @@ export class PowerPageManager {
       );
       this.core.powerManagement = this.powerManagement;
     }
+    await Promise.all([
+      this._loadVolume(),
+      this._updateTVStatus(),
+      this._loadCurrentOutput(),
+    ]);
+    this._updateUI();
+  }
+
+  _bindAllEvents() {
     this._bindPowerEvents();
     this._bindVolumeEvents();
     this._bindAudioOutputEvents();
-    this._loadVolume();
-    this._updateUI();
-    await this._updateTVStatus();
-    this._startTVStatusPolling();
-    this._isInitialized = true;
   }
 
   _startTVStatusPolling() {
@@ -41,40 +63,36 @@ export class PowerPageManager {
     }, 10000);
   }
 
-  async _showPageContainer() {
-    const videoContainer = document.getElementById("videoPageContainer");
-    const pageContainer = document.getElementById("pageContainer");
-    if (videoContainer) videoContainer.style.display = "none";
-    if (pageContainer) {
-      pageContainer.style.display = "block";
-      const response = await fetch("/pages/power.html");
-      const html = await response.text();
-      pageContainer.innerHTML = html;
-    }
-  }
-
   _bindPowerEvents() {
     const tvPowerBtn = document.getElementById("tvPowerBtn");
-    tvPowerBtn?.addEventListener("click", async () => {
-      try {
-        const statusText = document.querySelector("#tvStatus .status-text");
-        if (statusText) statusText.textContent = "Переключение...";
-        await this.core.api.post("/api/adb/connect", {
-          address: "192.168.50.13",
-        });
-        await this.core.api.post("/api/adb/keyevent", { keycode: 26 });
-        setTimeout(() => this._updateTVStatus(), 1000);
-      } catch (error) {
-        console.error("Failed to toggle TV:", error);
-        const statusText = document.querySelector("#tvStatus .status-text");
-        if (statusText) statusText.textContent = "Ошибка";
-        setTimeout(() => this._updateTVStatus(), 2000);
-      }
-    });
+    if (tvPowerBtn) {
+      tvPowerBtn.addEventListener("click", async () => {
+        try {
+          const statusText = document.querySelector("#tvStatus .status-text");
+          if (statusText) statusText.textContent = "Переключение...";
+          await this.core.api.post("/api/adb/connect", {
+            address: "192.168.50.13",
+          });
+          await this.core.api.post("/api/adb/keyevent", { keycode: 26 });
+          setTimeout(() => this._updateTVStatus(), 1500);
+        } catch (error) {
+          console.error("Failed to toggle TV:", error);
+          const statusText = document.querySelector("#tvStatus .status-text");
+          if (statusText) statusText.textContent = "Ошибка";
+          setTimeout(() => this._updateTVStatus(), 2000);
+        }
+      });
+    }
     const sleepBtn = document.getElementById("sleepBtn");
-    sleepBtn?.addEventListener("click", async () => {
-      await this.core.api.post("/api/system/sleep");
-    });
+    if (sleepBtn) {
+      sleepBtn.addEventListener("click", async () => {
+        try {
+          await this.core.api.post("/api/system/sleep");
+        } catch (error) {
+          console.error("Failed to sleep:", error);
+        }
+      });
+    }
   }
 
   _bindVolumeEvents() {
@@ -82,12 +100,16 @@ export class PowerPageManager {
     const volumeUp = document.getElementById("systemVolumeUp");
     const volumeMute = document.getElementById("systemVolumeMute");
     const volumeRange = document.getElementById("systemVolumeRange");
-    volumeDown?.addEventListener("click", () => this._changeVolume(-10));
-    volumeUp?.addEventListener("click", () => this._changeVolume(10));
-    volumeMute?.addEventListener("click", () => this._toggleMute());
-    volumeRange?.addEventListener("input", (e) =>
-      this._setVolume(parseInt(e.target.value)),
-    );
+    if (volumeDown)
+      volumeDown.addEventListener("click", () => this._changeVolume(-10));
+    if (volumeUp)
+      volumeUp.addEventListener("click", () => this._changeVolume(10));
+    if (volumeMute)
+      volumeMute.addEventListener("click", () => this._toggleMute());
+    if (volumeRange)
+      volumeRange.addEventListener("input", (e) => {
+        this._setVolume(parseInt(e.target.value));
+      });
   }
 
   async _changeVolume(delta) {
@@ -96,22 +118,38 @@ export class PowerPageManager {
   }
 
   async _setVolume(volume) {
+    if (this._currentVolume === volume && !this._isMuted) return;
     this._currentVolume = volume;
+    if (this._isMuted && volume > 0) {
+      this._isMuted = false;
+    }
+    this._updateVolumeUI();
     try {
-      await this.core.api.post("/api/audio/volume", { volume });
-      this._updateVolumeUI();
+      await this.core.api.post("/api/audio/volume", {
+        volume: this._currentVolume,
+      });
     } catch (error) {
       console.error("Failed to set volume:", error);
     }
   }
 
   async _toggleMute() {
-    this._isMuted = !this._isMuted;
     try {
       await this.core.api.post("/api/audio/mute");
-      this._updateVolumeUI();
+      const response = await this.core.api.get("/api/audio/volume");
+      if (response.success && response.data) {
+        if (response.data.muted !== undefined) {
+          this._isMuted = response.data.muted;
+        }
+        if (response.data.volume !== undefined) {
+          this._currentVolume = response.data.volume;
+        }
+        this._updateVolumeUI();
+      }
     } catch (error) {
       console.error("Failed to toggle mute:", error);
+      this._isMuted = !this._isMuted;
+      this._updateVolumeUI();
     }
   }
 
@@ -119,7 +157,9 @@ export class PowerPageManager {
     try {
       const res = await this.core.api.get("/api/audio/volume");
       if (res.success && res.data) {
-        this._currentVolume = res.data.volume || 50;
+        if (res.data.volume !== undefined)
+          this._currentVolume = res.data.volume;
+        if (res.data.muted !== undefined) this._isMuted = res.data.muted;
         this._updateVolumeUI();
       }
     } catch (error) {
@@ -154,21 +194,42 @@ export class PowerPageManager {
   _bindAudioOutputEvents() {
     const speakersBtn = document.getElementById("audioSpeakersBtn");
     const headphonesBtn = document.getElementById("audioHeadphonesBtn");
-    speakersBtn?.addEventListener("click", async () => {
-      const res = await this.core.api.post("/api/audio/output/speakers");
-      if (res.success) {
-        this._currentOutput = "speakers";
-        this._updateAudioOutputUI();
-      }
-    });
-    headphonesBtn?.addEventListener("click", async () => {
-      const res = await this.core.api.post("/api/audio/output/headphones");
-      if (res.success) {
-        this._currentOutput = "headphones";
-        this._updateAudioOutputUI();
-      }
-    });
-    this._loadCurrentOutput();
+    if (speakersBtn) {
+      speakersBtn.addEventListener("click", async () => {
+        try {
+          speakersBtn.disabled = true;
+          const res = await this.core.api.post("/api/audio/output/speakers");
+          if (res && res.success) {
+            this._currentOutput = "speakers";
+            this._updateAudioOutputUI();
+          } else {
+            console.error("Speakers switch failed:", res);
+          }
+        } catch (error) {
+          console.error("Failed to switch to speakers:", error);
+        } finally {
+          speakersBtn.disabled = false;
+        }
+      });
+    }
+    if (headphonesBtn) {
+      headphonesBtn.addEventListener("click", async () => {
+        try {
+          headphonesBtn.disabled = true;
+          const res = await this.core.api.post("/api/audio/output/headphones");
+          if (res && res.success) {
+            this._currentOutput = "headphones";
+            this._updateAudioOutputUI();
+          } else {
+            console.error("Headphones switch failed:", res);
+          }
+        } catch (error) {
+          console.error("Failed to switch to headphones:", error);
+        } finally {
+          headphonesBtn.disabled = false;
+        }
+      });
+    }
   }
 
   async _loadCurrentOutput() {
@@ -208,14 +269,21 @@ export class PowerPageManager {
       if (res.success && res.data) {
         const statusDot = document.querySelector("#tvStatus .status-dot");
         const statusText = document.querySelector("#tvStatus .status-text");
-        if (statusDot) statusDot.classList.toggle("on", res.data.screen_on);
-        if (statusText)
+        if (statusDot) {
+          if (res.data.screen_on) {
+            statusDot.classList.add("on");
+          } else {
+            statusDot.classList.remove("on");
+          }
+        }
+        if (statusText) {
           statusText.textContent = res.data.screen_on ? "Включен" : "Выключен";
+        }
       }
     } catch (error) {
       console.error("Failed to get TV status:", error);
       const statusText = document.querySelector("#tvStatus .status-text");
-      if (statusText) statusText.textContent = "Ошибка";
+      if (statusText) statusText.textContent = "Ошибка подключения";
     }
   }
 

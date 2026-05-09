@@ -12,10 +12,11 @@ export class AudioPageManager {
     this.playlistPopup = null;
     this._isInitialized = false;
     this._boundHandlers = new Map();
+    this._htmlLoaded = false;
   }
 
   async onPageLoaded() {
-    this._showPageContainer();
+    await this._showPageContainer();
     this._updateUI();
     await this.playbackManager.checkExistingPlaybacks("audio");
     await this._initAlbumModal();
@@ -28,16 +29,14 @@ export class AudioPageManager {
     this._isInitialized = true;
   }
 
-  _showPageContainer() {
-    const videoContainer = document.getElementById("videoPageContainer");
-    const pageContainer = document.getElementById("pageContainer");
-    if (videoContainer) videoContainer.style.display = "none";
-    if (pageContainer) {
-      pageContainer.style.display = "block";
-      if (!pageContainer.querySelector("#albumsGrid")) {
-        pageContainer.innerHTML =
-          '<div class="audio-library"><div class="albums-grid" id="albumsGrid"><div class="loading"><i class="fas fa-spinner fa-spin"></i> Загрузка альбомов...</div></div></div>';
-      }
+  async _showPageContainer() {
+    const audioContainer = document.getElementById("audioPageContainer");
+    if (!audioContainer) return;
+    if (!this._htmlLoaded) {
+      const response = await fetch("/pages/audio.html");
+      const html = await response.text();
+      audioContainer.innerHTML = html;
+      this._htmlLoaded = true;
     }
   }
 
@@ -61,7 +60,6 @@ export class AudioPageManager {
     const trackList = new TrackList(this.core.events);
     this.albumModal.setTrackList(trackList);
     this.core.albumModal = this.albumModal;
-    console.log("[AudioPageManager] AlbumModal initialized");
   }
 
   async _initAlbumLibrary() {
@@ -141,7 +139,6 @@ export class AudioPageManager {
   }
 
   _handlePlayAlbum(album) {
-    console.log("[AudioPageManager] album:play", album?.title);
     if (!album?.tracks?.length) return;
     const trackPaths = album.tracks.map((track) => track.path);
     if (this.core.musicApi?.playTracks) {
@@ -164,12 +161,10 @@ export class AudioPageManager {
   }
 
   async _handleAddToPlaylist(album) {
-    console.log("[AudioPageManager] album:addToPlaylist", album?.title);
     await this.playbackManager.addAlbumToPlaylist(album);
   }
 
   async _handlePlayMusium(album) {
-    console.log("[AudioPageManager] album:playMusium", album?.title);
     const tracks = [...(album.tracks || [])];
     if (tracks.length === 0 && this.core.musicApi?.getTracks) {
       try {
@@ -179,9 +174,7 @@ export class AudioPageManager {
           true,
         );
         tracks.push(...tracksData);
-      } catch (error) {
-        console.error("[AudioPageManager] getTracks error:", error);
-      }
+      } catch (error) {}
     }
     const trackPaths = tracks.map((track) => track.path);
     if (this.core.musicApi?.openMusium) {
@@ -190,7 +183,6 @@ export class AudioPageManager {
   }
 
   async _handleReplacePlaylist(album) {
-    console.log("[AudioPageManager] album:replacePlaylist", album?.title);
     await this.playbackManager.clearPlaylist();
     await this.playbackManager.addAlbumToPlaylist(album);
     this.core.events.emit("playlistCleared");
@@ -198,7 +190,6 @@ export class AudioPageManager {
   }
 
   _handlePlayTrack({ album, trackIndex }) {
-    console.log("[AudioPageManager] album:playTrack", album?.title, trackIndex);
     this.playbackManager.playTrack(album, trackIndex);
   }
 
