@@ -24,12 +24,12 @@ export class PlayerLifecycle {
       let hasActivePlayback = false;
       if (type === "video") {
         const status = await this.api.getVideoStatus();
-        if (status && status.success && status.currentFile && !status.paused) {
+        if (status && status.success && status.currentFile) {
           this.core.setCurrentFile(status.currentFile);
           this.core.setMediaType("video");
-          this.core.setPlaying(true);
+          this.core.setPlaying(!status.paused);
           this.uiUpdater.updateFileInfo(status.currentFile);
-          this.uiUpdater.updatePlayPauseButton(true);
+          this.uiUpdater.updatePlayPauseButton(!status.paused);
           this.uiUpdater.updateFullscreenButtonVisibility("video");
           hasActivePlayback = true;
         }
@@ -85,6 +85,9 @@ export class PlayerLifecycle {
       }
       if (hasActivePlayback) {
         if (this.polling) this.polling.start();
+        if (this.onRestore) {
+          this.onRestore();
+        }
       }
       return hasActivePlayback;
     } catch (error) {

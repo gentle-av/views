@@ -106,13 +106,15 @@ export class PlayerEventSubscriber {
   }
 
   _onPageChanged(page) {
-    const isMediaPage = page === "video" || page === "audio";
-    if (isMediaPage && this.core.hasActiveFile()) {
+    const hasActive = this.core.hasActiveFile();
+    if (hasActive) {
       this.onShow?.();
-    } else if (!isMediaPage && !this.core.hasActiveFile()) {
+    } else {
       const dom = document.getElementById("universalBottomPlayer");
-      dom?.classList.remove("active");
-      dom?.style.setProperty("display", "none");
+      if (dom) {
+        dom.classList.remove("active");
+        dom.style.setProperty("display", "none");
+      }
     }
   }
 
