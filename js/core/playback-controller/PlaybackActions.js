@@ -57,7 +57,7 @@ export class PlaybackActions {
   async next(mediaType = null) {
     const currentMediaType = mediaType || this.getCurrentMediaType();
     if (currentMediaType === "video") {
-      await this.seekVideo(10);
+      await this.seekVideo(5);
     } else {
       await this.api.next();
       setTimeout(() => this._updateTrackName(), 50);
@@ -67,7 +67,7 @@ export class PlaybackActions {
   async previous(mediaType = null) {
     const currentMediaType = mediaType || this.getCurrentMediaType();
     if (currentMediaType === "video") {
-      await this.seekVideo(-10);
+      await this.seekVideo(-5);
     } else {
       await this.api.previous();
       setTimeout(() => this._updateTrackName(), 50);
