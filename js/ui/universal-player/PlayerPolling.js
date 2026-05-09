@@ -36,7 +36,11 @@ export class PlayerPolling {
     const timeInfo = await this.api.getAudioCurrentTime();
     if (timeInfo && timeInfo.success) {
       this.progress.update(timeInfo.currentTime || 0, timeInfo.duration || 0);
-    } else {
+      const duration = timeInfo.duration || 0;
+      const currentTime = timeInfo.currentTime || 0;
+      if (duration > 0 && currentTime > 0 && duration - currentTime < 0.5) {
+        await this.api.audioNext();
+      }
     }
     const state = await this.api.getAudioPlaybackState();
     if (state && state.success) {
