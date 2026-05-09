@@ -1,5 +1,5 @@
 import { AlbumLibrary } from "../../ui/album-library/AlbumLibrary.js";
-import { AlbumModal } from "../../ui/album-modal.js";
+import { AlbumModal } from "../../ui/album-modal/AlbumModal.js";
 import { TrackList } from "../../ui/track-list.js";
 import { PlaylistPopup } from "../../ui/playlist-popup/PlaylistPopup.js";
 
