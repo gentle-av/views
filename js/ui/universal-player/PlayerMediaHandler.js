@@ -180,7 +180,14 @@ export class PlayerMediaHandler {
       this.core.reset();
       this.uiUpdater.reset();
       this.uiUpdater.updateFullscreenButtonVisibility(null);
+      if (this.onHide) {
+        this.onHide();
+      }
     }
+  }
+
+  setOnHide(callback) {
+    this.onHide = callback;
   }
 
   async togglePlayPause() {

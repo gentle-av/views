@@ -38,8 +38,6 @@ export class UniversalPlayer {
     this.initialize();
   }
 
-  // UniversalPlayer.js - измените порядок в методе initialize()
-
   async initialize() {
     this.dom = new PlayerDOM();
     const domReady = this.dom.init();
@@ -102,6 +100,7 @@ export class UniversalPlayer {
       () => this.show(),
       onStopHandler,
     );
+    this.mediaHandler.setOnHide(() => this.hide());
     this.mediaHandler.setForceRefreshVideo(() => this.lifecycle.refreshVideo());
     if (this.videoCloseModal) {
       this.mediaHandler.setVideoCloseModal(this.videoCloseModal);

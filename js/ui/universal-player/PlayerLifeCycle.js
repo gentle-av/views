@@ -42,7 +42,6 @@ export class PlayerLifecycle {
           this.uiUpdater.updateFileInfo(state.currentTrack);
           this.uiUpdater.updatePlayPauseButton(state.isPlaying || false);
           this.uiUpdater.updateFullscreenButtonVisibility("audio");
-          hasActivePlayback = true;
           if (
             state.currentIndex !== undefined &&
             state.totalTracks !== undefined
@@ -52,6 +51,36 @@ export class PlayerLifecycle {
               state.totalTracks,
             );
           }
+          const metadata = await this.api.getFileMetadata(state.currentTrack);
+          let artist = "";
+          let title = "";
+          let coverUrl = null;
+          if (metadata?.data) {
+            if (metadata.data.file) {
+              artist = metadata.data.file.artist || "";
+              title = metadata.data.file.title || "";
+              coverUrl = metadata.data.file.cover || null;
+            }
+            if (!title && metadata.data.database) {
+              title = metadata.data.database.title || "";
+              artist = metadata.data.database.artist || "";
+            }
+            if (!coverUrl && title) {
+              coverUrl = await this.api.getAlbumCover(
+                state.currentTrack,
+                title,
+                artist,
+              );
+            }
+          }
+          if (!title) {
+            let fileName = state.currentTrack.split("/").pop();
+            fileName = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
+            const match = fileName.match(/^\d+\s*[-.]?\s*(.+)$/);
+            title = match ? match[1] : fileName;
+          }
+          this.uiUpdater.updateTrackFullInfo(title, artist, coverUrl);
+          hasActivePlayback = true;
         }
       }
       if (hasActivePlayback) {
