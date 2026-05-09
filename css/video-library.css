@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   padding: 12px 20px;
-  background: var(--bg2);
+  background: var(--bg0);
   border-bottom: 1px solid var(--bg3);
   overflow-x: auto;
   white-space: nowrap;
