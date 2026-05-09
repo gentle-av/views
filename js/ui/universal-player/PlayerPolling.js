@@ -96,6 +96,14 @@ export class PlayerPolling {
       if (status.currentFile !== this.core.currentFile) {
         this.core.currentFile = status.currentFile;
         this.uiUpdater.updateFileInfo(this.core.currentFile);
+        const thumbnail = await this.api.getVideoThumbnail(
+          this.core.currentFile,
+        );
+        if (thumbnail) {
+          this.uiUpdater.showPreviewImage(thumbnail);
+        } else {
+          this.uiUpdater.updateMediaIcon("video");
+        }
       }
       const isPlaying = !status.paused;
       if (this.core.isPlaying !== isPlaying) {

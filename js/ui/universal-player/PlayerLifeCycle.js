@@ -19,6 +19,7 @@ export class PlayerLifecycle {
     this.mediaHandler = mediaHandler;
   }
 
+  // PlayerLifecycle.js - исправленный метод checkExistingPlayback
   async checkExistingPlayback(type) {
     try {
       let hasActivePlayback = false;
@@ -31,6 +32,14 @@ export class PlayerLifecycle {
           this.uiUpdater.updateFileInfo(status.currentFile);
           this.uiUpdater.updatePlayPauseButton(!status.paused);
           this.uiUpdater.updateFullscreenButtonVisibility("video");
+          const thumbnail = await this.api.getVideoThumbnail(
+            status.currentFile,
+          );
+          if (thumbnail) {
+            this.uiUpdater.showPreviewImage(thumbnail);
+          } else {
+            this.uiUpdater.updateMediaIcon("video");
+          }
           hasActivePlayback = true;
         }
       } else {
@@ -85,9 +94,6 @@ export class PlayerLifecycle {
       }
       if (hasActivePlayback) {
         if (this.polling) this.polling.start();
-        if (this.onRestore) {
-          this.onRestore();
-        }
       }
       return hasActivePlayback;
     } catch (error) {
