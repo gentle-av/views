@@ -87,9 +87,7 @@ export class MusicApiClient {
         const blob = await response.blob();
         return URL.createObjectURL(blob);
       }
-    } catch (error) {
-      console.error("Failed to fetch album cover:", error);
-    }
+    } catch (error) {}
     return null;
   }
 
@@ -102,7 +100,6 @@ export class MusicApiClient {
       const response = await this.get(url);
       return response.tracks || [];
     } catch (error) {
-      console.error("Failed to get tracks:", error);
       return [];
     }
   }
@@ -112,7 +109,6 @@ export class MusicApiClient {
       const url = `/api/music/file-metadata?path=${encodeURIComponent(filePath)}`;
       return await this.get(url);
     } catch (error) {
-      console.error("Failed to get file metadata:", error);
       return null;
     }
   }

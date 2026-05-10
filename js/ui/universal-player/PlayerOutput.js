@@ -18,9 +18,7 @@ export class PlayerOutput {
         this._currentOutput = "speakers";
         this._updateUI();
       }
-    } catch (error) {
-      console.error("Failed to switch to speakers:", error);
-    }
+    } catch (error) {}
   }
 
   async switchToHeadphones() {
@@ -30,9 +28,7 @@ export class PlayerOutput {
         this._currentOutput = "headphones";
         this._updateUI();
       }
-    } catch (error) {
-      console.error("Failed to switch to headphones:", error);
-    }
+    } catch (error) {}
   }
 
   _updateUI() {
@@ -67,9 +63,7 @@ export class PlayerOutput {
           setTimeout(() => this._updateUI(), 100);
         }
       }
-    } catch (error) {
-      console.error("Failed to load initial output:", error);
-    }
+    } catch (error) {}
   }
 
   startPolling() {
@@ -86,9 +80,7 @@ export class PlayerOutput {
           this._currentOutput = response.data.current;
           this._updateUI();
         }
-      } catch (error) {
-        console.error("Polling error:", error);
-      }
+      } catch (error) {}
     }, 3000);
   }
 

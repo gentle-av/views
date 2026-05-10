@@ -14,7 +14,6 @@ export class PlayerPolling {
   }
 
   start() {
-    console.log("[PlayerPolling] start called, isAudio:", this.core.isAudio());
     if (this._progressInterval) {
       clearInterval(this._progressInterval);
       this._progressInterval = null;
@@ -29,11 +28,8 @@ export class PlayerPolling {
         } else if (this.core.isVideo()) {
           await this._pollVideo();
         }
-      } catch (error) {
-        console.error("[Polling] error:", error);
-      }
+      } catch (error) {}
     }, 500);
-    console.log("[PlayerPolling] interval started");
   }
 
   async _pollAudio() {
@@ -191,7 +187,6 @@ export class PlayerPolling {
           tracks = tracksData;
           album.tracks = tracksData;
         } catch (error) {
-          console.error("Failed to load tracks:", error);
           return;
         }
       }

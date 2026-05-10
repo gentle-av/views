@@ -1,10 +1,31 @@
 export class PlayerMediaHandler {
-  constructor(api, core, uiUpdater, progress, onShow) {
+  constructor(api, core, uiUpdater, progress, onShow, onStop) {
     this.api = api;
     this.core = core;
     this.uiUpdater = uiUpdater;
     this.progress = progress;
     this.onShow = onShow;
+    this.onStop = onStop;
+  }
+
+  stopAudio() {
+    this.stop(true);
+  }
+
+  async stop(keepState = false) {
+    if (this.core.isVideo()) {
+      await this.api.closeVideo();
+    } else {
+      await this.api.audioStop();
+    }
+    if (!keepState) {
+      this.core.reset();
+      this.uiUpdater.reset();
+      this.uiUpdater.updateFullscreenButtonVisibility(null);
+      if (this.onHide) {
+        this.onHide();
+      }
+    }
   }
 
   toggleSettings() {
@@ -170,38 +191,15 @@ export class PlayerMediaHandler {
     } catch (error) {}
   }
 
-  async stop(keepState = false) {
-    if (this.core.isVideo()) {
-      await this.api.closeVideo();
-    } else if (this.core.isAudio() && this.api.playerApi) {
-      await this.api.audioStop();
-    }
-    if (!keepState) {
-      this.core.reset();
-      this.uiUpdater.reset();
-      this.uiUpdater.updateFullscreenButtonVisibility(null);
-      if (this.onHide) {
-        this.onHide();
-      }
-    }
-  }
-
   setOnHide(callback) {
     this.onHide = callback;
   }
 
-  async _toggleAudioPlayPause() {
-    const state = await this.api.getAudioPlaybackState();
-    if (state?.success && state.totalTracks > 0) {
-      if (this.core.isPlaying) {
-        await this.api.audioPause();
-      } else {
-        await this.api.audioPlay();
-      }
-      this.core.setPlaying(!this.core.isPlaying);
-      this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
+  async togglePlayPause() {
+    if (this.core.isVideo()) {
+      await this._toggleVideoPlayPause();
     } else {
-      Utils.showNotification("Плейлист пуст", "info");
+      await this._toggleAudioPlayPause();
     }
   }
 
@@ -251,7 +249,7 @@ export class PlayerMediaHandler {
       } else {
         Utils.showNotification("Ошибка перемотки", "error");
       }
-    } else if (this.core.isAudio() && this.api.playerApi) {
+    } else {
       await this.api.audioSeek(time);
       this.progress.update(time, this.progress.duration);
     }
@@ -260,7 +258,7 @@ export class PlayerMediaHandler {
   async previous() {
     if (this.core.isVideo()) {
       await this._seekRelative(-10);
-    } else if (this.core.isAudio() && this.api.playerApi) {
+    } else {
       await this.api.audioPrevious();
     }
   }
@@ -268,7 +266,7 @@ export class PlayerMediaHandler {
   async next() {
     if (this.core.isVideo()) {
       await this._seekRelative(10);
-    } else if (this.core.isAudio() && this.api.playerApi) {
+    } else {
       await this.api.audioNext();
     }
   }

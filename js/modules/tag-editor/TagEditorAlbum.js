@@ -73,7 +73,6 @@ export class TagEditorAlbum {
     if (window.showNotification) {
       window.showNotification(message, type);
     } else {
-      console.log(`[${type}] ${message}`);
     }
   }
 

@@ -51,7 +51,6 @@ export class AudioPageManager {
     }
     const modalElement = document.getElementById("albumModal");
     if (!modalElement) {
-      console.error("[AudioPageManager] albumModal element not found");
       return;
     }
     const universalPlayer = this.playbackManager?.universalPlayer;
@@ -72,7 +71,6 @@ export class AudioPageManager {
     }
     const container = document.getElementById("albumsGrid");
     if (!container) {
-      console.error("[AudioPageManager] albumsGrid not found");
       return;
     }
     this.albumLibrary = new AlbumLibrary(this.core.musicApi, this.core.events);
@@ -84,9 +82,6 @@ export class AudioPageManager {
     if (typeof PlaylistPopup !== "undefined" && !this.playlistPopup) {
       const universalPlayer = this.playbackManager?.universalPlayer;
       if (!universalPlayer) {
-        console.warn(
-          "[AudioPageManager] universalPlayer not ready yet, will retry",
-        );
         setTimeout(() => this._initPlaylistPopup(), 500);
         return;
       }

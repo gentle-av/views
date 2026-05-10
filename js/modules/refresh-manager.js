@@ -49,7 +49,6 @@ class RefreshButtonManager {
         Utils.showNotification("Ошибка запуска сканирования", "error");
       }
     } catch (error) {
-      console.error("Force rescan error:", error);
       this.closePopup();
       this.isRefreshing = false;
       Utils.showNotification("Ошибка: " + error.message, "error");
@@ -86,9 +85,7 @@ class RefreshButtonManager {
             this.isRefreshing = false;
           }
         }
-      } catch (error) {
-        console.error("Polling error:", error);
-      }
+      } catch (error) {}
     }
     if (!isComplete && this.isRefreshing) {
       Utils.showNotification("Превышено время ожидания сканирования", "error");

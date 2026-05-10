@@ -141,54 +141,31 @@ export class UniversalPlayer {
   }
 
   async checkAndRestorePlayback() {
-    console.log(
-      "[UniversalPlayer] checkAndRestorePlayback START, _restored:",
-      this._restored,
-    );
     if (this._restored) {
-      console.log("[UniversalPlayer] Already restored, skipping");
       return;
     }
     this._restored = true;
     try {
-      console.log("[UniversalPlayer] Checking video status...");
       const videoStatus = await this.api.getVideoStatus();
-      console.log("[UniversalPlayer] Video status:", videoStatus);
       if (videoStatus && videoStatus.success && videoStatus.currentFile) {
-        console.log("[UniversalPlayer] Found VIDEO playback");
         await this.lifecycle.checkExistingPlayback("video");
         this.show();
         return;
       }
-      console.log("[UniversalPlayer] Checking playlist...");
       const playlistData = await this.api.api.get("/api/audio/getPlaylist");
-      console.log("[UniversalPlayer] Playlist data:", playlistData);
       if (playlistData?.data?.length > 0) {
-        console.log(
-          "[UniversalPlayer] Found playlist with",
-          playlistData.data.length,
-          "tracks",
-        );
         await this._restoreFromPlaylist(playlistData.data);
         this.show();
         return;
       }
-      console.log("[UniversalPlayer] No active playback found");
-    } catch (error) {
-      console.error("[UniversalPlayer] checkAndRestorePlayback error:", error);
-    }
+    } catch (error) {}
   }
 
   async _restoreFromPlaylist(tracks) {
-    console.log(
-      "[UniversalPlayer] _restoreFromPlaylist, tracks count:",
-      tracks.length,
-    );
     const firstTrack = tracks[0];
     const trackPath =
       typeof firstTrack === "string" ? firstTrack : firstTrack.path;
     if (!trackPath) return;
-    console.log("[UniversalPlayer] Restoring from first track:", trackPath);
     this.core.setCurrentFile(trackPath);
     this.core.setMediaType("audio");
     this.core.setPlaying(true);
@@ -218,15 +195,12 @@ export class UniversalPlayer {
     }
     this.uiUpdater.updateTrackFullInfo(title, artist, coverUrl);
     if (this.polling) {
-      console.log("[UniversalPlayer] Starting polling for audio");
       this.polling.stop();
       this.polling.start();
     } else {
-      console.log("[UniversalPlayer] Polling not available!");
     }
     setTimeout(async () => {
       const timeInfo = await this.api.getAudioCurrentTime();
-      console.log("[UniversalPlayer] Initial time check:", timeInfo);
       if (timeInfo && timeInfo.success) {
         this.progress.update(timeInfo.currentTime || 0, timeInfo.duration || 0);
       }

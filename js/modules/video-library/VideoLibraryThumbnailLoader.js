@@ -34,7 +34,6 @@ export class VideoLibraryThumbnailLoader {
         body: JSON.stringify({ path: videoPath, width: 320, quality: 85 }),
       });
       if (!response.ok) {
-        console.warn(`HTTP ${response.status} for ${videoPath}`);
         return null;
       }
       const data = await response.json();
@@ -44,9 +43,7 @@ export class VideoLibraryThumbnailLoader {
       }
       if (data.use_icon) {
       }
-    } catch (error) {
-      console.error(`Failed to load thumbnail for ${videoPath}:`, error);
-    }
+    } catch (error) {}
     return null;
   }
 
@@ -121,9 +118,7 @@ export class VideoLibraryThumbnailLoader {
           return thumbnail;
         }
       }
-    } catch (error) {
-      console.error(`Failed to load folder preview for ${folderPath}:`, error);
-    }
+    } catch (error) {}
     this.folderVideoCache.set(cacheKey, null);
     return null;
   }

@@ -125,7 +125,6 @@ export class PreviewTooltip {
         this.showPlaceholder();
       }
     } catch (error) {
-      console.error("[PreviewTooltip] Error loading preview:", error);
       this.showPlaceholder();
     }
   }

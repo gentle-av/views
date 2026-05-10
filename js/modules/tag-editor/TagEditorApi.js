@@ -21,14 +21,12 @@ export class TagEditorApi {
       const data = await response.json();
       return data.status === "success";
     } catch (error) {
-      console.error("[TagEditorApi] Error updating tags:", error);
       return false;
     }
   }
 
   async uploadAlbumArt(filePath, imageData) {
     if (!imageData || imageData.length < 100) {
-      console.error("[TagEditorApi] Invalid image data");
       return false;
     }
     try {
@@ -44,7 +42,6 @@ export class TagEditorApi {
       const data = await response.json();
       return data.status === "success";
     } catch (error) {
-      console.error("[TagEditorApi] Error uploading album art:", error);
       return false;
     }
   }

@@ -270,7 +270,6 @@ export class VideoLibraryEvents {
       if (typeof Utils !== "undefined" && Utils.showNotification) {
         Utils.showNotification(errorMsg, "error");
       } else {
-        console.error(errorMsg);
       }
     }
   }

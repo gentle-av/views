@@ -85,7 +85,6 @@ export class AlbumEventHandlers {
     if (window.TagEditor && window.TagEditor.showTrackTagEditor) {
       window.TagEditor.showTrackTagEditor(track, album);
     } else {
-      console.error("TagEditor not available");
       if (window.showNotification) {
         window.showNotification("Редактор тегов недоступен", "error");
       }

@@ -48,7 +48,6 @@ export class AlbumModalActions {
           tracks = tracksData;
           album.tracks = tracksData;
         } catch (error) {
-          console.error("Failed to load tracks:", error);
           return;
         }
       }
@@ -103,7 +102,6 @@ export class AlbumModalActions {
           );
           tracks = tracksData;
         } catch (error) {
-          console.error("Failed to load tracks for playlist:", error);
           return;
         }
       }
@@ -141,15 +139,12 @@ export class AlbumModalActions {
           );
           tracks = tracksData;
           album.tracks = tracksData;
-        } catch (error) {
-          console.error("Failed to load tracks for editing:", error);
-        }
+        } catch (error) {}
       }
       if (window.TagEditor && window.TagEditor.showAlbumTagEditor) {
         this.onHide();
         window.TagEditor.showAlbumTagEditor(album);
       } else {
-        console.error("TagEditor not available");
         if (window.showNotification) {
           window.showNotification("Редактор тегов недоступен", "error");
         }

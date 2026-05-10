@@ -3,7 +3,6 @@ import { PlayerAPI } from "../../ui/universal-player/PlayerApi.js";
 
 export class PlaybackManager {
   constructor(core) {
-    console.log("[PlaybackManager] CONSTRUCTOR");
     this.core = core;
     this.universalPlayer = null;
     this._isInitialized = false;
@@ -11,9 +10,7 @@ export class PlaybackManager {
   }
 
   async init() {
-    console.log("[PlaybackManager] init START");
     const playerAPI = new PlayerAPI(this.core.api, this.core.musicApi, null);
-    console.log("[PlaybackManager] playerAPI created");
     this.universalPlayer = new UniversalPlayer(
       playerAPI,
       this.core.events,
@@ -24,27 +21,17 @@ export class PlaybackManager {
     window.universalPlayerInstance = this.universalPlayer;
     this.core.universalPlayer = this.universalPlayer;
     this._isInitialized = true;
-    console.log("[PlaybackManager] init DONE");
     return this;
   }
 
   async checkExistingPlaybacks() {
-    console.log(
-      "[PlaybackManager] checkExistingPlaybacks START, _restored:",
-      this._restored,
-    );
     if (this._restored) {
-      console.log("[PlaybackManager] Already restored");
       return;
     }
     if (!this.universalPlayer) {
-      console.log("[PlaybackManager] universalPlayer not ready");
       return;
     }
     this._restored = true;
-    console.log(
-      "[PlaybackManager] Calling universalPlayer.checkAndRestorePlayback",
-    );
     await this.universalPlayer.checkAndRestorePlayback();
   }
 

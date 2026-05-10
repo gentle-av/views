@@ -20,7 +20,6 @@ export class PlayerLifecycle {
   }
 
   async checkExistingPlayback(type) {
-    console.log("[PlayerLifecycle] checkExistingPlayback START, type:", type);
     try {
       let hasActivePlayback = false;
       if (type === "video") {
@@ -43,9 +42,6 @@ export class PlayerLifecycle {
           hasActivePlayback = true;
         }
       } else {
-        console.log(
-          "[PlayerLifecycle] Audio restoration handled by UniversalPlayer",
-        );
         return false;
       }
       if (hasActivePlayback) {
@@ -59,7 +55,6 @@ export class PlayerLifecycle {
       }
       return hasActivePlayback;
     } catch (error) {
-      console.error("[PlayerLifecycle] checkExistingPlayback error:", error);
       return false;
     }
   }
@@ -88,11 +83,6 @@ export class PlayerLifecycle {
         return false;
       }
     } catch (error) {
-      console.error("Error deleting video:", error);
-      Utils.showNotification(
-        "Ошибка удаления видео: " + error.message,
-        "error",
-      );
       return false;
     }
   }

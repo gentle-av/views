@@ -65,7 +65,6 @@ export class VideoLibrary {
       this.renderer.ensureIconsVisible();
       this.dom.adjustBottomPadding();
     } else {
-      console.error("[VideoLibrary] Error:", data.error);
       this.dom.showError(data.error || "Ошибка загрузки");
     }
   }

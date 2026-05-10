@@ -21,13 +21,10 @@ export class MediaCenter {
   }
 
   async init() {
-    console.log("[MediaCenter] init START");
     this.core = new MediaCenterCore();
     await this.core.init();
-    console.log("[MediaCenter] Core initialized");
     this.playbackManager = new PlaybackManager(this.core);
     await this.playbackManager.init();
-    console.log("[MediaCenter] PlaybackManager initialized");
     this.uiManager = new UIManager(this.core);
     this._injectUIMethods();
     this.videoPageManager = new VideoPageManager(
@@ -51,11 +48,8 @@ export class MediaCenter {
     );
     this._setupEventHandlers();
     this._exposeGlobal();
-    console.log("[MediaCenter] Starting playback restoration");
     await this.playbackManager.checkExistingPlaybacks();
-    console.log("[MediaCenter] Switching to video page");
     await NavigationManager.switchTo("video");
-    console.log("[MediaCenter] init DONE");
   }
 
   _injectUIMethods() {

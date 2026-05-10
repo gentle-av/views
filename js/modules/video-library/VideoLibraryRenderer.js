@@ -7,7 +7,6 @@ export class VideoLibraryRenderer {
   render(items) {
     const container = this.dom.getContainer();
     if (!container) {
-      console.error("[VideoLibraryRenderer] Container is null");
       return [];
     }
     const visibleItems = items.filter((item) => !item.name.startsWith("."));

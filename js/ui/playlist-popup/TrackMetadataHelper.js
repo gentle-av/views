@@ -37,7 +37,6 @@ export class TrackMetadataHelper {
       this.tracksCache.set(filePath, metadata);
       return metadata;
     } catch (error) {
-      console.error("Failed to fetch metadata for:", filePath, error);
       return this._fallbackMetadata(filePath);
     }
   }

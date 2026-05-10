@@ -109,7 +109,6 @@ export class VideoCloseModal {
         Utils.showNotification("Видео закрыто", "info");
       }
     } catch (error) {
-      console.error("[VideoCloseModal] Error closing video:", error);
       if (typeof Utils !== "undefined" && Utils.showNotification) {
         Utils.showNotification("Ошибка закрытия видео", "error");
       }
@@ -138,10 +137,6 @@ export class VideoCloseModal {
         }
         this.events.emit("video:refresh");
       } else {
-        console.error(
-          "[VideoCloseModal] Delete failed:",
-          deleteResponse?.error,
-        );
         if (typeof Utils !== "undefined" && Utils.showNotification) {
           Utils.showNotification(
             deleteResponse?.error || "Ошибка удаления видео",
@@ -150,7 +145,6 @@ export class VideoCloseModal {
         }
       }
     } catch (error) {
-      console.error("[VideoCloseModal] Error closing/deleting video:", error);
       if (typeof Utils !== "undefined" && Utils.showNotification) {
         Utils.showNotification("Ошибка при закрытии/удалении видео", "error");
       }

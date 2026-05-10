@@ -9,14 +9,10 @@ export class PlayerEventHandler {
     this._clearAudioPlaylist = this._clearAudioPlaylist.bind(this);
   }
 
-  _clearAudioPlaylist() {
+  async _clearAudioPlaylist() {
     try {
-      if (
-        this.mediaHandler.api.playerApi &&
-        this.mediaHandler.api.playerApi.clearPlaylist
-      ) {
-        this.mediaHandler.api.playerApi.clearPlaylist();
-      }
+      await this.mediaHandler.api.audioStop();
+      await this.mediaHandler.api.api.post("/api/audio/clear");
     } catch (error) {
       console.error("[PlayerEventHandler] Failed to clear playlist:", error);
     }

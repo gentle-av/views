@@ -42,7 +42,6 @@ export class PlayerAPI {
       }
       return null;
     } catch (error) {
-      console.error("[PlayerAPI] getAudioPlaybackState error:", error);
       return null;
     }
   }
@@ -59,7 +58,6 @@ export class PlayerAPI {
       }
       return null;
     } catch (error) {
-      console.error("[PlayerAPI] getAudioCurrentTime error:", error);
       return null;
     }
   }
@@ -96,7 +94,6 @@ export class PlayerAPI {
       const result = await this.musicApi.getFileMetadata(path);
       return result;
     } catch (error) {
-      console.error("[DEBUG] getFileMetadata error:", error);
       return null;
     }
   }

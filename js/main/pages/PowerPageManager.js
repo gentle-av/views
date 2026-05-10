@@ -76,7 +76,6 @@ export class PowerPageManager {
           await this.core.api.post("/api/adb/keyevent", { keycode: 26 });
           setTimeout(() => this._updateTVStatus(), 1500);
         } catch (error) {
-          console.error("Failed to toggle TV:", error);
           const statusText = document.querySelector("#tvStatus .status-text");
           if (statusText) statusText.textContent = "Ошибка";
           setTimeout(() => this._updateTVStatus(), 2000);
@@ -88,9 +87,7 @@ export class PowerPageManager {
       sleepBtn.addEventListener("click", async () => {
         try {
           await this.core.api.post("/api/system/sleep");
-        } catch (error) {
-          console.error("Failed to sleep:", error);
-        }
+        } catch (error) {}
       });
     }
   }
@@ -128,9 +125,7 @@ export class PowerPageManager {
       await this.core.api.post("/api/audio/volume", {
         volume: this._currentVolume,
       });
-    } catch (error) {
-      console.error("Failed to set volume:", error);
-    }
+    } catch (error) {}
   }
 
   async _toggleMute() {
@@ -147,7 +142,6 @@ export class PowerPageManager {
         this._updateVolumeUI();
       }
     } catch (error) {
-      console.error("Failed to toggle mute:", error);
       this._isMuted = !this._isMuted;
       this._updateVolumeUI();
     }
@@ -162,9 +156,7 @@ export class PowerPageManager {
         if (res.data.muted !== undefined) this._isMuted = res.data.muted;
         this._updateVolumeUI();
       }
-    } catch (error) {
-      console.warn("Failed to load volume:", error);
-    }
+    } catch (error) {}
   }
 
   _updateVolumeUI() {
@@ -203,10 +195,8 @@ export class PowerPageManager {
             this._currentOutput = "speakers";
             this._updateAudioOutputUI();
           } else {
-            console.error("Speakers switch failed:", res);
           }
         } catch (error) {
-          console.error("Failed to switch to speakers:", error);
         } finally {
           speakersBtn.disabled = false;
         }
@@ -221,10 +211,8 @@ export class PowerPageManager {
             this._currentOutput = "headphones";
             this._updateAudioOutputUI();
           } else {
-            console.error("Headphones switch failed:", res);
           }
         } catch (error) {
-          console.error("Failed to switch to headphones:", error);
         } finally {
           headphonesBtn.disabled = false;
         }
@@ -239,9 +227,7 @@ export class PowerPageManager {
         this._currentOutput = res.data.current;
         this._updateAudioOutputUI();
       }
-    } catch (error) {
-      console.warn("Failed to load current output:", error);
-    }
+    } catch (error) {}
   }
 
   _updateAudioOutputUI() {
@@ -281,7 +267,6 @@ export class PowerPageManager {
         }
       }
     } catch (error) {
-      console.error("Failed to get TV status:", error);
       const statusText = document.querySelector("#tvStatus .status-text");
       if (statusText) statusText.textContent = "Ошибка подключения";
     }

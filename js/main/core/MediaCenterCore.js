@@ -55,9 +55,7 @@ export class MediaCenterCore {
             body: JSON.stringify({ tracks }),
           });
           return await response.json();
-        } catch (error) {
-          console.error("[MusicAPI] openMusium error:", error);
-        }
+        } catch (error) {}
       };
     }
   }

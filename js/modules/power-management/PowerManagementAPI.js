@@ -41,7 +41,6 @@ export class PowerManagementAPI {
       const response = await this.api.post("/api/system/sleep");
       return { success: response.success };
     } catch (error) {
-      console.error("Failed to sleep computer:", error);
       return { success: false, error: error.message };
     }
   }
