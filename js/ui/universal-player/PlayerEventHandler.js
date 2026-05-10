@@ -32,7 +32,7 @@ export class PlayerEventHandler {
             this.mediaHandler.stop();
           }
         } else {
-          this.mediaHandler.stop(true);
+          this.mediaHandler.stop(false); // ИЗМЕНИТЬ true НА false
           this._clearAudioPlaylist();
           if (this.mediaHandler.onHide) {
             this.mediaHandler.onHide();

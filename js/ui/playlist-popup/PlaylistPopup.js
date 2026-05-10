@@ -64,7 +64,6 @@ export class PlaylistPopup {
       try {
         const apiClient = this.universalPlayer.apiClient;
         if (!apiClient) {
-          console.error("[PlaylistPopup] No API client available");
           return;
         }
         await apiClient.post("/api/audio/clear");
@@ -87,9 +86,7 @@ export class PlaylistPopup {
             }
           }, 500);
         }
-      } catch (error) {
-        console.error("[PlaylistPopup] Error clearing playlist:", error);
-      }
+      } catch (error) {}
     });
   }
 
