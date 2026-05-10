@@ -193,11 +193,13 @@ export class UniversalPlayer {
       const match = fileName.match(/^\d+\s*[-.]?\s*(.+)$/);
       title = match ? match[1] : fileName;
     }
+    if (!coverUrl && title) {
+      coverUrl = await this.api.getAlbumCover(trackPath, title, artist);
+    }
     this.uiUpdater.updateTrackFullInfo(title, artist, coverUrl);
     if (this.polling) {
       this.polling.stop();
       this.polling.start();
-    } else {
     }
     setTimeout(async () => {
       const timeInfo = await this.api.getAudioCurrentTime();
