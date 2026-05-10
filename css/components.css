@@ -309,12 +309,12 @@
   }
 }
 
-/* Растягивание на всю высоту */
 .scrollable-content {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  padding-bottom: 20px;
 }
 
 .audio-library {
