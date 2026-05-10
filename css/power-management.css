@@ -28,25 +28,6 @@
   margin: 0;
 }
 
-.power-widget-btn {
-  padding: 8px 16px;
-  background: var(--bg2);
-  border: 1px solid var(--bg3);
-  border-radius: 8px;
-  color: var(--fg1);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
-}
-
-.power-widget-btn:hover {
-  background: var(--bg3);
-  border-color: var(--yellow);
-  color: var(--yellow);
-}
-
 .power-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -60,6 +41,19 @@
   padding: 32px 24px;
   text-align: center;
   border: 1px solid var(--bg3);
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.power-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.power-card:active {
+  transform: translateY(0);
 }
 
 .power-card-icon {
@@ -80,7 +74,6 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 28px;
   font-size: 16px;
   color: var(--fg3);
 }
@@ -100,48 +93,6 @@
 
 .status-dot.off {
   background: var(--red);
-}
-
-.power-btn {
-  background: var(--bg2);
-  border: none;
-  border-radius: 12px;
-  padding: 12px 24px;
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--fg0);
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.power-btn i {
-  font-size: 18px;
-}
-
-.power-btn:hover {
-  background: var(--bg3);
-  transform: scale(1.02);
-}
-
-.tv-power-btn {
-  background: var(--blue);
-  color: var(--bg0);
-}
-
-.tv-power-btn:hover {
-  background: #9bb9d4;
-}
-
-.sleep-btn {
-  background: var(--purple);
-  color: var(--bg0);
-}
-
-.sleep-btn:hover {
-  background: #e7a1b7;
 }
 
 .audio-output-section {
@@ -216,6 +167,15 @@
   border: 1px solid var(--bg3);
 }
 
+.volume-value-top {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  font-family: monospace;
+  color: var(--yellow);
+  margin-bottom: 16px;
+}
+
 .volume-controls {
   display: flex;
   align-items: center;
@@ -272,13 +232,6 @@
   transform: scale(1.05);
 }
 
-.volume-value {
-  min-width: 45px;
-  text-align: center;
-  font-family: monospace;
-  color: var(--yellow);
-}
-
 @media (max-width: 768px) {
   .power-management-container {
     padding: 12px;
@@ -293,19 +246,6 @@
 
   .power-page-header h2 {
     font-size: 1.1rem;
-  }
-
-  .power-widget-btn {
-    padding: 6px 12px;
-    font-size: 0.75rem;
-  }
-
-  .power-widget-btn span {
-    display: none;
-  }
-
-  .power-widget-btn i {
-    margin: 0;
   }
 
   .power-cards-grid {
@@ -331,7 +271,6 @@
   }
 
   .power-card-status {
-    margin-bottom: 12px;
     font-size: 11px;
     gap: 4px;
   }
@@ -341,20 +280,6 @@
     height: 8px;
   }
 
-  .power-btn {
-    padding: 6px 12px;
-    font-size: 12px;
-    gap: 6px;
-  }
-
-  .power-btn i {
-    font-size: 12px;
-  }
-
-  .power-btn span {
-    display: inline;
-  }
-
   .volume-section {
     margin-top: 16px;
     padding: 12px;
@@ -362,6 +287,11 @@
 
   .section-title {
     font-size: 0.85rem;
+    margin-bottom: 12px;
+  }
+
+  .volume-value-top {
+    font-size: 18px;
     margin-bottom: 12px;
   }
 
@@ -375,11 +305,6 @@
     width: 32px;
     height: 32px;
     font-size: 0.8rem;
-  }
-
-  .volume-value {
-    min-width: 38px;
-    font-size: 0.75rem;
   }
 
   .audio-output-section {
@@ -435,16 +360,11 @@
 
   .power-card-status {
     font-size: 10px;
+  }
+
+  .volume-value-top {
+    font-size: 16px;
     margin-bottom: 10px;
-  }
-
-  .power-btn {
-    padding: 5px 10px;
-    font-size: 11px;
-  }
-
-  .power-btn i {
-    font-size: 11px;
   }
 
   .volume-down,
@@ -452,11 +372,6 @@
   .volume-mute {
     width: 28px;
     height: 28px;
-    font-size: 0.7rem;
-  }
-
-  .volume-value {
-    min-width: 32px;
     font-size: 0.7rem;
   }
 

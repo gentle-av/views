@@ -2,7 +2,8 @@ export class PowerManagementUI {
   constructor(container, state) {
     this.container = container;
     this.state = state;
-    this.tvPowerBtn = null;
+    this.tvCard = null;
+    this.computerCard = null;
     this.tvStatusText = null;
     this.tvStatusDot = null;
   }
@@ -13,7 +14,7 @@ export class PowerManagementUI {
       <div class="page power-page">
         <div class="power-management-container">
           <div class="power-cards-grid">
-            <div class="power-card tv-card">
+            <div class="power-card tv-card" id="tvCard">
               <div class="power-card-icon">
                 <i class="fas fa-tv"></i>
               </div>
@@ -22,12 +23,8 @@ export class PowerManagementUI {
                 <span class="status-dot" id="tvStatusDot"></span>
                 <span class="status-text" id="tvStatusText">Проверка...</span>
               </p>
-              <button class="power-btn tv-power-btn" id="tvPowerBtn">
-                <i class="fas fa-power-off"></i>
-                <span>Вкл/Выкл</span>
-              </button>
             </div>
-            <div class="power-card computer-card">
+            <div class="power-card computer-card" id="computerCard">
               <div class="power-card-icon">
                 <i class="fas fa-desktop"></i>
               </div>
@@ -36,10 +33,6 @@ export class PowerManagementUI {
                 <span class="status-dot on"></span>
                 <span class="status-text">Активен</span>
               </p>
-              <button class="power-btn sleep-btn" id="sleepBtn">
-                <i class="fas fa-moon"></i>
-                <span>Сон</span>
-              </button>
             </div>
           </div>
         </div>
@@ -49,7 +42,8 @@ export class PowerManagementUI {
   }
 
   cacheElements() {
-    this.tvPowerBtn = document.getElementById("tvPowerBtn");
+    this.tvCard = document.getElementById("tvCard");
+    this.computerCard = document.getElementById("computerCard");
     this.tvStatusText = document.getElementById("tvStatusText");
     this.tvStatusDot = document.getElementById("tvStatusDot");
   }
@@ -68,6 +62,14 @@ export class PowerManagementUI {
     }
   }
 
+  getTvCard() {
+    return this.tvCard;
+  }
+
+  getComputerCard() {
+    return this.computerCard;
+  }
+
   showNotification(message, type = "info", events) {
     if (events) {
       events.emit("notification:show", { message, type });
@@ -84,9 +86,5 @@ export class PowerManagementUI {
         alert(message);
       }
     }
-  }
-
-  getTVPowerBtn() {
-    return this.tvPowerBtn;
   }
 }

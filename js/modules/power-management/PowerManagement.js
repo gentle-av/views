@@ -9,7 +9,6 @@ export class PowerManagement {
     this.state = new PowerManagementState(options);
     this.ui = new PowerManagementUI(options.container, this.state);
     this.tvHandler = new PowerManagementTV(apiClient, events, this.state);
-    this.sleepBtn = null;
     this.isDestroyed = false;
     this.init();
   }
@@ -24,18 +23,22 @@ export class PowerManagement {
 
   render() {
     this.ui.render();
-    this.sleepBtn = document.getElementById("sleepBtn");
   }
 
   bindEvents() {
-    const tvPowerBtn = this.ui.getTVPowerBtn();
-    if (tvPowerBtn) {
-      tvPowerBtn.addEventListener("click", (e) => {
+    const tvCard = this.ui.getTvCard();
+    const computerCard = this.ui.getComputerCard();
+    if (tvCard) {
+      tvCard.addEventListener("click", (e) => {
+        e.stopPropagation();
         this.tvHandler.toggleTV();
       });
     }
-    if (this.sleepBtn) {
-      this.sleepBtn.addEventListener("click", () => this.sleepComputer());
+    if (computerCard) {
+      computerCard.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.sleepComputer();
+      });
     }
   }
 
