@@ -9,7 +9,6 @@ import { PlayerVolume } from "./PlayerVolume.js";
 import { PlayerOutput } from "./PlayerOutput.js";
 import { PlayerEventSubscriber } from "./PlayerEventSubscriber.js";
 import { PreviewTooltip } from "./PreviewTooltip.js";
-import { PlayerChannelManager } from "./PlayerChannelManager.js";
 import { PlayerEventHandler } from "./PlayerEventHandler.js";
 import { PlayerLifecycle } from "./PlayerLifeCycle.js";
 
@@ -29,7 +28,6 @@ export class UniversalPlayer {
     this.mediaHandler = null;
     this.volume = null;
     this.output = null;
-    this.channelManager = null;
     this.lifecycle = null;
     this.eventSubscriber = null;
     this.previewTooltip = null;
@@ -57,12 +55,6 @@ export class UniversalPlayer {
     );
     this.volume = new PlayerVolume(this.apiClient, this.dom, this.core);
     this.output = new PlayerOutput(this.apiClient, this.dom, this.core);
-    this.channelManager = new PlayerChannelManager(
-      this.apiClient,
-      this.events,
-      this.dom,
-    );
-    await this.channelManager.init(this.tvApi);
     this.lifecycle = new PlayerLifecycle(
       this.core,
       this.uiUpdater,
@@ -107,9 +99,6 @@ export class UniversalPlayer {
     this.mediaHandler.setForceRefreshVideo(() => this.lifecycle.refreshVideo());
     if (this.videoCloseModal) {
       this.mediaHandler.setVideoCloseModal(this.videoCloseModal);
-      if (this.channelManager) {
-        this.channelManager.videoCloseModal = this.videoCloseModal;
-      }
     }
     this.dom.ensureOutputButtons();
     this.eventHandler = new PlayerEventHandler(
@@ -117,7 +106,6 @@ export class UniversalPlayer {
       this.volume,
       this.output,
       this.progress,
-      this.channelManager,
       this.videoCloseModal,
     );
     const playerEvents = new PlayerEvents(this.eventHandler.getHandlers());
@@ -145,9 +133,6 @@ export class UniversalPlayer {
     this.videoCloseModal = modal;
     if (this.mediaHandler) {
       this.mediaHandler.setVideoCloseModal(modal);
-    }
-    if (this.channelManager) {
-      this.channelManager.videoCloseModal = modal;
     }
     if (this.eventHandler) {
       this.eventHandler._videoCloseModal = modal;

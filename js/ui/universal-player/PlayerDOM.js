@@ -3,7 +3,6 @@ export class PlayerDOM {
     this.element = null;
     this.elements = {};
     this._hasActivePlayback = false;
-    this.channelControl = null;
   }
 
   init() {
@@ -13,59 +12,6 @@ export class PlayerDOM {
     this.element.style.display = "none";
     this.element.classList.remove("active");
     return true;
-  }
-
-  setChannelControl(control) {
-    this.channelControl = control;
-  }
-
-  renderChannelControl() {
-    const settings = this.elements.universalBottomSettings;
-    if (!settings || !this.channelControl) return;
-    let channelSection = settings.querySelector(
-      ".universal-bottom-player-channel-section",
-    );
-    if (channelSection) return;
-    channelSection = document.createElement("div");
-    channelSection.className = "universal-bottom-player-channel-section";
-    const channelDisplay = document.createElement("div");
-    channelDisplay.id = "universalBottomChannelDisplay";
-    channelDisplay.className = "universal-bottom-channel-display";
-    channelDisplay.textContent = "Канал 1";
-    const channelButtons = document.createElement("div");
-    channelButtons.className = "universal-bottom-channel-buttons";
-    for (let i = 1; i <= 9; i++) {
-      const btn = document.createElement("button");
-      btn.textContent = i;
-      btn.dataset.channel = i;
-      btn.addEventListener("click", () => {
-        if (this.channelControl) this.channelControl.set(i);
-      });
-      channelButtons.appendChild(btn);
-    }
-    const zeroBtn = document.createElement("button");
-    zeroBtn.textContent = "0";
-    zeroBtn.dataset.channel = 0;
-    zeroBtn.addEventListener("click", () => {
-      if (this.channelControl) this.channelControl.set(0);
-    });
-    channelButtons.appendChild(zeroBtn);
-    const upBtn = document.createElement("button");
-    upBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
-    upBtn.addEventListener("click", () => {
-      if (this.channelControl) this.channelControl.up();
-    });
-    channelButtons.appendChild(upBtn);
-    const downBtn = document.createElement("button");
-    downBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
-    downBtn.addEventListener("click", () => {
-      if (this.channelControl) this.channelControl.down();
-    });
-    channelButtons.appendChild(downBtn);
-    channelSection.appendChild(channelDisplay);
-    channelSection.appendChild(channelButtons);
-    settings.appendChild(channelSection);
-    this.elements.universalBottomChannelDisplay = channelDisplay;
   }
 
   ensureOutputButtons() {

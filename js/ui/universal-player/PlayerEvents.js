@@ -47,21 +47,6 @@ export class PlayerEvents {
       elements.universalBottomProgressBar.addEventListener("click", handler);
       this.boundHandlers.set("progressClick", handler);
     }
-    this._attachChannelEvents();
-  }
-
-  _attachChannelEvents() {
-    const channelInput = document.getElementById("sysChannelInput");
-    const channelGo = document.getElementById("sysChannelGo");
-    if (channelGo && this.handlers.onChannelGo) {
-      channelGo.addEventListener("click", this.handlers.onChannelGo);
-      this.boundHandlers.set("channelGo", this.handlers.onChannelGo);
-    }
-    if (channelInput && this.handlers.onChannelEnter) {
-      const handler = this.handlers.onChannelEnter;
-      channelInput.addEventListener("keypress", handler);
-      this.boundHandlers.set("channelEnter", handler);
-    }
   }
 
   _attachClick(element, handler) {
@@ -78,20 +63,6 @@ export class PlayerEvents {
       if (element) {
         element.removeEventListener("click", handler);
       }
-    }
-    const channelInput = document.getElementById("sysChannelInput");
-    const channelGo = document.getElementById("sysChannelGo");
-    if (channelGo && this.boundHandlers.has("channelGo")) {
-      channelGo.removeEventListener(
-        "click",
-        this.boundHandlers.get("channelGo"),
-      );
-    }
-    if (channelInput && this.boundHandlers.has("channelEnter")) {
-      channelInput.removeEventListener(
-        "keypress",
-        this.boundHandlers.get("channelEnter"),
-      );
     }
     this.boundHandlers.clear();
   }
