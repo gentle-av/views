@@ -46,6 +46,7 @@ export class PlayerEventHandler {
       onToggleSettings: () => this.mediaHandler.toggleSettings?.(),
       onVolumeDown: () => this.volume.changeVolume(-5),
       onVolumeUp: () => this.volume.changeVolume(5),
+      onVolumeSet: (volume) => this.volume.setVolume(volume), // новый обработчик
       onToggleMute: () => this.volume.toggleMute(),
       onSpeakers: () => this.output.switchToSpeakers(),
       onHeadphones: () => this.output.switchToHeadphones(),
