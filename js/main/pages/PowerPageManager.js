@@ -13,14 +13,17 @@ export class PowerPageManager {
   }
 
   async onPageLoaded() {
+    console.log("[PowerPageManager] onPageLoaded started");
     await this._showPageContainer();
     await this._loadInitialData();
     this._bindAllEvents();
     this._startTVStatusPolling();
     this._isInitialized = true;
+    console.log("[PowerPageManager] onPageLoaded finished");
   }
 
   async _showPageContainer() {
+    console.log("[PowerPageManager] _showPageContainer");
     const powerContainer = document.getElementById("powerPageContainer");
     if (!powerContainer) return;
     if (!this._htmlLoaded) {
@@ -28,15 +31,17 @@ export class PowerPageManager {
       const html = await response.text();
       powerContainer.innerHTML = html;
       this._htmlLoaded = true;
+      console.log("[PowerPageManager] power.html loaded");
     }
   }
 
   async _loadInitialData() {
+    console.log("[PowerPageManager] _loadInitialData");
     if (!this.powerManagement) {
       this.powerManagement = initPowerManagement(
         this.core.api,
         this.core.events,
-        { tvAddress: "192.168.50.13" },
+        {},
       );
       this.core.powerManagement = this.powerManagement;
     }
@@ -64,23 +69,44 @@ export class PowerPageManager {
   }
 
   _bindPowerEvents() {
-    const tvPowerBtn = document.getElementById("tvPowerBtn");
-    if (tvPowerBtn) {
-      tvPowerBtn.addEventListener("click", async () => {
+    const tvCard = document.getElementById("tvCard");
+    if (tvCard) {
+      console.log("[PowerPageManager] tvCard found");
+      tvCard.addEventListener("click", async () => {
+        console.log("[PowerPageManager] tvCard clicked");
+        const statusText = document.querySelector("#tvStatus .status-text");
+        const statusDot = document.querySelector("#tvStatus .status-dot");
+        const isCurrentlyOn = statusDot?.classList.contains("on");
+        console.log(
+          "[PowerPageManager] Current TV state:",
+          isCurrentlyOn ? "ON" : "OFF",
+        );
         try {
-          const statusText = document.querySelector("#tvStatus .status-text");
-          if (statusText) statusText.textContent = "Переключение...";
-          await this.core.api.post("/api/adb/connect", {
-            address: "192.168.50.13",
-          });
-          await this.core.api.post("/api/adb/keyevent", { keycode: 26 });
-          setTimeout(() => this._updateTVStatus(), 1500);
+          if (statusText)
+            statusText.textContent = isCurrentlyOn
+              ? "Выключение..."
+              : "Включение...";
+          console.log("[PowerPageManager] Calling /api/power/tv-on");
+          const response = await this.core.api.post("/api/power/tv-on");
+          console.log("[PowerPageManager] Response:", response);
+          if (response && response.success) {
+            console.log("[PowerPageManager] TV powered ON");
+            if (statusText) statusText.textContent = "Включен";
+            if (statusDot) statusDot.classList.add("on");
+          } else {
+            console.log("[PowerPageManager] TV powered OFF");
+            if (statusText) statusText.textContent = "Выключен";
+            if (statusDot) statusDot.classList.remove("on");
+          }
         } catch (error) {
-          const statusText = document.querySelector("#tvStatus .status-text");
+          console.error("[PowerPageManager] TV power error:", error);
           if (statusText) statusText.textContent = "Ошибка";
+        } finally {
           setTimeout(() => this._updateTVStatus(), 2000);
         }
       });
+    } else {
+      console.error("[PowerPageManager] tvCard not found");
     }
     const sleepBtn = document.getElementById("sleepBtn");
     if (sleepBtn) {
@@ -194,7 +220,6 @@ export class PowerPageManager {
           if (res && res.success) {
             this._currentOutput = "speakers";
             this._updateAudioOutputUI();
-          } else {
           }
         } catch (error) {
         } finally {
@@ -210,7 +235,6 @@ export class PowerPageManager {
           if (res && res.success) {
             this._currentOutput = "headphones";
             this._updateAudioOutputUI();
-          } else {
           }
         } catch (error) {
         } finally {
@@ -265,8 +289,13 @@ export class PowerPageManager {
         if (statusText) {
           statusText.textContent = res.data.screen_on ? "Включен" : "Выключен";
         }
+        console.log(
+          "[PowerPageManager] TV status updated:",
+          res.data.screen_on ? "ON" : "OFF",
+        );
       }
     } catch (error) {
+      console.error("[PowerPageManager] TV status error:", error);
       const statusText = document.querySelector("#tvStatus .status-text");
       if (statusText) statusText.textContent = "Ошибка подключения";
     }
