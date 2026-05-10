@@ -1,6 +1,5 @@
 import { EventBus } from "../../core/event-bus.js";
 import { ApiClient } from "../../services/api-client.js";
-import { PlayerApiClient } from "../../services/player-api-client.js";
 import { MusicApiClient } from "../../services/music-api-client.js";
 import { NavigationManager } from "../managers/NavigationManager.js";
 import { MediaCenterState } from "./MediaCenterState.js";
@@ -10,7 +9,6 @@ export class MediaCenterCore {
   constructor() {
     this.events = null;
     this.api = null;
-    this.playerApi = null;
     this.musicApi = null;
     this.universalPlayer = null;
     this.videoLibrary = null;
@@ -27,7 +25,6 @@ export class MediaCenterCore {
     this._initApis();
     this.eventsManager = new MediaCenterEvents(this.events);
     NavigationManager.init(this.events);
-    await this.playerApi.checkAvailability();
     this.state.isInitialized = true;
     return this;
   }
@@ -42,7 +39,6 @@ export class MediaCenterCore {
   _initApis() {
     this.events = new EventBus();
     this.api = new ApiClient();
-    this.playerApi = new PlayerApiClient();
     this.musicApi = new MusicApiClient();
     this._fixMusicApi();
   }

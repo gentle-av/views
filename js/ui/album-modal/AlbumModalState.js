@@ -9,6 +9,7 @@ export class AlbumModalState {
   get currentAlbum() {
     return this._currentAlbum;
   }
+
   set currentAlbum(album) {
     this._currentAlbum = album;
   }
@@ -16,9 +17,11 @@ export class AlbumModalState {
   getModal() {
     return this.modal;
   }
+
   getTitleEl() {
     return this.titleEl;
   }
+
   getTracksContainer() {
     return this.tracksContainer;
   }

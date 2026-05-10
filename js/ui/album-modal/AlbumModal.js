@@ -6,9 +6,10 @@ import { AlbumModalUI } from "./AlbumModalUI.js";
 import { AlbumModalEvents } from "./AlbumModalEvents.js";
 
 export class AlbumModal {
-  constructor(events, musicApi = null) {
+  constructor(events, musicApi = null, universalPlayer = null) {
     this.events = events;
     this.musicApi = musicApi;
+    this.universalPlayer = universalPlayer;
     this.state = new AlbumModalState();
     this.ui = new AlbumModalUI(this.state.getModal());
     this.header = new AlbumModalHeader(this.state.getTitleEl());
@@ -16,6 +17,7 @@ export class AlbumModal {
       this.state.getTracksContainer(),
       null,
       this.musicApi,
+      this.universalPlayer,
     );
     this.actions = null;
     this.eventsHandler = null;
@@ -28,6 +30,7 @@ export class AlbumModal {
       this.state.getModal(),
       this.events,
       this.musicApi,
+      this.universalPlayer,
       () => this.hide(),
     );
     this.eventsHandler = new AlbumModalEvents(this.state.getModal(), (album) =>
@@ -39,6 +42,14 @@ export class AlbumModal {
   setMusicApi(musicApi) {
     this.musicApi = musicApi;
     this.tracks.musicApi = musicApi;
+  }
+
+  setUniversalPlayer(universalPlayer) {
+    this.universalPlayer = universalPlayer;
+    this.tracks.universalPlayer = universalPlayer;
+    if (this.actions) {
+      this.actions.universalPlayer = universalPlayer;
+    }
   }
 
   setTrackList(trackList) {

@@ -1,8 +1,9 @@
 export class AlbumModalActions {
-  constructor(modal, events, musicApi, onHide) {
+  constructor(modal, events, musicApi, universalPlayer, onHide) {
     this.modal = modal;
     this.events = events;
     this.musicApi = musicApi;
+    this.universalPlayer = universalPlayer;
     this.onHide = onHide;
   }
 
@@ -36,8 +37,7 @@ export class AlbumModalActions {
     if (!playBtn) return;
     playBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const tracks = album.tracks || [];
-      let trackPaths = [];
+      let tracks = album.tracks || [];
       if (tracks.length === 0 && this.musicApi) {
         try {
           const tracksData = await this.musicApi.getTracks(
@@ -45,25 +45,27 @@ export class AlbumModalActions {
             album.artist,
             true,
           );
-          trackPaths = tracksData.map((track) => track.path);
+          tracks = tracksData;
         } catch (error) {
           console.error("Failed to load tracks:", error);
+          return;
         }
-      } else {
-        trackPaths = tracks.map((track) => track.path);
       }
-      if (trackPaths.length > 0) {
-        if (this.musicApi && this.musicApi.playTracks) {
-          await this.musicApi.playTracks(trackPaths);
-          this.events.emit("playback:audioStart", trackPaths[0]);
-          if (window.MediaCenter && window.MediaCenter.playback) {
-            setTimeout(() => {
-              window.MediaCenter.playback.play();
-            }, 500);
-          }
-        } else {
-          this.events.emit("album:play", album);
-        }
+      const trackPaths = tracks.map((track) => track.path);
+      if (
+        trackPaths.length > 0 &&
+        this.universalPlayer &&
+        this.universalPlayer.playerApi
+      ) {
+        await this.universalPlayer.playerApi.setPlaylist(trackPaths);
+        await this.universalPlayer.playerApi.play();
+        this.events.emit("playback:audioStart", trackPaths[0]);
+      } else if (
+        trackPaths.length > 0 &&
+        this.universalPlayer &&
+        this.universalPlayer.playTracks
+      ) {
+        await this.universalPlayer.playTracks(trackPaths);
       }
       this.onHide();
     });
@@ -74,7 +76,7 @@ export class AlbumModalActions {
     if (!addBtn) return;
     addBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      const tracks = album.tracks || [];
+      let tracks = album.tracks || [];
       if (tracks.length === 0 && this.musicApi) {
         try {
           const tracksData = await this.musicApi.getTracks(
@@ -82,9 +84,10 @@ export class AlbumModalActions {
             album.artist,
             true,
           );
-          tracks.push(...tracksData);
+          tracks = tracksData;
         } catch (error) {
           console.error("Failed to load tracks for playlist:", error);
+          return;
         }
       }
       for (const track of tracks) {

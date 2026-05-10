@@ -1,8 +1,9 @@
 export class AlbumModalTracks {
-  constructor(container, trackList, musicApi) {
+  constructor(container, trackList, musicApi, universalPlayer) {
     this.container = container;
     this.trackList = trackList;
     this.musicApi = musicApi;
+    this.universalPlayer = universalPlayer;
   }
 
   setTrackList(trackList) {
@@ -38,6 +39,7 @@ export class AlbumModalTracks {
           this.container,
           album,
           this._onEditTrack.bind(this),
+          this.universalPlayer,
         );
       }
       return;
@@ -69,6 +71,7 @@ export class AlbumModalTracks {
             this.container,
             album,
             this._onEditTrack.bind(this),
+            this.universalPlayer,
           );
         }
       } catch (error) {
