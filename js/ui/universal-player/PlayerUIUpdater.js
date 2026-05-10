@@ -1,3 +1,4 @@
+// js/ui/universal-player/PlayerUIUpdater.js
 export class PlayerUIUpdater {
   constructor(dom, progress) {
     this.dom = dom;
@@ -19,10 +20,10 @@ export class PlayerUIUpdater {
     const trackName = this.dom.get("universalBottomTrackName");
     const trackArtist = this.dom.get("universalBottomTrackArtist");
     if (trackName && title) {
-      trackName.textContent = this._escape(title);
+      trackName.textContent = this._decodeHtml(title);
     }
     if (trackArtist) {
-      trackArtist.textContent = artist ? this._escape(artist) : "";
+      trackArtist.textContent = artist ? this._decodeHtml(artist) : "";
       trackArtist.style.display = artist ? "block" : "none";
     }
   }
@@ -30,7 +31,6 @@ export class PlayerUIUpdater {
   updateFileInfo(path) {
     const trackName = this.dom.get("universalBottomTrackName");
     if (!trackName) return;
-
     if (!path) {
       trackName.textContent = "—";
       return;
@@ -42,7 +42,7 @@ export class PlayerUIUpdater {
     );
     const match = fileName.match(/^\d+\s*[-.]?\s*(.+)$/);
     if (match) fileName = match[1];
-    trackName.textContent = this._escape(fileName);
+    trackName.textContent = this._decodeHtml(fileName);
   }
 
   updateTrackFullInfo(title, artist, coverUrl) {
@@ -51,16 +51,15 @@ export class PlayerUIUpdater {
       let trackTitle = title;
       const match = trackTitle.match(/^\d+\s*[-.]?\s*(.+)$/);
       if (match) trackTitle = match[1];
-      trackName.textContent = this._escape(trackTitle);
+      trackName.textContent = this._decodeHtml(trackTitle);
     }
     const trackArtist = this.dom.get("universalBottomTrackArtist");
     if (trackArtist) {
-      trackArtist.textContent = artist ? this._escape(artist) : "";
+      trackArtist.textContent = artist ? this._decodeHtml(artist) : "";
       trackArtist.style.display = artist ? "block" : "none";
     }
     if (coverUrl) {
       this.showPreviewImage(coverUrl);
-    } else {
     }
   }
 
@@ -79,6 +78,7 @@ export class PlayerUIUpdater {
       previewIcon.className =
         mediaType === "video" ? "fas fa-video" : "fas fa-music";
     }
+    this.updateFullscreenButtonVisibility(mediaType);
   }
 
   updateTrackCount(currentIndex, totalTracks) {
@@ -121,7 +121,7 @@ export class PlayerUIUpdater {
 
   reset() {
     this.updateFileInfo(null);
-    this.updateTrackInfo("—", "", "");
+    this.updateTrackInfo("—", "");
     this.hidePreviewImage();
     this.updatePlayPauseButton(false);
     this.progress.reset();
@@ -158,6 +158,13 @@ export class PlayerUIUpdater {
         toggle.classList.remove("collapsed");
       }
     }
+  }
+
+  _decodeHtml(str) {
+    if (!str) return "";
+    const textarea = document.createElement("textarea");
+    textarea.innerHTML = str;
+    return textarea.value;
   }
 
   _escape(str) {

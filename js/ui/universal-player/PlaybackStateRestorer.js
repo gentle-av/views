@@ -1,11 +1,20 @@
 export class PlaybackStateRestorer {
-  constructor(api, core, uiUpdater, polling, lifecycle, onRestoreComplete) {
+  constructor(
+    api,
+    core,
+    uiUpdater,
+    polling,
+    lifecycle,
+    onRestoreComplete,
+    progress,
+  ) {
     this.api = api;
     this.core = core;
     this.uiUpdater = uiUpdater;
     this.polling = polling;
     this.lifecycle = lifecycle;
     this.onRestoreComplete = onRestoreComplete;
+    this.progress = progress;
     this._restored = false;
   }
 
@@ -14,15 +23,19 @@ export class PlaybackStateRestorer {
     this._restored = true;
     try {
       const videoStatus = await this.api.getVideoStatus();
-      if (videoStatus?.success && videoStatus.currentFile) {
+      if (videoStatus && videoStatus.success && videoStatus.currentFile) {
         await this.lifecycle.checkExistingPlayback("video");
-        this.onRestoreComplete?.();
+        if (this.onRestoreComplete) {
+          this.onRestoreComplete();
+        }
         return;
       }
       const playlistData = await this.api.api.get("/api/audio/getPlaylist");
-      if (playlistData?.data?.length > 0) {
+      if (playlistData && playlistData.data && playlistData.data.length > 0) {
         await this._restoreFromPlaylist(playlistData.data);
-        this.onRestoreComplete?.();
+        if (this.onRestoreComplete) {
+          this.onRestoreComplete();
+        }
         return;
       }
     } catch (error) {}
@@ -39,11 +52,12 @@ export class PlaybackStateRestorer {
     this.uiUpdater.updateFileInfo(trackPath);
     this.uiUpdater.updateTrackCount(0, tracks.length);
     this.uiUpdater.updatePlayPauseButton(true);
+    this.uiUpdater.updateFullscreenButtonVisibility("audio");
     const metadata = await this.api.getFileMetadata(trackPath);
     let artist = "";
     let title = "";
     let coverUrl = null;
-    if (metadata?.data) {
+    if (metadata && metadata.data) {
       if (metadata.data.file) {
         artist = metadata.data.file.artist || "";
         title = metadata.data.file.title || "";
@@ -70,7 +84,12 @@ export class PlaybackStateRestorer {
     }
     setTimeout(async () => {
       const timeInfo = await this.api.getAudioCurrentTime();
-      if (timeInfo && timeInfo.success) {
+      if (
+        timeInfo &&
+        timeInfo.success &&
+        this.progress &&
+        this.progress.update
+      ) {
         this.progress.update(timeInfo.currentTime || 0, timeInfo.duration || 0);
       }
     }, 500);
