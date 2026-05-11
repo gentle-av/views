@@ -1,0 +1,322 @@
+.search-popup-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  animation: searchFadeIn 0.2s ease;
+}
+
+.search-popup-modal.closing {
+  animation: searchFadeOut 0.2s ease;
+}
+
+.search-popup-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.search-popup-container {
+  position: relative;
+  width: 90%;
+  max-width: 600px;
+  margin-top: 80px;
+  background: var(--bg1);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  animation: searchSlideDown 0.25s ease;
+  border: 1px solid var(--bg3);
+  overflow: hidden;
+}
+
+.search-popup-modal.closing .search-popup-container {
+  animation: searchSlideUp 0.2s ease;
+}
+
+.search-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--bg3);
+}
+
+.search-popup-header i {
+  font-size: 20px;
+  color: var(--yellow);
+}
+
+.search-popup-input {
+  flex: 1;
+  background: var(--bg1);
+  border: 1px solid var(--bg3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: var(--fg0);
+  font-size: 1rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.search-popup-input:focus {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 2px rgba(250, 189, 47, 0.2);
+}
+
+.search-popup-input::placeholder {
+  color: var(--fg4);
+}
+
+.search-popup-close {
+  width: 40px;
+  height: 40px;
+  background: var(--bg1);
+  border: 1px solid var(--bg3);
+  border-radius: 12px;
+  color: var(--fg3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.search-popup-close:hover {
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--bg0);
+  transform: rotate(90deg);
+}
+
+.search-popup-content {
+  padding: 20px;
+}
+
+.search-popup-results {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.search-popup-hints {
+  padding: 16px 20px;
+  display: flex;
+  gap: 16px;
+  background: var(--bg1);
+  border-top: 1px solid var(--bg3);
+}
+
+.search-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--fg3);
+}
+
+.search-hint i {
+  font-size: 12px;
+  color: var(--yellow);
+}
+
+.search-popup-result-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bg3);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.search-popup-result-item:hover {
+  background: var(--bg2);
+}
+
+.search-popup-result-title {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--fg0);
+  margin-bottom: 4px;
+}
+
+.search-popup-result-artist {
+  font-size: 0.8rem;
+  color: var(--yellow);
+}
+
+.search-popup-result-year {
+  font-size: 0.7rem;
+  color: var(--fg3);
+  margin-left: 8px;
+}
+
+.search-popup-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--fg3);
+}
+
+.search-popup-empty i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.search-popup-empty p {
+  font-size: 0.9rem;
+}
+
+.search-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--bg3);
+  border-radius: 24px;
+  color: var(--fg0);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.search-button i {
+  font-size: 16px;
+  color: var(--yellow);
+}
+
+.search-button:hover {
+  background: var(--bg3);
+  border-color: var(--yellow);
+  transform: translateY(-1px);
+}
+
+.search-button:active {
+  transform: translateY(0);
+}
+
+@keyframes searchFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes searchFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes searchSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes searchSlideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+}
+
+@media (max-width: 768px) {
+  .search-popup-container {
+    width: 95%;
+    margin-top: 60px;
+  }
+
+  .search-popup-header {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .search-popup-header i {
+    font-size: 18px;
+  }
+
+  .search-popup-input {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+
+  .search-popup-close {
+    width: 36px;
+    height: 36px;
+  }
+
+  .search-popup-hints {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .search-hint {
+    font-size: 0.7rem;
+  }
+
+  .search-hint i {
+    font-size: 10px;
+  }
+
+  .search-popup-content {
+    padding: 12px;
+  }
+
+  .search-popup-result-item {
+    padding: 10px 12px;
+  }
+
+  .search-popup-result-title {
+    font-size: 0.85rem;
+  }
+
+  .search-popup-result-artist {
+    font-size: 0.75rem;
+  }
+
+  .search-button span {
+    display: none;
+  }
+
+  .search-button {
+    padding: 8px 12px;
+  }
+
+  .search-button i {
+    font-size: 18px;
+    margin: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-popup-container {
+    margin-top: 40px;
+  }
+
+  .search-popup-hints {
+    flex-direction: column;
+    gap: 8px;
+  }
+}

@@ -10,6 +10,7 @@ export class UIManager {
       "headerRefreshMetadataBtn",
     );
     const globalSearchBox = document.getElementById("globalSearchBox");
+    const searchButton = document.getElementById("searchButton");
     const refreshBtn = document.getElementById("headerRefreshBtn");
     const isAudio = page === "audio";
     const isPower = page === "power";
@@ -18,13 +19,21 @@ export class UIManager {
       mainContent.classList.toggle("video-page", !isAudio && !isPower);
       mainContent.classList.toggle("power-page", isPower);
     }
-    if (headerPlaylistBtn)
+    if (headerPlaylistBtn) {
       headerPlaylistBtn.style.display = isAudio ? "flex" : "none";
-    if (headerRefreshMetadataBtn)
+    }
+    if (headerRefreshMetadataBtn) {
       headerRefreshMetadataBtn.style.display = isAudio ? "flex" : "none";
-    if (globalSearchBox)
-      globalSearchBox.style.display = isAudio ? "flex" : "none";
-    if (refreshBtn) refreshBtn.style.display = "none";
+    }
+    if (globalSearchBox) {
+      globalSearchBox.style.display = "none";
+    }
+    if (searchButton) {
+      searchButton.style.display = isAudio ? "flex" : "none";
+    }
+    if (refreshBtn) {
+      refreshBtn.style.display = "none";
+    }
   }
 
   setupSearchUI(onSearch, onClear) {
@@ -40,6 +49,7 @@ export class UIManager {
         searchClearBtn.style.display = shouldShow ? "flex" : "none";
       }
     };
+
     searchInput.oninput = (e) => {
       if (onSearch) onSearch(e.target.value);
       updateClearButton();

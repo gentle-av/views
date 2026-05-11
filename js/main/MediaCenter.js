@@ -26,6 +26,7 @@ export class MediaCenter {
     this.playbackManager = new PlaybackManager(this.core);
     await this.playbackManager.init();
     this.uiManager = new UIManager(this.core);
+    NavigationManager.init(this.core.events, this.uiManager);
     this._injectUIMethods();
     this.videoPageManager = new VideoPageManager(
       this.core,

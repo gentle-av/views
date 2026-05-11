@@ -1,6 +1,7 @@
 export class NavigationManager {
-  static init(events) {
+  static init(events, uiManager) {
     this.events = events;
+    this.uiManager = uiManager;
     this._setupNavigationListeners();
   }
 
@@ -25,6 +26,9 @@ export class NavigationManager {
   }
 
   static async switchTo(page) {
+    if (this.uiManager) {
+      this.uiManager.updateUIForPage(page);
+    }
     const sidebarBtns = document.querySelectorAll(".sidebar-btn");
     sidebarBtns.forEach((btn) => {
       if (btn.dataset.page === page) {

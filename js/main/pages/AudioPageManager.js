@@ -2,6 +2,7 @@ import { AlbumLibrary } from "../../ui/album-library/AlbumLibrary.js";
 import { AlbumModal } from "../../ui/album-modal/AlbumModal.js";
 import { TrackList } from "../../ui/track-list.js";
 import { PlaylistPopup } from "../../ui/playlist-popup/PlaylistPopup.js";
+import { SearchPopup } from "../../ui/album-library/SearchPopup.js";
 
 export class AudioPageManager {
   constructor(core, playbackManager) {
@@ -100,20 +101,41 @@ export class AudioPageManager {
       refreshBtn.style.display = "none";
       refreshBtn.onclick = null;
     }
-    if (this.core._setupSearchUI) {
-      this.core._setupSearchUI(
-        (term) => {
-          if (this.albumLibrary && this.albumLibrary.isReady) {
-            this.albumLibrary.searchAlbums(term);
-          }
-        },
-        () => {
-          if (this.albumLibrary && this.albumLibrary.isReady) {
-            this.albumLibrary.searchAlbums("");
-          }
-        },
-      );
+    const searchButton = document.getElementById("searchButton");
+    if (searchButton && this.albumLibrary) {
+      const oldClickListener = searchButton._searchClickListener;
+      if (oldClickListener) {
+        searchButton.removeEventListener("click", oldClickListener);
+      }
+      const searchClickListener = () => {
+        this._showSearchPopup();
+      };
+      searchButton._searchClickListener = searchClickListener;
+      searchButton.addEventListener("click", searchClickListener);
     }
+  }
+
+  _showSearchPopup() {
+    if (this._searchPopup) {
+      this._searchPopup.hide();
+      this._searchPopup = null;
+    }
+    this._searchPopup = new SearchPopup(
+      (term) => {
+        if (this.albumLibrary && this.albumLibrary.isReady) {
+          this.albumLibrary.searchAlbums(term);
+        }
+      },
+      () => {
+        if (
+          this.albumLibrary &&
+          this.albumLibrary.search.getCurrentTerm() === ""
+        ) {
+          this.albumLibrary.search.reset();
+        }
+      },
+    );
+    this._searchPopup.show();
   }
 
   _setupAlbumEvents() {
@@ -220,6 +242,10 @@ export class AudioPageManager {
       this.core.events.off(event, handler);
     }
     this._boundHandlers.clear();
+    if (this._searchPopup) {
+      this._searchPopup.hide();
+      this._searchPopup = null;
+    }
     if (this.albumLibrary) {
       this.albumLibrary.destroy();
       this.albumLibrary = null;

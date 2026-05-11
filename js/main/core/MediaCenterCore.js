@@ -1,7 +1,6 @@
 import { EventBus } from "../../core/event-bus.js";
 import { ApiClient } from "../../services/api-client.js";
 import { MusicApiClient } from "../../services/music-api-client.js";
-import { NavigationManager } from "../managers/NavigationManager.js";
 import { MediaCenterState } from "./MediaCenterState.js";
 import { MediaCenterEvents } from "./MediaCenterEvents.js";
 
@@ -25,7 +24,6 @@ export class MediaCenterCore {
     this._setupBeforeUnload();
     this._initApis();
     this.eventsManager = new MediaCenterEvents(this.events);
-    NavigationManager.init(this.events);
     this.state.isInitialized = true;
     return this;
   }
