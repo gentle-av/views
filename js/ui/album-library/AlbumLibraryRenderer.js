@@ -5,6 +5,7 @@ export class AlbumLibraryRenderer {
     this.container = container;
     this.events = events;
     this.state = state;
+    this._scrollPosition = 0;
   }
 
   showLoading() {
@@ -45,6 +46,22 @@ export class AlbumLibraryRenderer {
     if (existing) existing.remove();
   }
 
+  saveScrollPosition() {
+    const scrollable = document.getElementById("scrollableContent");
+    if (scrollable) {
+      this._scrollPosition = scrollable.scrollTop;
+    }
+  }
+
+  restoreScrollPosition() {
+    const scrollable = document.getElementById("scrollableContent");
+    if (scrollable && this._scrollPosition > 0) {
+      setTimeout(() => {
+        scrollable.scrollTop = this._scrollPosition;
+      }, 50);
+    }
+  }
+
   renderAlbums(onCardRender) {
     if (!this.container || this.state.isDestroyed) return;
     const loadingIndicator = this.container.querySelector(".loading");
@@ -75,9 +92,19 @@ export class AlbumLibraryRenderer {
       if (onCardRender) onCardRender(card);
     }
     this.showLoadingMore();
+    this._fixScroll();
+  }
+
+  _fixScroll() {
+    const scrollable = document.getElementById("scrollableContent");
+    if (scrollable) {
+      scrollable.style.overflowY = "auto";
+      scrollable.style.webkitOverflowScrolling = "touch";
+    }
   }
 
   clear() {
+    this.saveScrollPosition();
     if (this.container) {
       this.container.innerHTML = "";
     }

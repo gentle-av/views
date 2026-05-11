@@ -18,6 +18,8 @@ export class AlbumLibrarySearch {
     }
     this.renderer.clear();
     this.renderer.renderAlbums();
+    this.renderer.restoreScrollPosition();
+    this.renderer._fixScroll();
   }
 
   refreshFilter() {
@@ -33,26 +35,12 @@ export class AlbumLibrarySearch {
     this.state.filteredAlbums = [...this.state.albums];
     this.renderer.clear();
     this.renderer.renderAlbums();
+    this.renderer._fixScroll();
   }
 
   search(term) {
     this.renderer.closeAllSwipes();
     this._currentTerm = term;
     this._applyFilter();
-  }
-
-  _applyFilter() {
-    if (!this._currentTerm.trim()) {
-      this.state.filteredAlbums = [...this.state.albums];
-    } else {
-      const lowerTerm = this._currentTerm.toLowerCase();
-      this.state.filteredAlbums = this.state.albums.filter(
-        (a) =>
-          a.title.toLowerCase().includes(lowerTerm) ||
-          a.artist.toLowerCase().includes(lowerTerm),
-      );
-    }
-    this.renderer.clear();
-    this.renderer.renderAlbums();
   }
 }

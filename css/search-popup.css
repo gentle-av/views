@@ -385,3 +385,67 @@
     display: inline;
   }
 }
+
+/* В конец файла добавьте: */
+.header-controls-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.search-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg2);
+  border: 1px solid var(--bg3);
+  border-radius: 24px;
+  color: var(--fg0);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  order: 1;
+}
+
+.search-button i {
+  font-size: 16px;
+  color: var(--yellow);
+}
+
+.search-button:hover {
+  background: var(--bg3);
+  border-color: var(--yellow);
+  transform: translateY(-1px);
+}
+
+.search-button:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .header-controls-section {
+    gap: 4px;
+  }
+
+  .search-button span {
+    display: none;
+  }
+
+  .search-button {
+    padding: 8px 12px;
+    margin-left: auto;
+  }
+
+  .search-button i {
+    font-size: 18px;
+    margin: 0;
+  }
+
+  .mobile-nav-buttons {
+    display: flex;
+    gap: 4px;
+    margin-right: auto;
+  }
+}
