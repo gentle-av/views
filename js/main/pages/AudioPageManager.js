@@ -11,18 +11,28 @@ export class AudioPageManager {
     this.albumLibrary = null;
     this.albumModal = null;
     this.playlistPopup = null;
+    this.searchPopup = null;
     this._isInitialized = false;
     this._boundHandlers = new Map();
     this._htmlLoaded = false;
   }
 
   async onPageLoaded() {
+    if (this._isInitialized) {
+      this._showPageContainer();
+      this._updateUI();
+      return;
+    }
+    await this._fullInit();
+  }
+
+  async _fullInit() {
     await this._showPageContainer();
     this._updateUI();
     await this._initAlbumModal();
     await this._initAlbumLibrary();
     this._initPlaylistPopup();
-    this._setupSearchUI();
+    this._setupSearchButton();
     this._setupAlbumEvents();
     this._cacheTrackNames();
     this._isInitialized = true;
@@ -31,6 +41,7 @@ export class AudioPageManager {
   async _showPageContainer() {
     const audioContainer = document.getElementById("audioPageContainer");
     if (!audioContainer) return;
+    audioContainer.style.display = "block";
     if (!this._htmlLoaded) {
       const response = await fetch("/pages/audio.html");
       const html = await response.text();
@@ -46,14 +57,9 @@ export class AudioPageManager {
   }
 
   async _initAlbumModal() {
-    if (this.albumModal) {
-      this.albumModal.hide();
-      this.albumModal = null;
-    }
+    if (this.albumModal) return;
     const modalElement = document.getElementById("albumModal");
-    if (!modalElement) {
-      return;
-    }
+    if (!modalElement) return;
     const universalPlayer = this.playbackManager?.universalPlayer;
     this.albumModal = new AlbumModal(
       this.core.events,
@@ -66,36 +72,30 @@ export class AudioPageManager {
   }
 
   async _initAlbumLibrary() {
-    if (this.albumLibrary) {
-      this.albumLibrary.destroy();
-      this.albumLibrary = null;
-    }
+    if (this.albumLibrary) return;
     const container = document.getElementById("albumsGrid");
-    if (!container) {
-      return;
-    }
+    if (!container) return;
     this.albumLibrary = new AlbumLibrary(this.core.musicApi, this.core.events);
     await this.albumLibrary.init();
     this.core.albumLibrary = this.albumLibrary;
   }
 
   _initPlaylistPopup() {
-    if (typeof PlaylistPopup !== "undefined" && !this.playlistPopup) {
-      const universalPlayer = this.playbackManager?.universalPlayer;
-      if (!universalPlayer) {
-        setTimeout(() => this._initPlaylistPopup(), 500);
-        return;
-      }
-      this.playlistPopup = new PlaylistPopup(
-        universalPlayer,
-        this.core.events,
-        this.albumLibrary,
-      );
-      this.core.playlistPopup = this.playlistPopup;
+    if (this.playlistPopup) return;
+    const universalPlayer = this.playbackManager?.universalPlayer;
+    if (!universalPlayer) {
+      setTimeout(() => this._initPlaylistPopup(), 500);
+      return;
     }
+    this.playlistPopup = new PlaylistPopup(
+      universalPlayer,
+      this.core.events,
+      this.albumLibrary,
+    );
+    this.core.playlistPopup = this.playlistPopup;
   }
 
-  _setupSearchUI() {
+  _setupSearchButton() {
     const refreshBtn = document.getElementById("headerRefreshBtn");
     if (refreshBtn) {
       refreshBtn.style.display = "none";
@@ -103,39 +103,67 @@ export class AudioPageManager {
     }
     const searchButton = document.getElementById("searchButton");
     if (searchButton && this.albumLibrary) {
-      const oldClickListener = searchButton._searchClickListener;
-      if (oldClickListener) {
-        searchButton.removeEventListener("click", oldClickListener);
+      if (this._searchClickListener) {
+        searchButton.removeEventListener("click", this._searchClickListener);
       }
-      const searchClickListener = () => {
+      this._searchClickListener = () => {
         this._showSearchPopup();
       };
-      searchButton._searchClickListener = searchClickListener;
-      searchButton.addEventListener("click", searchClickListener);
+      searchButton.addEventListener("click", this._searchClickListener);
     }
   }
 
   _showSearchPopup() {
-    if (this._searchPopup) {
-      this._searchPopup.hide();
-      this._searchPopup = null;
+    if (this.searchPopup) {
+      this.searchPopup.hide(false);
+      this.searchPopup = null;
     }
-    this._searchPopup = new SearchPopup(
+    this.searchPopup = new SearchPopup(
       (term) => {
         if (this.albumLibrary && this.albumLibrary.isReady) {
           this.albumLibrary.searchAlbums(term);
         }
       },
       () => {
-        if (
-          this.albumLibrary &&
-          this.albumLibrary.search.getCurrentTerm() === ""
-        ) {
-          this.albumLibrary.search.reset();
+        if (this.albumLibrary && this.albumLibrary.isReady) {
+          this.albumLibrary.searchAlbums("");
         }
       },
+      () => {
+        const currentTerm =
+          this.albumLibrary && this.albumLibrary.search
+            ? this.albumLibrary.search.getCurrentTerm()
+            : "";
+        return currentTerm;
+      },
     );
-    this._searchPopup.show();
+    this.searchPopup.show();
+  }
+
+  _showSearchPopup() {
+    if (this.searchPopup) {
+      this.searchPopup.hide(false);
+      this.searchPopup = null;
+    }
+    this.searchPopup = new SearchPopup(
+      (term) => {
+        if (this.albumLibrary && this.albumLibrary.isReady) {
+          this.albumLibrary.searchAlbums(term);
+        }
+      },
+      () => {
+        if (this.albumLibrary && this.albumLibrary.isReady) {
+          this.albumLibrary.searchAlbums("");
+        }
+      },
+      () => {
+        if (this.albumLibrary && this.albumLibrary.search) {
+          return this.albumLibrary.search.getCurrentTerm();
+        }
+        return "";
+      },
+    );
+    this.searchPopup.show();
   }
 
   _setupAlbumEvents() {
@@ -229,6 +257,13 @@ export class AudioPageManager {
     }
   }
 
+  hide() {
+    const audioContainer = document.getElementById("audioPageContainer");
+    if (audioContainer) {
+      audioContainer.style.display = "none";
+    }
+  }
+
   getAlbumLibrary() {
     return this.albumLibrary;
   }
@@ -242,9 +277,9 @@ export class AudioPageManager {
       this.core.events.off(event, handler);
     }
     this._boundHandlers.clear();
-    if (this._searchPopup) {
-      this._searchPopup.hide();
-      this._searchPopup = null;
+    if (this.searchPopup) {
+      this.searchPopup.hide(false);
+      this.searchPopup = null;
     }
     if (this.albumLibrary) {
       this.albumLibrary.destroy();
