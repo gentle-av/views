@@ -1,3 +1,5 @@
+/* app-header.css - обновленный (желтый hover для всех кнопок header-btn) */
+
 .app-header {
   position: sticky;
   top: 0;
@@ -40,7 +42,7 @@
 
 .header-btn {
   background: var(--bg2);
-  border: none;
+  border: 1px solid var(--bg3);
   padding: 8px 16px;
   border-radius: 12px;
   color: var(--fg0);
@@ -49,17 +51,30 @@
   align-items: center;
   gap: 8px;
   font-size: 0.9rem;
-  transition: all 0.2s;
+  font-weight: 500;
+  transition: all 0.2s ease;
   height: 36px;
   min-height: 36px;
 }
 
-.header-btn:hover {
-  background: var(--bg3);
-}
-
 .header-btn i {
   font-size: 1rem;
+  color: var(--yellow);
+}
+
+.header-btn:hover {
+  background: var(--bg3);
+  border-color: var(--yellow);
+  color: var(--yellow);
+  transform: translateY(-1px);
+}
+
+.header-btn:hover i {
+  color: var(--yellow);
+}
+
+.header-btn:active {
+  transform: translateY(0);
 }
 
 .scrollable-content {
@@ -69,35 +84,6 @@
   height: calc(100vh - 60px);
   padding-bottom: 0;
   transition: padding-bottom 0.3s ease;
-}
-
-.search-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: var(--bg2);
-  border: 1px solid var(--bg3);
-  border-radius: 24px;
-  color: var(--fg0);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
-}
-
-.search-button i {
-  font-size: 16px;
-  color: var(--yellow);
-}
-
-.search-button:hover {
-  background: var(--bg3);
-  border-color: var(--yellow);
-  transform: translateY(-1px);
-}
-
-.search-button:active {
-  transform: translateY(0);
 }
 
 @media (max-width: 768px) {
@@ -124,7 +110,6 @@
     padding: 8px 12px;
     height: 36px;
     min-height: 36px;
-    padding: 6px 12px;
   }
 
   .scrollable-content {
@@ -137,22 +122,6 @@
     justify-content: space-between;
     gap: 8px;
     min-height: 36px;
-  }
-
-  .search-button {
-    order: 1;
-    margin-left: auto;
-    padding: 8px 12px;
-    min-width: 44px;
-  }
-
-  .search-button span {
-    display: none;
-  }
-
-  .search-button i {
-    font-size: 18px;
-    margin: 0;
   }
 
   .mobile-nav-buttons .header-btn {
@@ -171,7 +140,8 @@
 
   #headerPlaylistBtn,
   #headerRefreshBtn,
-  .refresh-metadata-btn {
+  .refresh-metadata-btn,
+  #searchButton {
     order: 2;
   }
 }
@@ -233,9 +203,11 @@
 #headerPlaylistBtn,
 #headerRefreshBtn,
 .playlist-toggle-header,
-.refresh-header {
+.refresh-header,
+.refresh-metadata-btn,
+#searchButton {
   border-radius: 12px;
-  transition: all var(--transition-fast) ease;
+  transition: all 0.2s ease;
   background: var(--bg2);
   border: 1px solid var(--bg3);
   color: var(--fg0);
@@ -244,36 +216,57 @@
   align-items: center;
   gap: 8px;
   font-size: 0.9rem;
+  font-weight: 500;
   padding: 8px 16px;
+}
+
+#headerPlaylistBtn i,
+#headerRefreshBtn i,
+.playlist-toggle-header i,
+.refresh-header i,
+.refresh-metadata-btn i,
+#searchButton i {
+  color: var(--yellow);
+  font-size: 1rem;
 }
 
 #headerPlaylistBtn:hover,
 #headerRefreshBtn:hover,
 .playlist-toggle-header:hover,
-.refresh-header:hover {
+.refresh-header:hover,
+.refresh-metadata-btn:hover,
+#searchButton:hover {
   background: var(--bg3);
   border-color: var(--yellow);
   color: var(--yellow);
   transform: translateY(-2px);
 }
 
+#headerPlaylistBtn:hover i,
+#headerRefreshBtn:hover i,
+.playlist-toggle-header:hover i,
+.refresh-header:hover i,
+.refresh-metadata-btn:hover i,
+#searchButton:hover i {
+  color: var(--yellow);
+}
+
 #headerPlaylistBtn:active,
 #headerRefreshBtn:active,
 .playlist-toggle-header:active,
-.refresh-header:active {
+.refresh-header:active,
+.refresh-metadata-btn:active,
+#searchButton:active {
   transform: translateY(0px);
-}
-
-#headerRefreshBtn:hover i,
-.refresh-header:hover i {
-  transform: none;
 }
 
 @media (max-width: 768px) {
   #headerPlaylistBtn,
   #headerRefreshBtn,
   .playlist-toggle-header,
-  .refresh-header {
+  .refresh-header,
+  .refresh-metadata-btn,
+  #searchButton {
     padding: 10px;
     min-width: 44px;
   }
@@ -281,14 +274,18 @@
   #headerPlaylistBtn span,
   #headerRefreshBtn span,
   .playlist-toggle-header span,
-  .refresh-header span {
+  .refresh-header span,
+  .refresh-metadata-btn span,
+  #searchButton span {
     display: none;
   }
 
   #headerPlaylistBtn:hover,
   #headerRefreshBtn:hover,
   .playlist-toggle-header:hover,
-  .refresh-header:hover {
+  .refresh-header:hover,
+  .refresh-metadata-btn:hover,
+  #searchButton:hover {
     transform: translateY(-1px);
   }
 }
@@ -297,7 +294,9 @@
   #headerPlaylistBtn,
   #headerRefreshBtn,
   .playlist-toggle-header,
-  .refresh-header {
+  .refresh-header,
+  .refresh-metadata-btn,
+  #searchButton {
     padding: 8px;
   }
 }
@@ -308,38 +307,6 @@
 
 .audio-page .audio-only {
   display: flex;
-}
-
-.refresh-metadata-btn {
-  border-radius: 12px;
-  transition: all var(--transition-fast) ease;
-  background: var(--bg2);
-  border: 1px solid var(--bg3);
-  color: var(--fg0);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.9rem;
-  padding: 8px 16px;
-}
-
-.refresh-metadata-btn:hover {
-  background: var(--bg3);
-  border-color: var(--green);
-  color: var(--green);
-  transform: translateY(-2px);
-}
-
-@media (max-width: 768px) {
-  .refresh-metadata-btn span {
-    display: none;
-  }
-
-  .refresh-metadata-btn {
-    padding: 10px;
-    min-width: 44px;
-  }
 }
 
 .mobile-nav-buttons .header-btn.nav-power-btn.active {

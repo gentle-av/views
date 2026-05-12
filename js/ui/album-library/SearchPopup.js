@@ -79,7 +79,7 @@ export class SearchPopup {
         <div class="search-popup-header">
           <i class="fas fa-search"></i>
           <input type="text" class="search-popup-input" placeholder="Поиск альбомов или исполнителей..." autocomplete="off">
-          <button class="search-popup-close">
+          <button class="modal-close">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -109,7 +109,7 @@ export class SearchPopup {
     `;
     document.body.appendChild(this.modal);
     this.searchInput = this.modal.querySelector(".search-popup-input");
-    const closeBtn = this.modal.querySelector(".search-popup-close");
+    const closeBtn = this.modal.querySelector(".modal-close");
     const overlay = this.modal.querySelector(".search-popup-overlay");
     const clearBtn = this.modal.querySelector(".search-popup-clear-btn");
     const applyBtn = this.modal.querySelector(".search-popup-apply-btn");
