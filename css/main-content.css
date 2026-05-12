@@ -34,7 +34,7 @@
 
 .scrollable-content {
   flex: 1;
-  overflow-y: hidden !important;
+  overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
