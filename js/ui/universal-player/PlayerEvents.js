@@ -47,6 +47,12 @@ export class PlayerEvents {
       elements.universalBottomProgressBar.addEventListener("click", handler);
       this.boundHandlers.set("progressClick", handler);
     }
+    if (elements.universalBottomVolumeRange) {
+      const handler = (e) =>
+        this.handlers.onVolumeSet?.(parseInt(e.target.value));
+      elements.universalBottomVolumeRange.addEventListener("input", handler);
+      this.boundHandlers.set("volumeRange", handler);
+    }
   }
 
   _attachClick(element, handler) {

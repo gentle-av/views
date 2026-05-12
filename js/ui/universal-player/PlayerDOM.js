@@ -9,9 +9,6 @@ export class PlayerDOM {
     this.element = document.getElementById("universalBottomPlayer");
     if (!this.element) return false;
     this._cacheElements();
-    // Удалить эти две строки:
-    // this.element.style.display = "none";
-    // this.element.classList.remove("active");
     return true;
   }
 
@@ -71,6 +68,8 @@ export class PlayerDOM {
       "universalBottomPrevBtn",
       "universalBottomNextBtn",
       "universalBottomStopBtn",
+      "universalBottomVolumeRange",
+      "universalBottomVolumeFill",
       "universalBottomFullscreenBtn",
       "universalBottomProgressBar",
       "universalBottomProgressFill",

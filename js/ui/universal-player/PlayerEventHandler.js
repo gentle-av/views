@@ -1,4 +1,3 @@
-// js/ui/universal-player/PlayerEventHandler.js
 export class PlayerEventHandler {
   constructor(mediaHandler, volume, output, progress, videoCloseModal) {
     this.mediaHandler = mediaHandler;
@@ -32,7 +31,7 @@ export class PlayerEventHandler {
             this.mediaHandler.stop();
           }
         } else {
-          this.mediaHandler.stop(false); // ИЗМЕНИТЬ true НА false
+          this.mediaHandler.stop(false);
           this._clearAudioPlaylist();
           if (this.mediaHandler.onHide) {
             this.mediaHandler.onHide();
@@ -44,8 +43,8 @@ export class PlayerEventHandler {
       onToggleSettings: () => this.mediaHandler.toggleSettings?.(),
       onVolumeDown: () => this.volume.changeVolume(-5),
       onVolumeUp: () => this.volume.changeVolume(5),
-      onVolumeSet: (volume) => this.volume.setVolume(volume), // новый обработчик
       onToggleMute: () => this.volume.toggleMute(),
+      onVolumeSet: (volume) => this.volume.setVolume(volume),
       onSpeakers: () => this.output.switchToSpeakers(),
       onHeadphones: () => this.output.switchToHeadphones(),
       onProgressClick: (e) => {

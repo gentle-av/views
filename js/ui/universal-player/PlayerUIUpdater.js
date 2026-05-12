@@ -1,4 +1,3 @@
-// js/ui/universal-player/PlayerUIUpdater.js
 export class PlayerUIUpdater {
   constructor(dom, progress) {
     this.dom = dom;

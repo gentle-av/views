@@ -21,13 +21,23 @@ export class PlayerVolume {
     if (newVolume === this._currentVolume) return;
     this._currentVolume = newVolume;
     this._updateUI();
-    try {
-      await this.api.post("/api/audio/volume", { volume: this._currentVolume });
-      if (this._isMuted && newVolume > 0) {
-        this._isMuted = false;
-        this._updateUI();
-      }
-    } catch (error) {}
+    await this.api.post("/api/audio/volume", { volume: this._currentVolume });
+    if (this._isMuted && newVolume > 0) {
+      this._isMuted = false;
+      this._updateUI();
+    }
+  }
+
+  async setVolume(volume) {
+    const newVolume = Math.min(100, Math.max(0, volume));
+    if (newVolume === this._currentVolume) return;
+    this._currentVolume = newVolume;
+    this._updateUI();
+    await this.api.post("/api/audio/volume", { volume: this._currentVolume });
+    if (this._isMuted && newVolume > 0) {
+      this._isMuted = false;
+      this._updateUI();
+    }
   }
 
   async toggleMute() {
@@ -43,10 +53,28 @@ export class PlayerVolume {
   _updateUI() {
     const volumeValue = this.dom.get("universalBottomVolumeValue");
     const volumeMute = this.dom.get("universalBottomVolumeMute");
+    const volumeFill = this.dom.get("universalBottomVolumeFill");
+    const volumeRange = this.dom.get("universalBottomVolumeRange");
+    const displayVolume = this._isMuted ? 0 : this._currentVolume;
     if (volumeValue) {
       volumeValue.textContent = this._isMuted
         ? "0%"
         : `${this._currentVolume}%`;
+    }
+    if (volumeFill) {
+      volumeFill.style.width = `${displayVolume}%`;
+      if (this._isMuted || displayVolume === 0) {
+        volumeFill.style.background = "var(--bg3)";
+      } else if (displayVolume <= 33) {
+        volumeFill.style.background = "var(--green)";
+      } else if (displayVolume <= 66) {
+        volumeFill.style.background = "var(--yellow)";
+      } else {
+        volumeFill.style.background = "var(--red)";
+      }
+    }
+    if (volumeRange) {
+      volumeRange.value = displayVolume;
     }
     if (volumeMute) {
       const icon = volumeMute.querySelector("i");
@@ -76,6 +104,7 @@ export class PlayerVolume {
         typeof response.data.volume === "number"
       ) {
         this._currentVolume = response.data.volume;
+        this.dom._cacheElements();
         this._updateUI();
       }
     } catch (error) {}
@@ -103,7 +132,10 @@ export class PlayerVolume {
             this._isMuted = response.data.muted;
             updated = true;
           }
-          if (updated) this._updateUI();
+          if (updated) {
+            this.dom._cacheElements();
+            this._updateUI();
+          }
         }
       } catch (error) {}
     }, 2000);

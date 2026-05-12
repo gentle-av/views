@@ -1,4 +1,3 @@
-// js/ui/universal-player/UniversalPlayer.js
 import { PlayerCore } from "./PlayerCore.js";
 import { PlayerProgress } from "./PlayerProgress.js";
 import { PlayerUIUpdater } from "./PlayerUIUpdater.js";

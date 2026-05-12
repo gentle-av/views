@@ -1,4 +1,3 @@
-// PlaybackCoordinator.js
 export class PlaybackCoordinator {
   constructor(api, core, uiUpdater, progress, onShow, onStop) {
     this.api = api;

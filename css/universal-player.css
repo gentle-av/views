@@ -671,3 +671,22 @@
     padding-right: max(20px, env(safe-area-inset-right));
   }
 }
+
+.universal-bottom-player-volume-fill {
+  width: 50%;
+  height: 100%;
+  border-radius: 4px;
+  transition: background 0.1s ease;
+}
+
+.universal-bottom-player-volume-fill[data-level="low"] {
+  background: var(--green);
+}
+
+.universal-bottom-player-volume-fill[data-level="medium"] {
+  background: var(--yellow);
+}
+
+.universal-bottom-player-volume-fill[data-level="high"] {
+  background: var(--red);
+}
