@@ -65,12 +65,17 @@ export class PlayerVolume {
       volumeFill.style.width = `${displayVolume}%`;
       if (this._isMuted || displayVolume === 0) {
         volumeFill.style.background = "var(--bg3)";
-      } else if (displayVolume <= 33) {
-        volumeFill.style.background = "var(--green)";
-      } else if (displayVolume <= 66) {
-        volumeFill.style.background = "var(--yellow)";
       } else {
-        volumeFill.style.background = "var(--red)";
+        const percent = displayVolume / 100;
+        let r, g;
+        if (percent <= 0.5) {
+          r = Math.floor(255 * (percent * 2));
+          g = 255;
+        } else {
+          r = 255;
+          g = Math.floor(255 * (1 - (percent - 0.5) * 2));
+        }
+        volumeFill.style.background = `linear-gradient(90deg, rgb(255, ${g}, 0), rgb(${r}, ${Math.max(0, g - 50)}, 0))`;
       }
     }
     if (volumeRange) {
