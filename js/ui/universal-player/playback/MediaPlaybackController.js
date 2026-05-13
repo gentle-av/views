@@ -9,6 +9,11 @@ export class MediaPlaybackController {
     this.progress = null;
     this.strategy = null;
     this.videoCloseModal = null;
+    this.AudioPlaybackStrategy = null;
+  }
+
+  setAudioPlaybackStrategyClass(strategyClass) {
+    this.AudioPlaybackStrategy = strategyClass;
   }
 
   setOnHide(callback) {
@@ -21,6 +26,22 @@ export class MediaPlaybackController {
 
   setStrategy(strategy) {
     this.strategy = strategy;
+  }
+
+  _ensureStrategy() {
+    if (this.strategy) return true;
+    if (
+      this.core.hasActiveFile() &&
+      this.core.isAudio() &&
+      this.AudioPlaybackStrategy
+    ) {
+      this.strategy = new this.AudioPlaybackStrategy(this.api);
+      this.strategy.setCore(this.core);
+      this.strategy.setUIUpdater(this.uiUpdater);
+      this.strategy.setProgress(this.progress);
+      return true;
+    }
+    return false;
   }
 
   async stop(keepState = false) {
@@ -39,18 +60,22 @@ export class MediaPlaybackController {
   }
 
   async togglePlayPause() {
+    this._ensureStrategy();
     if (this.strategy) await this.strategy.togglePlayPause();
   }
 
   async seek(time) {
+    this._ensureStrategy();
     if (this.strategy) await this.strategy.seek(time);
   }
 
   async previous() {
+    this._ensureStrategy();
     if (this.strategy) await this.strategy.previous();
   }
 
   async next() {
+    this._ensureStrategy();
     if (this.strategy) await this.strategy.next();
   }
 

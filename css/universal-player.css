@@ -8,15 +8,24 @@
   z-index: 100;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
-  transition: transform 0.3s ease;
-  display: none;
   box-sizing: border-box;
   flex-shrink: 0;
+  display: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease,
+    transform 0.3s ease;
 }
 
 .universal-bottom-player.active {
   display: flex;
   flex-direction: column;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 .universal-bottom-player.minimized {
@@ -65,9 +74,6 @@
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
-  transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease;
 }
 
 .universal-bottom-player-info {
@@ -283,8 +289,8 @@
 .universal-bottom-player-volume-fill {
   width: 50%;
   height: 100%;
-  background: linear-gradient(90deg, var(--yellow), var(--orange));
   border-radius: 4px;
+  transition: background 0.1s ease;
 }
 
 .universal-bottom-player-volume-range {
@@ -394,6 +400,18 @@
   transform: rotate(180deg);
 }
 
+.universal-bottom-player-volume-fill[data-level="low"] {
+  background: var(--green);
+}
+
+.universal-bottom-player-volume-fill[data-level="medium"] {
+  background: var(--yellow);
+}
+
+.universal-bottom-player-volume-fill[data-level="high"] {
+  background: var(--red);
+}
+
 @media (max-width: 1024px) {
   .universal-bottom-player-content {
     flex-wrap: wrap;
@@ -498,14 +516,10 @@
     width: 100%;
   }
 
-  @supports (padding-bottom: env(safe-area-inset-bottom)) {
-    .universal-bottom-player {
-      padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    }
-
-    .universal-bottom-player.minimized {
-      transform: translateY(calc(100% - 60px - env(safe-area-inset-bottom)));
-    }
+  .universal-bottom-player-settings {
+    max-height: 200px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .universal-bottom-player-progress-bar,
@@ -519,6 +533,16 @@
   .universal-bottom-player-content {
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
+  }
+
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .universal-bottom-player {
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    }
+
+    .universal-bottom-player.minimized {
+      transform: translateY(calc(100% - 60px - env(safe-area-inset-bottom)));
+    }
   }
 }
 
@@ -643,14 +667,6 @@
   }
 }
 
-@media (max-width: 768px) {
-  .universal-bottom-player-settings {
-    max-height: 200px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
 @media (prefers-color-scheme: dark) {
   .universal-bottom-player {
     background: var(--bg1);
@@ -670,23 +686,4 @@
     padding-left: max(20px, env(safe-area-inset-left));
     padding-right: max(20px, env(safe-area-inset-right));
   }
-}
-
-.universal-bottom-player-volume-fill {
-  width: 50%;
-  height: 100%;
-  border-radius: 4px;
-  transition: background 0.1s ease;
-}
-
-.universal-bottom-player-volume-fill[data-level="low"] {
-  background: var(--green);
-}
-
-.universal-bottom-player-volume-fill[data-level="medium"] {
-  background: var(--yellow);
-}
-
-.universal-bottom-player-volume-fill[data-level="high"] {
-  background: var(--red);
 }
