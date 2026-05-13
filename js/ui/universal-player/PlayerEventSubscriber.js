@@ -1,3 +1,5 @@
+import { MetadataExtractor } from "./utils/MetadataExtractor.js";
+
 export class PlayerEventSubscriber {
   constructor(events, api, mediaHandler, core, uiUpdater, onShow, onStop) {
     this.events = events;
@@ -8,16 +10,23 @@ export class PlayerEventSubscriber {
     this.onShow = onShow;
     this.onStop = onStop;
     this._isStartingVideo = false;
+    this._onVideoPlay = this._onVideoPlay.bind(this);
+    this._onAudioStart = this._onAudioStart.bind(this);
+    this._onVideoStopped = this._onVideoStopped.bind(this);
+    this._onAudioStopped = this._onAudioStopped.bind(this);
+    this._onStateChange = this._onStateChange.bind(this);
+    this._onTrackChanged = this._onTrackChanged.bind(this);
+    this._onPlaylistChanged = this._onPlaylistChanged.bind(this);
   }
 
   subscribe() {
-    this.events.on("video:play", (path) => this._onVideoPlay(path));
-    this.events.on("playback:audioStart", (path) => this._onAudioStart(path));
-    this.events.on("playback:videoStopped", () => this._onVideoStopped());
-    this.events.on("playback:audioStopped", () => this._onAudioStopped());
-    this.events.on("stateChange", (state) => this._onStateChange(state));
-    this.events.on("trackChanged", (data) => this._onTrackChanged(data));
-    this.events.on("playlistChanged", () => this._onPlaylistChanged());
+    this.events.on("video:play", this._onVideoPlay);
+    this.events.on("playback:audioStart", this._onAudioStart);
+    this.events.on("playback:videoStopped", this._onVideoStopped);
+    this.events.on("playback:audioStopped", this._onAudioStopped);
+    this.events.on("stateChange", this._onStateChange);
+    this.events.on("trackChanged", this._onTrackChanged);
+    this.events.on("playlistChanged", this._onPlaylistChanged);
   }
 
   _onVideoPlay(path) {
@@ -62,30 +71,8 @@ export class PlayerEventSubscriber {
 
   async _updateTrackInfoFromPath(path) {
     if (!this.api || !this.uiUpdater) return;
-    const metadata = await this.api.getFileMetadata(path);
-    let artist = "";
-    let title = "";
-    let coverUrl = null;
-    if (metadata?.data) {
-      if (metadata.data.file) {
-        artist = metadata.data.file.artist || "";
-        title = metadata.data.file.title || "";
-        coverUrl = metadata.data.file.cover || null;
-      }
-      if (!title && metadata.data.database) {
-        title = metadata.data.database.title || "";
-        artist = metadata.data.database.artist || "";
-      }
-      if (!coverUrl && title) {
-        coverUrl = await this.api.getAlbumCover(path, title, artist);
-      }
-    }
-    if (!title) {
-      let fileName = path.split("/").pop();
-      fileName = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
-      const match = fileName.match(/^\d+\s*[-.]?\s*(.+)$/);
-      title = match ? match[1] : fileName;
-    }
+    const { title, artist, coverUrl } =
+      await MetadataExtractor.extractTrackInfo(this.api, path);
     this.uiUpdater.updateTrackFullInfo(title, artist, coverUrl);
   }
 

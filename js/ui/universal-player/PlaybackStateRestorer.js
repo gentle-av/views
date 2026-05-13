@@ -1,3 +1,5 @@
+import { MetadataExtractor } from "./utils/MetadataExtractor.js";
+
 export class PlaybackStateRestorer {
   constructor(
     api,
@@ -34,7 +36,9 @@ export class PlaybackStateRestorer {
         if (this.onRestoreComplete) this.onRestoreComplete();
         return;
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Failed to restore playback state:", error);
+    }
   }
 
   async _restoreFromPlaylist(tracks) {
@@ -49,30 +53,8 @@ export class PlaybackStateRestorer {
     this.uiUpdater.updateTrackCount(0, tracks.length);
     this.uiUpdater.updatePlayPauseButton(true);
     this.uiUpdater.updateFullscreenButtonVisibility("audio");
-    const metadata = await this.api.getFileMetadata(trackPath);
-    let artist = "",
-      title = "",
-      coverUrl = null;
-    if (metadata?.data) {
-      if (metadata.data.file) {
-        artist = metadata.data.file.artist || "";
-        title = metadata.data.file.title || "";
-        coverUrl = metadata.data.file.cover || null;
-      }
-      if (!title && metadata.data.database) {
-        title = metadata.data.database.title || "";
-        artist = metadata.data.database.artist || "";
-      }
-    }
-    if (!title) {
-      let fileName = trackPath.split("/").pop();
-      fileName = fileName.replace(/\.(flac|mp3|m4a|wav|ogg|aac)$/i, "");
-      const match = fileName.match(/^\d+\s*[-.]?\s*(.+)$/);
-      title = match ? match[1] : fileName;
-    }
-    if (!coverUrl && title) {
-      coverUrl = await this.api.getAlbumCover(trackPath, title, artist);
-    }
+    const { title, artist, coverUrl } =
+      await MetadataExtractor.extractTrackInfo(this.api, trackPath);
     this.uiUpdater.updateTrackFullInfo(title, artist, coverUrl);
     if (this.polling) {
       this.polling.stop();
