@@ -1,19 +1,19 @@
-import { PlayerCore } from "./PlayerCore.js";
-import { PlayerProgress } from "./PlayerProgress.js";
-import { PlayerUIUpdater } from "./PlayerUIUpdater.js";
-import { PlayerPolling } from "./PlayerPolling.js";
-import { PlayerDOM } from "./PlayerDOM.js";
-import { PlayerEvents } from "./PlayerEvents.js";
-import { PlayerMediaHandler } from "./PlayerMediaHandler.js";
-import { PlayerVolume } from "./PlayerVolume.js";
-import { PlayerOutput } from "./PlayerOutput.js";
-import { PlayerEventSubscriber } from "./PlayerEventSubscriber.js";
-import { PreviewTooltip } from "./PreviewTooltip.js";
-import { PlayerEventHandler } from "./PlayerEventHandler.js";
-import { PlayerLifecycle } from "./PlayerLifeCycle.js";
-import { PlaybackStateRestorer } from "./PlaybackStateRestorer.js";
-import { PlayerVisibilityController } from "./PlayerVisibilityController.js";
-import { PlayerAPIBridge } from "./PlayerAPIBridge.js";
+import { PlayerCore } from "./core/PlayerCore.js";
+import { PlayerProgress } from "./core/PlayerProgress.js";
+import { PlayerUIUpdater } from "./core/PlayerUIUpdater.js";
+import { PlayerDOM } from "./core/PlayerDOM.js";
+import { PlayerVisibilityController } from "./core/PlayerVisibilityController.js";
+import { PlayerMediaHandler } from "./media-handling/PlayerMediaHandler.js";
+import { PlayerPolling } from "./media-handling/PlayerPolling.js";
+import { PlaybackStateRestorer } from "./media-handling/PlaybackStateRestorer.js";
+import { PlayerVolume } from "./ui/PlayerVolume.js";
+import { PlayerOutput } from "./ui/PlayerOutput.js";
+import { PlayerEvents } from "./ui/PlayerEvents.js";
+import { PlayerEventHandler } from "./ui/PlayerEventHandler.js";
+import { PlayerEventSubscriber } from "./ui/PlayerEventSubscriber.js";
+import { PreviewTooltip } from "./ui/PreviewTooltip.js";
+import { PlayerLifeCycle } from "./media-handling/PlayerLifeCycle.js";
+import { PlayerAPIBridge } from "./api/PlayerAPIBridge.js";
 
 export class UniversalPlayer {
   constructor(api, events, musicApi, playerApi, apiClient, tvApi = null) {
@@ -31,7 +31,7 @@ export class UniversalPlayer {
     this.polling = null;
     this.volume = null;
     this.output = null;
-    this.lifecycle = null;
+    this.lifeCycle = null;
     this.mediaHandler = null;
     this.eventSubscriber = null;
     this.previewTooltip = null;
@@ -61,7 +61,7 @@ export class UniversalPlayer {
     );
     this.volume = new PlayerVolume(this.apiClient, this.dom, this.core);
     this.output = new PlayerOutput(this.apiClient, this.dom, this.core);
-    this.lifecycle = new PlayerLifecycle(
+    this.lifeCycle = new PlayerLifeCycle(
       this.core,
       this.uiUpdater,
       this.progress,
@@ -71,7 +71,7 @@ export class UniversalPlayer {
       this.events,
       this.mediaHandler,
     );
-    this.lifecycle.onRestore = () => {
+    this.lifeCycle.onRestore = () => {
       this.show();
     };
     const onStopHandler = async () => {
@@ -82,7 +82,7 @@ export class UniversalPlayer {
       ) {
         const result = await this.videoCloseModal.show(this.core.currentFile);
         if (result?.action === "delete") {
-          await this.lifecycle.deleteCurrentVideo();
+          await this.lifeCycle.deleteCurrentVideo();
           this.hide();
         } else if (result?.action === "close") {
           await this.mediaHandler.stop(true);
@@ -102,7 +102,7 @@ export class UniversalPlayer {
       onStopHandler,
     );
     this.mediaHandler.setOnHide(() => this.hide());
-    this.mediaHandler.setForceRefreshVideo(() => this.lifecycle.refreshVideo());
+    this.mediaHandler.setForceRefreshVideo(() => this.lifeCycle.refreshVideo());
     if (this.videoCloseModal)
       this.mediaHandler.setVideoCloseModal(this.videoCloseModal);
     this.dom.ensureOutputButtons();
@@ -134,7 +134,7 @@ export class UniversalPlayer {
     this.visibility.setUIUpdater(this.uiUpdater);
     this.apiBridge = new PlayerAPIBridge(
       this.api,
-      this.lifecycle,
+      this.lifeCycle,
       this.mediaHandler,
     );
     this.stateRestorer = new PlaybackStateRestorer(
@@ -142,7 +142,7 @@ export class UniversalPlayer {
       this.core,
       this.uiUpdater,
       this.polling,
-      this.lifecycle,
+      this.lifeCycle,
       () => this.visibility.show(),
       this.progress,
     );
@@ -172,7 +172,7 @@ export class UniversalPlayer {
 
   clearState() {
     if (this.apiBridge) this.apiBridge.clearState();
-    else if (this.lifecycle) this.lifecycle.clearState();
+    else if (this.lifeCycle) this.lifeCycle.clearState();
     this.hide();
   }
 

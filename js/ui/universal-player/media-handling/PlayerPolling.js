@@ -1,4 +1,4 @@
-import { MetadataExtractor } from "./utils/MetadataExtractor.js";
+import { MetadataExtractor } from "../utils/MetadataExtractor.js";
 
 export class PlayerPolling {
   constructor(api, core, progress, uiUpdater, onStateChange) {

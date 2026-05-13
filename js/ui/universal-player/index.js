@@ -3,7 +3,8 @@ export {
   PlaybackStrategy,
   VideoPlaybackStrategy,
   AudioPlaybackStrategy,
-} from "./strategies/index.js";
-export { MediaPlaybackController } from "./MediaPlaybackController.js";
-export { PlaybackCoordinator } from "./PlaybackCoordinator.js";
-export { PlayerMediaHandler } from "./PlayerMediaHandler.js";
+} from "./playback/index.js";
+export { MediaPlaybackController } from "./playback/MediaPlaybackController.js";
+export { PlaybackCoordinator } from "./playback/PlaybackCoordinator.js";
+export { PlayerMediaHandler } from "./media-handling/PlayerMediaHandler.js";
+export { MetadataExtractor } from "./utils/MetadataExtractor.js";

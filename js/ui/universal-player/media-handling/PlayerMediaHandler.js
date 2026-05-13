@@ -1,5 +1,5 @@
-import { MediaPlaybackController } from "./MediaPlaybackController.js";
-import { PlaybackCoordinator } from "./PlaybackCoordinator.js";
+import { MediaPlaybackController } from "../playback/MediaPlaybackController.js";
+import { PlaybackCoordinator } from "../playback/PlaybackCoordinator.js";
 
 export class PlayerMediaHandler {
   constructor(api, core, uiUpdater, progress, onShow, onStop) {

@@ -1,5 +1,5 @@
 import { UniversalPlayer } from "../../ui/universal-player/UniversalPlayer.js";
-import { PlayerAPI } from "../../ui/universal-player/PlayerApi.js";
+import { PlayerAPI } from "../../ui/universal-player/api/PlayerApi.js";
 
 export class PlaybackManager {
   constructor(core) {

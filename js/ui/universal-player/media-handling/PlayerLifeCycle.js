@@ -1,4 +1,4 @@
-export class PlayerLifecycle {
+export class PlayerLifeCycle {
   constructor(
     core,
     uiUpdater,
