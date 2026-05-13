@@ -6,13 +6,10 @@ export class VideoCloseModal {
     this.modal = null;
     this.currentVideoPath = null;
     this.resolvePromise = null;
-    this.bindEvents();
+    this._bindEvents();
   }
 
-  bindEvents() {
-    this.events.on("video:close", (videoPath) => {
-      this.show(videoPath);
-    });
+  _bindEvents() {
     this.events.on("video:requestClose", (videoPath) => {
       this.show(videoPath);
     });
@@ -20,7 +17,7 @@ export class VideoCloseModal {
 
   show(videoPath) {
     this.currentVideoPath = videoPath;
-    this.createModal();
+    this._createModal();
     this.modal.classList.add("active");
     return new Promise((resolve) => {
       this.resolvePromise = resolve;
@@ -29,20 +26,16 @@ export class VideoCloseModal {
 
   showWithCurrentVideo() {
     if (
-      this.universalPlayer &&
-      this.universalPlayer.core &&
-      this.universalPlayer.core.currentFile &&
+      this.universalPlayer?.core?.currentFile &&
       this.universalPlayer.core.isVideo()
     ) {
       this.show(this.universalPlayer.core.currentFile);
     } else {
-      if (typeof Utils !== "undefined" && Utils.showNotification) {
-        Utils.showNotification("Нет активного видео", "info");
-      }
+      Utils?.showNotification?.("Нет активного видео", "info");
     }
   }
 
-  createModal() {
+  _createModal() {
     if (this.modal) {
       this.modal.remove();
     }
@@ -57,7 +50,7 @@ export class VideoCloseModal {
         </div>
         <div class="video-close-modal-body">
           <p>Выберите действие для видео:</p>
-          <div class="video-close-modal-path">${this.escapeHtml(this.getFileName(this.currentVideoPath))}</div>
+          <div class="video-close-modal-path">${this._escapeHtml(this._getFileName(this.currentVideoPath))}</div>
         </div>
         <div class="video-close-modal-buttons">
           <button class="video-close-modal-btn close-only" id="videoCloseOnlyBtn">
@@ -76,90 +69,78 @@ export class VideoCloseModal {
       </div>
     `;
     document.body.appendChild(this.modal);
-    const closeOnlyBtn = this.modal.querySelector("#videoCloseOnlyBtn");
-    const closeDeleteBtn = this.modal.querySelector("#videoCloseDeleteBtn");
-    const cancelBtn = this.modal.querySelector("#videoCloseCancelBtn");
-    const overlay = this.modal.querySelector(".video-close-modal-overlay");
-    closeOnlyBtn.addEventListener("click", () => this.handleCloseOnly());
-    closeDeleteBtn.addEventListener("click", () => this.handleCloseDelete());
-    cancelBtn.addEventListener("click", () => this.hide());
-    overlay.addEventListener("click", () => this.hide());
-    this.handleKeyPress = (e) => {
-      if (e.key === "Escape") {
-        this.hide();
-      }
+    this.modal
+      .querySelector("#videoCloseOnlyBtn")
+      .addEventListener("click", () => this._handleCloseOnly());
+    this.modal
+      .querySelector("#videoCloseDeleteBtn")
+      .addEventListener("click", () => this._handleCloseDelete());
+    this.modal
+      .querySelector("#videoCloseCancelBtn")
+      .addEventListener("click", () => this.hide());
+    this.modal
+      .querySelector(".video-close-modal-overlay")
+      .addEventListener("click", () => this.hide());
+    this._handleKeyPress = (e) => {
+      if (e.key === "Escape") this.hide();
     };
-    document.addEventListener("keydown", this.handleKeyPress);
+    document.addEventListener("keydown", this._handleKeyPress);
   }
 
-  getFileName(filePath) {
+  _getFileName(filePath) {
     if (!filePath) return "Неизвестный файл";
-    const parts = filePath.split("/");
-    return parts[parts.length - 1];
+    return filePath.split("/").pop();
   }
 
-  async handleCloseOnly() {
+  async _handleCloseOnly() {
     const videoPath = this.currentVideoPath;
     this.hide();
-    this.events.emit("video:closeOnly", videoPath);
-    if (this.resolvePromise) {
+    this.events.emit("video:closed", videoPath);
+    if (this.resolvePromise)
       this.resolvePromise({ action: "close", path: videoPath });
-    }
     try {
       await this.api.post("/api/video/close");
-      this.clearPlayerState();
-      if (typeof Utils !== "undefined" && Utils.showNotification) {
-        Utils.showNotification("Видео закрыто", "info");
-      }
+      this._clearPlayerState();
+      Utils?.showNotification?.("Видео закрыто", "info");
     } catch (error) {
-      if (typeof Utils !== "undefined" && Utils.showNotification) {
-        Utils.showNotification("Ошибка закрытия видео", "error");
-      }
+      Utils?.showNotification?.("Ошибка закрытия видео", "error");
     }
   }
 
-  async handleCloseDelete() {
+  async _handleCloseDelete() {
     const videoPath = this.currentVideoPath;
     this.hide();
-    this.events.emit("video:closeAndDelete", videoPath);
-    if (this.resolvePromise) {
+    this.events.emit("video:deleted", videoPath);
+    if (this.resolvePromise)
       this.resolvePromise({ action: "delete", path: videoPath });
-    }
     try {
       await this.api.post("/api/video/close");
-      this.clearPlayerState();
       const deleteResponse = await this.api.post("/api/trash", {
         path: videoPath,
       });
-      if (deleteResponse && deleteResponse.success) {
-        if (typeof Utils !== "undefined" && Utils.showNotification) {
-          Utils.showNotification(
-            `Видео "${this.getFileName(videoPath)}" удалено`,
-            "success",
-          );
-        }
+      if (deleteResponse?.success) {
+        Utils?.showNotification?.(
+          `Видео "${this._getFileName(videoPath)}" удалено`,
+          "success",
+        );
         this.events.emit("video:refresh");
       } else {
-        if (typeof Utils !== "undefined" && Utils.showNotification) {
-          Utils.showNotification(
-            deleteResponse?.error || "Ошибка удаления видео",
-            "error",
-          );
-        }
+        Utils?.showNotification?.(
+          deleteResponse?.error || "Ошибка удаления видео",
+          "error",
+        );
       }
     } catch (error) {
-      if (typeof Utils !== "undefined" && Utils.showNotification) {
-        Utils.showNotification("Ошибка при закрытии/удалении видео", "error");
-      }
+      Utils?.showNotification?.("Ошибка при закрытии/удалении видео", "error");
     }
   }
 
-  clearPlayerState() {
+  _clearPlayerState() {
     this.events.emit("player:clearState");
     if (this.universalPlayer) {
-      this.universalPlayer.core.reset();
-      this.universalPlayer.progress.reset();
-      this.universalPlayer.uiUpdater.reset();
+      this.universalPlayer.core?.reset();
+      this.universalPlayer.progress?.reset();
+      this.universalPlayer.uiUpdater?.reset();
       this.universalPlayer.hide();
     }
   }
@@ -168,14 +149,13 @@ export class VideoCloseModal {
     if (this.modal) {
       this.modal.classList.remove("active");
       setTimeout(() => {
-        if (this.modal && this.modal.parentNode) {
-          this.modal.remove();
-          this.modal = null;
-        }
+        if (this.modal?.parentNode) this.modal.remove();
+        this.modal = null;
       }, 200);
     }
-    if (this.handleKeyPress) {
-      document.removeEventListener("keydown", this.handleKeyPress);
+    if (this._handleKeyPress) {
+      document.removeEventListener("keydown", this._handleKeyPress);
+      this._handleKeyPress = null;
     }
     if (this.resolvePromise) {
       this.resolvePromise({ action: "cancelled", path: null });
@@ -184,7 +164,7 @@ export class VideoCloseModal {
     this.currentVideoPath = null;
   }
 
-  escapeHtml(str) {
+  _escapeHtml(str) {
     if (!str) return "";
     const div = document.createElement("div");
     div.textContent = str;
@@ -193,9 +173,6 @@ export class VideoCloseModal {
 
   destroy() {
     this.hide();
-    if (this.modal) {
-      this.modal.remove();
-      this.modal = null;
-    }
+    this.events.off("video:requestClose");
   }
 }

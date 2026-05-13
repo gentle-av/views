@@ -150,16 +150,6 @@ export class UniversalPlayer {
     this.checkAndRestorePlayback();
   }
 
-  setVideoCloseModal(modal) {
-    this.videoCloseModal = modal;
-    if (this.mediaHandler) {
-      this.mediaHandler.setVideoCloseModal(modal);
-    }
-    if (this.eventHandler) {
-      this.eventHandler._videoCloseModal = modal;
-    }
-  }
-
   async checkAndRestorePlayback() {
     if (this.stateRestorer) await this.stateRestorer.checkAndRestore();
   }

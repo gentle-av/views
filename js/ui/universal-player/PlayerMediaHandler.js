@@ -73,10 +73,6 @@ export class PlayerMediaHandler {
     this.controller.setOnHide(callback);
   }
 
-  setVideoCloseModal(modal) {
-    this.controller.setVideoCloseModal(modal);
-  }
-
   setForceRefreshVideo(fn) {
     this.coordinator.setVideoForceRefresh(fn);
   }

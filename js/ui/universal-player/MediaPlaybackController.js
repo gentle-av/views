@@ -23,10 +23,6 @@ export class MediaPlaybackController {
     this.strategy = strategy;
   }
 
-  setVideoCloseModal(modal) {
-    this.videoCloseModal = modal;
-  }
-
   async stop(keepState = false) {
     if (this.strategy) await this.strategy.stop();
     if (!keepState) {

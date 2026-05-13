@@ -1,3 +1,4 @@
+// js/main/pages/VideoPageManager.js
 import { VideoLibrary } from "../../modules/video-library/VideoLibrary.js";
 
 export class VideoPageManager {
@@ -40,14 +41,6 @@ export class VideoPageManager {
       this.playbackManager.universalPlayer,
     );
     this.core.videoLibrary = this.videoLibrary;
-    if (
-      this.playbackManager.universalPlayer &&
-      this.videoLibrary.videoCloseModal
-    ) {
-      this.playbackManager.universalPlayer.setVideoCloseModal(
-        this.videoLibrary.videoCloseModal,
-      );
-    }
   }
 
   _setupVideoEvents() {
