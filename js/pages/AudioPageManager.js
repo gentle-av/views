@@ -1,8 +1,8 @@
-import { AlbumLibrary } from "../../ui/album-library/AlbumLibrary.js";
-import { AlbumModal } from "../../ui/album-modal/AlbumModal.js";
-import { TrackList } from "../../ui/track-list.js";
-import { PlaylistPopup } from "../../ui/playlist-popup/PlaylistPopup.js";
-import { SearchPopup } from "../../ui/album-library/SearchPopup.js";
+import { AlbumLibrary } from "../modules/albums/AlbumLibrary.js";
+import { AlbumModal } from "../modules/albums/AlbumModal.js";
+import { TrackList } from "../modules/albums/TrackList.js";
+import { PlaylistPopup } from "../ui/components/PlaylistPopup.js";
+import { SearchPopup } from "../modules/albums/SearchPopup.js";
 
 export class AudioPageManager {
   constructor(core, playbackManager) {

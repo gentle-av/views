@@ -1,5 +1,5 @@
 import { PlaybackStrategy } from "./PlaybackStrategy.js";
-import { MetadataExtractor } from "../../utils/MetadataExtractor.js";
+import { MetadataExtractor } from "../utils/MetadataExtractor.js";
 
 export class AudioPlaybackStrategy extends PlaybackStrategy {
   constructor(api) {

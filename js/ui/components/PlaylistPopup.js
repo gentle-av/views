@@ -1,4 +1,4 @@
-import { TrackMetadataHelper } from "./TrackMetadataHelper.js";
+import { TrackMetadataHelper } from "../../services/TrackMetadataHelper.js";
 import { PlaylistPopupUI } from "./PlaylistPopupUI.js";
 import { PlaylistRenderer } from "./PlaylistRenderer.js";
 

@@ -1,4 +1,4 @@
-import { initPowerManagement } from "../../modules/power-management/index.js";
+import { initPowerManagement } from "../modules/power-management/index.js";
 
 export class PowerPageManager {
   constructor(core) {

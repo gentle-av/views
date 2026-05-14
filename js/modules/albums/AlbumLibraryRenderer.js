@@ -1,4 +1,4 @@
-import { AlbumCard } from "../album-card.js";
+import { AlbumCard } from "./AlbumCard.js";
 
 export class AlbumLibraryRenderer {
   constructor(container, events, state) {

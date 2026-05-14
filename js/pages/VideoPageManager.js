@@ -1,5 +1,5 @@
 // js/main/pages/VideoPageManager.js
-import { VideoLibrary } from "../../modules/video-library/VideoLibrary.js";
+import { VideoLibrary } from "../modules/videos/VideoLibrary.js";
 
 export class VideoPageManager {
   constructor(core, playbackManager, navigationManager) {
