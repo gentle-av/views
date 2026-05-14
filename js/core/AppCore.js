@@ -1,7 +1,7 @@
-import { EventBus } from "./event-bus.js";
-import { ApiClient } from "./api/api-client.js";
-import { MusicApiClient } from "./api/music-api-client.js";
-import { MediaCenterState } from "./state/app-state.js";
+import { EventBus } from "./EventBus.js";
+import { ApiClient } from "./api/ApiClient.js";
+import { MusicApiClient } from "./api/MusicApiClient.js";
+import { MediaCenterState } from "./state/AppState.js";
 import { MediaCenterEvents } from "./MediaCenterEvents.js";
 
 export class MediaCenterCore {
