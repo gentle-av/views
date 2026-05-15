@@ -9,10 +9,14 @@
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
   box-sizing: border-box;
   flex-shrink: 0;
-  display: flex;
+  display: none;
   flex-direction: column;
   transition: transform 0.3s ease;
   transform: translateY(0);
+}
+
+.universal-bottom-player.visible {
+  display: flex;
 }
 
 .universal-bottom-player.hidden {

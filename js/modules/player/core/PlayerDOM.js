@@ -56,7 +56,7 @@ export class PlayerDOM {
     if (
       !this._hasActivePlayback &&
       this.element &&
-      this.element.classList.contains("active")
+      this.element.classList.contains("visible")
     ) {
       this.hide();
     }
@@ -106,12 +106,14 @@ export class PlayerDOM {
   show() {
     if (this.element) {
       this.element.classList.remove("hidden");
+      this.element.classList.add("visible");
       this.element.style.display = "flex";
     }
   }
 
   hide() {
     if (this.element) {
+      this.element.classList.remove("visible");
       this.element.classList.add("hidden");
       setTimeout(() => {
         if (this.element.classList.contains("hidden")) {
