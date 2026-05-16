@@ -39,3 +39,4 @@ class TagEditor {
 
 const TagEditorInstance = new TagEditor();
 window.TagEditor = TagEditorInstance;
+export { TagEditorInstance };

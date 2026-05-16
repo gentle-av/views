@@ -7,6 +7,7 @@ import { AudioPageManager } from "../pages/AudioPageManager.js";
 import { PowerPageManager } from "../pages/PowerPageManager.js";
 import { AlbumEventHandlers } from "./handlers/AlbumEventHandlers.js";
 import { VideoEventHandlers } from "./handlers/VideoEventHandlers.js";
+import { TagEditorInstance } from "../modules/tag-editor/index.js";
 
 export class MediaCenter {
   constructor() {
@@ -23,6 +24,7 @@ export class MediaCenter {
   async init() {
     this.core = new MediaCenterCore();
     await this.core.init();
+    window.TagEditor = TagEditorInstance;
     this.playbackManager = new PlaybackManager(this.core);
     await this.playbackManager.init();
     this.uiManager = new UIManager(this.core);
