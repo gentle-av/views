@@ -16,7 +16,15 @@ import { PlayerLifeCycle } from "./media-handling/PlayerLifeCycle.js";
 import { PlayerAPIBridge } from "./api/PlayerAPIBridge.js";
 
 export class UniversalPlayer {
-  constructor(api, events, musicApi, playerApi, apiClient, tvApi = null) {
+  constructor(
+    api,
+    events,
+    musicApi,
+    playerApi,
+    apiClient,
+    tvApi = null,
+    videoCloseModal = null,
+  ) {
     this.api = api;
     this.events = events;
     this.musicApi = musicApi;
@@ -39,6 +47,7 @@ export class UniversalPlayer {
     this.visibility = null;
     this.apiBridge = null;
     this.stateRestorer = null;
+    this.videoCloseModal = videoCloseModal;
     this.initialize();
   }
 

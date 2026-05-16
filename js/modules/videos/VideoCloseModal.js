@@ -1,12 +1,17 @@
 export class VideoCloseModal {
-  constructor(events, api, universalPlayer = null) {
+  constructor(events, api, notificationService) {
     this.events = events;
     this.api = api;
-    this.universalPlayer = universalPlayer;
+    this.notificationService = notificationService;
+    this.universalPlayer = null;
     this.modal = null;
     this.currentVideoPath = null;
     this.resolvePromise = null;
     this._bindEvents();
+  }
+
+  setUniversalPlayer(universalPlayer) {
+    this.universalPlayer = universalPlayer;
   }
 
   _bindEvents() {
@@ -31,7 +36,13 @@ export class VideoCloseModal {
     ) {
       this.show(this.universalPlayer.core.currentFile);
     } else {
-      Utils?.showNotification?.("Нет активного видео", "info");
+      this._showNotification("Нет активного видео", "info");
+    }
+  }
+
+  _showNotification(message, type) {
+    if (this.notificationService) {
+      this.notificationService.show(message, type);
     }
   }
 
@@ -101,9 +112,9 @@ export class VideoCloseModal {
     try {
       await this.api.post("/api/video/close");
       this._clearPlayerState();
-      Utils?.showNotification?.("Видео закрыто", "info");
+      this._showNotification("Видео закрыто", "info");
     } catch (error) {
-      Utils?.showNotification?.("Ошибка закрытия видео", "error");
+      this._showNotification("Ошибка закрытия видео", "error");
     }
   }
 
@@ -119,19 +130,19 @@ export class VideoCloseModal {
         path: videoPath,
       });
       if (deleteResponse?.success) {
-        Utils?.showNotification?.(
+        this._showNotification(
           `Видео "${this._getFileName(videoPath)}" удалено`,
           "success",
         );
         this.events.emit("video:refresh");
       } else {
-        Utils?.showNotification?.(
+        this._showNotification(
           deleteResponse?.error || "Ошибка удаления видео",
           "error",
         );
       }
     } catch (error) {
-      Utils?.showNotification?.("Ошибка при закрытии/удалении видео", "error");
+      this._showNotification("Ошибка при закрытии/удалении видео", "error");
     }
   }
 
