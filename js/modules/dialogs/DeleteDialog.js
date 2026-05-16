@@ -141,3 +141,4 @@ class CustomDeleteDialog {
 }
 
 const CustomDeleteDialogInstance = new CustomDeleteDialog();
+export { CustomDeleteDialogInstance };

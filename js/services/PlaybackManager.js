@@ -1,6 +1,7 @@
 import { UniversalPlayer } from "../modules/player/UniversalPlayer.js";
 import { PlayerAPI } from "../modules/player/api/PlayerApi.js";
 import { VideoCloseModal } from "../modules/videos/VideoCloseModal.js";
+import { CustomDeleteDialogInstance } from "../modules/dialogs/DeleteDialog.js";
 
 export class PlaybackManager {
   constructor(core) {
@@ -13,10 +14,11 @@ export class PlaybackManager {
 
   async init() {
     const playerAPI = new PlayerAPI(this.core.api, this.core.musicApi, null);
+    window.deleteDialog = CustomDeleteDialogInstance;
     this.videoCloseModal = new VideoCloseModal(
       this.core.events,
       this.core.api,
-      this.core.notificationService,
+      this.core.notificationService || null,
     );
     this.universalPlayer = new UniversalPlayer(
       playerAPI,
@@ -51,24 +53,6 @@ export class PlaybackManager {
         this.universalPlayer.clearState();
       }
     });
-  }
-
-  async addAlbumToPlaylist(album) {
-    if (this.playback?.addAlbumToPlaylist) {
-      await this.playback.addAlbumToPlaylist(album);
-    }
-  }
-
-  playTrack(album, trackIndex) {
-    if (this.playback?.playTrack) {
-      this.playback.playTrack(album, trackIndex);
-    }
-  }
-
-  async clearPlaylist() {
-    if (this.playback?.api?.clearPlaylist) {
-      await this.playback.api.clearPlaylist();
-    }
   }
 
   destroy() {
