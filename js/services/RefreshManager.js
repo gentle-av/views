@@ -227,3 +227,5 @@ if (document.readyState === "loading") {
 } else {
   new RefreshButtonManager();
 }
+
+export default RefreshButtonManager;
