@@ -1,3 +1,4 @@
+// AlbumModalActions.js
 export class AlbumModalActions {
   constructor(modal, events, musicApi, universalPlayer, onHide) {
     this.modal = modal;
@@ -98,25 +99,20 @@ export class AlbumModalActions {
     });
   }
 
-  async _attachAddButton(container, album) {
+  _attachAddButton(container, album) {
     const addBtn = container.querySelector(".modal-add-btn");
     if (!addBtn) return;
-    addBtn.addEventListener("click", async (e) => {
+    addBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      let tracks = album.tracks || [];
-      if (tracks.length === 0 && this.musicApi) {
-        try {
-          const tracksData = await this.musicApi.getTracks(
-            album.title,
-            album.artist,
-            true,
-          );
-          tracks = tracksData;
-        } catch (error) {
-          return;
-        }
-      }
+      const tracks = album.tracks || [];
       for (const track of tracks) {
+        if (track.path) {
+          fetch("/api/audio/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ track: track.path }),
+          }).catch((err) => console.error("Failed to add track:", err));
+        }
         this.events.emit("playlist:addTrack", {
           path: track.path,
           title:
@@ -124,12 +120,6 @@ export class AlbumModalActions {
           artist: track.artist || album.artist,
           duration: track.duration || 0,
         });
-      }
-      if (window.showNotification) {
-        window.showNotification(
-          `Добавлено ${tracks.length} треков в плейлист`,
-          "success",
-        );
       }
       this.onHide();
     });
