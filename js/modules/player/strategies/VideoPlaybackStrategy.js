@@ -1,4 +1,4 @@
-import { PlaybackStrategy } from "./PlaybackStrategy.js";
+import { PlaybackStrategy } from './PlaybackStrategy.js';
 
 export class VideoPlaybackStrategy extends PlaybackStrategy {
   constructor(api) {
@@ -33,24 +33,22 @@ export class VideoPlaybackStrategy extends PlaybackStrategy {
 
   async start(path) {
     this.core.startStartingVideo();
-    this.uiUpdater.updateTrackInfo("Видео", "");
-    this.uiUpdater.updateFullscreenButtonVisibility("video");
+    const fileName = this._getFileName(path);
+    this.uiUpdater.updateTrackInfo(fileName, '');
+    this.uiUpdater.updateFullscreenButtonVisibility('video');
     this.onShow?.();
     const thumbnail = await this.api.getVideoThumbnail(path);
     if (thumbnail) this.uiUpdater.showPreviewImage(thumbnail);
     await this.api.closeVideo();
     const response = await this.api.openFile(path);
     if (!response.success) {
-      this.uiUpdater.showNotification(
-        response.error || "Ошибка воспроизведения",
-        "error",
-      );
+      this.uiUpdater.showNotification(response.error || 'Ошибка воспроизведения', 'error');
       this.core.finishStartingVideo();
       return;
     }
     this.uiUpdater.updatePlayPauseButton(true);
     this.core.setCurrentFile(path);
-    this.core.setMediaType("video");
+    this.core.setMediaType('video');
     this.core.setPlaying(true);
     this.core.finishStartingVideo();
     this.progress.reset();
@@ -62,9 +60,18 @@ export class VideoPlaybackStrategy extends PlaybackStrategy {
           this.progress.update(status.currentTime, status.duration);
         }
       } catch (e) {
-        console.warn("Failed to get initial video status", e);
+        console.warn('Failed to get initial video status', e);
       }
     }, 500);
+  }
+
+  _getFileName(path) {
+    if (!path) return 'Видео';
+    const parts = path.split('/');
+    let fileName = parts[parts.length - 1];
+    fileName = fileName.replace(/\.[^/.]+$/, '');
+    const match = fileName.match(/^\d+\s*[-.]?\s*(.+)$/);
+    return match ? match[1] : fileName;
   }
 
   async stop() {
@@ -73,24 +80,21 @@ export class VideoPlaybackStrategy extends PlaybackStrategy {
 
   async togglePlayPause() {
     if (!this.core.hasActiveFile()) {
-      this.uiUpdater.showNotification("Нет активного видео", "info");
+      this.uiUpdater.showNotification('Нет активного видео', 'info');
       return;
     }
     const status = await this.api.getVideoStatus();
-    if (!status.success || status.reason === "process_dead") {
-      this.uiUpdater.showNotification(
-        "Видео не загружено или процесс завершён",
-        "error",
-      );
+    if (!status.success || status.reason === 'process_dead') {
+      this.uiUpdater.showNotification('Видео не загружено или процесс завершён', 'error');
       return;
     }
-    const command = this.core.isPlaying ? "pause" : "play";
+    const command = this.core.isPlaying ? 'pause' : 'play';
     const response = await this.api.controlVideo(command);
     if (response.success) {
       this.core.setPlaying(!this.core.isPlaying, true);
       this.uiUpdater.updatePlayPauseButton(this.core.isPlaying);
     } else {
-      this.uiUpdater.showNotification("Ошибка управления видео", "error");
+      this.uiUpdater.showNotification('Ошибка управления видео', 'error');
     }
   }
 
@@ -99,7 +103,7 @@ export class VideoPlaybackStrategy extends PlaybackStrategy {
     if (response.success) {
       this.progress.update(response.time, this.progress.duration);
     } else {
-      this.uiUpdater.showNotification("Ошибка перемотки", "error");
+      this.uiUpdater.showNotification('Ошибка перемотки', 'error');
     }
   }
 
@@ -113,7 +117,7 @@ export class VideoPlaybackStrategy extends PlaybackStrategy {
 
   async _seekRelative(seconds) {
     if (!this.core.hasActiveFile()) {
-      this.uiUpdater.showNotification("Нет активного медиа", "info");
+      this.uiUpdater.showNotification('Нет активного медиа', 'info');
       return;
     }
     const status = await this.api.getVideoStatus();
@@ -124,7 +128,7 @@ export class VideoPlaybackStrategy extends PlaybackStrategy {
     if (response.success) {
       this.progress.update(newTime, duration);
     } else {
-      this.uiUpdater.showNotification("Ошибка перемотки", "error");
+      this.uiUpdater.showNotification('Ошибка перемотки', 'error');
     }
   }
 
@@ -141,6 +145,6 @@ export class VideoPlaybackStrategy extends PlaybackStrategy {
   }
 
   updateUI() {
-    this.uiUpdater.updateFullscreenButtonVisibility("video");
+    this.uiUpdater.updateFullscreenButtonVisibility('video');
   }
 }
